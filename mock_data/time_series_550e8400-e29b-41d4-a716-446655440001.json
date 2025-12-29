@@ -1,0 +1,36 @@
+{
+  "box_id": "550e8400-e29b-41d4-a716-446655440001",
+  "data": [
+    {"date": "2023-12-17", "floor_price_usd": 240.00, "volume": 42000.00, "listings_count": 2980},
+    {"date": "2023-12-18", "floor_price_usd": 241.50, "volume": 42800.00, "listings_count": 2995},
+    {"date": "2023-12-19", "floor_price_usd": 239.75, "volume": 41200.00, "listings_count": 3002},
+    {"date": "2023-12-20", "floor_price_usd": 242.25, "volume": 43500.00, "listings_count": 3010},
+    {"date": "2023-12-21", "floor_price_usd": 243.00, "volume": 44200.00, "listings_count": 3018},
+    {"date": "2023-12-22", "floor_price_usd": 244.50, "volume": 44500.00, "listings_count": 3025},
+    {"date": "2023-12-23", "floor_price_usd": 243.75, "volume": 43800.00, "listings_count": 3030},
+    {"date": "2023-12-24", "floor_price_usd": 244.00, "volume": 44000.00, "listings_count": 3035},
+    {"date": "2023-12-25", "floor_price_usd": 244.25, "volume": 44100.00, "listings_count": 3038},
+    {"date": "2023-12-26", "floor_price_usd": 245.00, "volume": 44700.00, "listings_count": 3040},
+    {"date": "2023-12-27", "floor_price_usd": 244.75, "volume": 44300.00, "listings_count": 3042},
+    {"date": "2023-12-28", "floor_price_usd": 245.25, "volume": 44800.00, "listings_count": 3043},
+    {"date": "2023-12-29", "floor_price_usd": 245.50, "volume": 45000.00, "listings_count": 3043},
+    {"date": "2023-12-30", "floor_price_usd": 245.75, "volume": 45100.00, "listings_count": 3044},
+    {"date": "2023-12-31", "floor_price_usd": 246.00, "volume": 45200.00, "listings_count": 3044},
+    {"date": "2024-01-01", "floor_price_usd": 246.25, "volume": 45300.00, "listings_count": 3044},
+    {"date": "2024-01-02", "floor_price_usd": 246.50, "volume": 45400.00, "listings_count": 3044},
+    {"date": "2024-01-03", "floor_price_usd": 246.75, "volume": 45500.00, "listings_count": 3044},
+    {"date": "2024-01-04", "floor_price_usd": 247.00, "volume": 45600.00, "listings_count": 3044},
+    {"date": "2024-01-05", "floor_price_usd": 247.25, "volume": 45700.00, "listings_count": 3044},
+    {"date": "2024-01-06", "floor_price_usd": 247.50, "volume": 45800.00, "listings_count": 3044},
+    {"date": "2024-01-07", "floor_price_usd": 247.75, "volume": 45900.00, "listings_count": 3044},
+    {"date": "2024-01-08", "floor_price_usd": 248.00, "volume": 46000.00, "listings_count": 3044},
+    {"date": "2024-01-09", "floor_price_usd": 248.25, "volume": 46100.00, "listings_count": 3044},
+    {"date": "2024-01-10", "floor_price_usd": 248.50, "volume": 46200.00, "listings_count": 3044},
+    {"date": "2024-01-11", "floor_price_usd": 248.75, "volume": 46300.00, "listings_count": 3044},
+    {"date": "2024-01-12", "floor_price_usd": 249.00, "volume": 46400.00, "listings_count": 3044},
+    {"date": "2024-01-13", "floor_price_usd": 249.50, "volume": 46500.00, "listings_count": 3044},
+    {"date": "2024-01-14", "floor_price_usd": 249.99, "volume": 46600.00, "listings_count": 3044},
+    {"date": "2024-01-15", "floor_price_usd": 245.99, "volume": 45230.50, "listings_count": 3044}
+  ]
+}
+
