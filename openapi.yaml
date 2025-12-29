@@ -1,0 +1,594 @@
+openapi: 3.0.3
+info:
+  title: BoosterBoxPro API
+  description: API for sealed TCG booster box market intelligence and analytics
+  version: 1.0.0
+  contact:
+    name: BoosterBoxPro API Support
+
+servers:
+  - url: https://api.boosterboxpro.com/api/v1
+    description: Production server
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+tags:
+  - name: booster-boxes
+    description: Booster box data and metrics endpoints
+
+paths:
+  /booster-boxes:
+    get:
+      tags:
+        - booster-boxes
+      summary: Get leaderboard of booster boxes
+      description: Returns ranked list of booster boxes sorted by volume or other metrics
+      operationId: getLeaderboard
+      parameters:
+        - name: sort
+          in: query
+          description: Sort by field
+          required: false
+          schema:
+            type: string
+            enum: [volume, market_cap, floor_price, floor_change_1d, sales, listed]
+            default: volume
+        - name: order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          description: Number of results to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: date
+          in: query
+          description: Date for metrics (YYYY-MM-DD). Defaults to today
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+              example:
+                $ref: '#/components/examples/LeaderboardExample'
+        '400':
+          description: Bad request (invalid parameters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /booster-boxes/{id}:
+    get:
+      tags:
+        - booster-boxes
+      summary: Get detailed analytics for a specific booster box
+      description: Returns comprehensive metrics, time-series data, and advanced analytics for a single booster box
+      operationId: getBoxDetail
+      parameters:
+        - name: id
+          in: path
+          description: Booster box UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          description: Date for metrics (YYYY-MM-DD). Defaults to today
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoxDetailResponse'
+              example:
+                $ref: '#/components/examples/BoxDetailExample'
+        '404':
+          description: Box not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /booster-boxes/{id}/time-series:
+    get:
+      tags:
+        - booster-boxes
+      summary: Get time-series data for a booster box
+      description: Returns historical daily metrics for a booster box over a date range
+      operationId: getTimeSeries
+      parameters:
+        - name: id
+          in: path
+          description: Booster box UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          description: Start date (YYYY-MM-DD). Defaults to 30 days ago
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date (YYYY-MM-DD). Defaults to today
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  box_id:
+                    type: string
+                    format: uuid
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TimeSeriesDataPoint'
+        '404':
+          description: Box not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /booster-boxes/{id}/sparkline:
+    get:
+      tags:
+        - booster-boxes
+      summary: Get sparkline price data
+      description: Returns price points for sparkline chart visualization
+      operationId: getSparkline
+      parameters:
+        - name: id
+          in: path
+          description: Booster box UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: days
+          in: query
+          description: Number of days of history. Defaults to 30
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 30
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  box_id:
+                    type: string
+                    format: uuid
+                  prices:
+                    type: array
+                    items:
+                      type: number
+                      format: float
+        '404':
+          description: Box not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    LeaderboardResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardBox'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    LeaderboardBox:
+      type: object
+      required:
+        - id
+        - product_name
+        - rank
+        - metrics
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the booster box
+        rank:
+          type: integer
+          description: Current rank position (1 = highest volume)
+          minimum: 1
+        rank_change_direction:
+          type: string
+          enum: [up, down, same]
+          description: Direction of rank change since last period
+        rank_change_amount:
+          type: integer
+          description: Number of positions moved (positive = up, negative = down)
+          nullable: true
+        product_name:
+          type: string
+          description: Full product name (e.g., "One Piece - OP-01 Romance Dawn Booster Box")
+        set_name:
+          type: string
+          nullable: true
+          description: Set name (e.g., "Romance Dawn")
+        game_type:
+          type: string
+          description: Game type (e.g., "One Piece", "MTG", "Pokemon")
+          default: "One Piece"
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to box image/avatar
+        metrics:
+          $ref: '#/components/schemas/BoxMetrics'
+        reprint_risk:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          default: LOW
+        metric_date:
+          type: string
+          format: date
+          description: Date these metrics represent
+
+    BoxMetrics:
+      type: object
+      properties:
+        floor_price_usd:
+          type: number
+          format: float
+          description: Current floor price in USD
+          nullable: true
+        floor_price_1d_change_pct:
+          type: number
+          format: float
+          description: 1-day floor price percentage change
+          nullable: true
+        daily_volume_usd:
+          type: number
+          format: float
+          description: Daily volume in USD (PRIMARY METRIC for ranking)
+          nullable: true
+        unified_volume_7d_ema:
+          type: number
+          format: float
+          description: 7-day EMA of unified volume (primary ranking metric)
+          nullable: true
+        units_sold_count:
+          type: integer
+          description: Number of boxes sold today
+          nullable: true
+        active_listings_count:
+          type: integer
+          description: Number of active listings
+          nullable: true
+        listed_percentage:
+          type: number
+          format: float
+          description: Percentage of estimated supply listed
+          nullable: true
+        estimated_total_supply:
+          type: integer
+          description: Estimated total supply (for percentage calculation)
+          nullable: true
+        liquidity_score:
+          type: number
+          format: float
+          description: Liquidity score (0.0 to 1.0)
+          nullable: true
+        price_sparkline_1d:
+          type: array
+          items:
+            $ref: '#/components/schemas/SparklineDataPoint'
+          description: Price points for 24-hour sparkline chart
+          nullable: true
+
+    SparklineDataPoint:
+      type: object
+      required:
+        - timestamp
+        - price
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        price:
+          type: number
+          format: float
+
+    BoxDetailResponse:
+      type: object
+      required:
+        - id
+        - product_name
+        - metrics
+      properties:
+        id:
+          type: string
+          format: uuid
+        rank:
+          type: integer
+          nullable: true
+        rank_change_direction:
+          type: string
+          enum: [up, down, same]
+          nullable: true
+        rank_change_amount:
+          type: integer
+          nullable: true
+        product_name:
+          type: string
+        set_name:
+          type: string
+          nullable: true
+        game_type:
+          type: string
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+        release_date:
+          type: string
+          format: date
+          nullable: true
+        reprint_risk:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        metrics:
+          $ref: '#/components/schemas/DetailedBoxMetrics'
+        time_series_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeriesDataPoint'
+          description: Historical daily metrics (last 30 days)
+        rank_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/RankHistoryPoint'
+          description: Historical rank positions over time
+        metric_date:
+          type: string
+          format: date
+
+    DetailedBoxMetrics:
+      allOf:
+        - $ref: '#/components/schemas/BoxMetrics'
+        - type: object
+          properties:
+            visible_market_cap_usd:
+              type: number
+              format: float
+              nullable: true
+            expected_days_to_sell:
+              type: number
+              format: float
+              description: Expected days to sell if listed today (1-365)
+              nullable: true
+            days_to_20_percent:
+              type: number
+              format: float
+              description: Projected days until 20% price increase (max 180)
+              nullable: true
+            absorption_rate:
+              type: number
+              format: float
+              description: Boxes sold / boxes listed ratio
+              nullable: true
+
+    TimeSeriesDataPoint:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date
+        floor_price_usd:
+          type: number
+          format: float
+          nullable: true
+        volume:
+          type: number
+          format: float
+          nullable: true
+        listings_count:
+          type: integer
+          nullable: true
+        sales_count:
+          type: integer
+          nullable: true
+        market_cap:
+          type: number
+          format: float
+          nullable: true
+
+    RankHistoryPoint:
+      type: object
+      required:
+        - date
+        - rank
+      properties:
+        date:
+          type: string
+          format: date
+        rank:
+          type: integer
+        rank_change:
+          type: integer
+          nullable: true
+          description: Change from previous rank (positive = up, negative = down)
+
+    ResponseMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of boxes available
+        sort:
+          type: string
+          description: Sort field used
+        sort_direction:
+          type: string
+          enum: [asc, desc]
+        date:
+          type: string
+          format: date
+          description: Date of metrics
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+        detail:
+          type: string
+          description: Detailed error information
+          nullable: true
+
+  examples:
+    LeaderboardExample:
+      value:
+        data:
+          - id: "550e8400-e29b-41d4-a716-446655440000"
+            rank: 1
+            rank_change_direction: "up"
+            rank_change_amount: 2
+            product_name: "One Piece - OP-01 Romance Dawn Booster Box"
+            set_name: "Romance Dawn"
+            game_type: "One Piece"
+            image_url: "https://cdn.example.com/op01-box.jpg"
+            metrics:
+              floor_price_usd: 245.99
+              floor_price_1d_change_pct: -1.3
+              daily_volume_usd: 45230.50
+              unified_volume_7d_ema: 43890.25
+              units_sold_count: 18
+              active_listings_count: 3044
+              listed_percentage: 8.3
+              estimated_total_supply: 36600
+              liquidity_score: 0.75
+              price_sparkline_1d:
+                - timestamp: "2024-01-14T00:00:00Z"
+                  price: 249.99
+                - timestamp: "2024-01-14T04:00:00Z"
+                  price: 248.50
+                - timestamp: "2024-01-14T08:00:00Z"
+                  price: 247.25
+            reprint_risk: "LOW"
+            metric_date: "2024-01-15"
+        meta:
+          total: 10
+          sort: "volume"
+          sort_direction: "desc"
+          date: "2024-01-15"
+
+    BoxDetailExample:
+      value:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        rank: 1
+        rank_change_direction: "up"
+        rank_change_amount: 2
+        product_name: "One Piece - OP-01 Romance Dawn Booster Box"
+        set_name: "Romance Dawn"
+        game_type: "One Piece"
+        image_url: "https://cdn.example.com/op01-box.jpg"
+        release_date: "2023-03-31"
+        reprint_risk: "LOW"
+        metrics:
+          floor_price_usd: 245.99
+          floor_price_1d_change_pct: -1.3
+          daily_volume_usd: 45230.50
+          unified_volume_7d_ema: 43890.25
+          units_sold_count: 18
+          active_listings_count: 3044
+          listed_percentage: 8.3
+          estimated_total_supply: 36600
+          liquidity_score: 0.75
+          visible_market_cap_usd: 748476.56
+          expected_days_to_sell: 14.5
+          days_to_20_percent: 12.5
+          absorption_rate: 0.59
+        time_series_data:
+          - date: "2024-01-01"
+            floor_price_usd: 240.00
+            volume: 42000.00
+            listings_count: 2980
+            sales_count: 15
+            market_cap: 715200.00
+        rank_history:
+          - date: "2024-01-01"
+            rank: 3
+            rank_change: 1
+        metric_date: "2024-01-15"
+

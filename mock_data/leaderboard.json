@@ -1,0 +1,321 @@
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "rank": 1,
+      "rank_change_direction": "up",
+      "rank_change_amount": 2,
+      "product_name": "One Piece - OP-01 Romance Dawn Booster Box",
+      "set_name": "Romance Dawn",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op01-box.jpg",
+      "metrics": {
+        "floor_price_usd": 245.99,
+        "floor_price_1d_change_pct": -1.3,
+        "daily_volume_usd": 45230.50,
+        "unified_volume_7d_ema": 43890.25,
+        "units_sold_count": 18,
+        "active_listings_count": 3044,
+        "listed_percentage": 8.3,
+        "estimated_total_supply": 36600,
+        "liquidity_score": 0.75,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 249.99},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 248.50},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 247.25},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 246.00},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 245.50},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 245.99}
+        ]
+      },
+      "reprint_risk": "LOW",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "rank": 2,
+      "rank_change_direction": "down",
+      "rank_change_amount": -1,
+      "product_name": "One Piece - OP-02 Paramount War Booster Box",
+      "set_name": "Paramount War",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op02-box.jpg",
+      "metrics": {
+        "floor_price_usd": 195.50,
+        "floor_price_1d_change_pct": 2.1,
+        "daily_volume_usd": 38120.75,
+        "unified_volume_7d_ema": 37500.00,
+        "units_sold_count": 15,
+        "active_listings_count": 2850,
+        "listed_percentage": 7.8,
+        "estimated_total_supply": 36500,
+        "liquidity_score": 0.68,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 191.25},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 192.00},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 193.50},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 194.25},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 195.00},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 195.50}
+        ]
+      },
+      "reprint_risk": "LOW",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "rank": 3,
+      "rank_change_direction": "same",
+      "rank_change_amount": 0,
+      "product_name": "One Piece - OP-03 Pillars of Strength Booster Box",
+      "set_name": "Pillars of Strength",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op03-box.jpg",
+      "metrics": {
+        "floor_price_usd": 175.25,
+        "floor_price_1d_change_pct": 0.0,
+        "daily_volume_usd": 32850.00,
+        "unified_volume_7d_ema": 32000.00,
+        "units_sold_count": 12,
+        "active_listings_count": 2650,
+        "listed_percentage": 9.2,
+        "estimated_total_supply": 28800,
+        "liquidity_score": 0.65,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 175.25},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 175.25},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 175.50},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 175.00},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 175.25},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 175.25}
+        ]
+      },
+      "reprint_risk": "MEDIUM",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "rank": 4,
+      "rank_change_direction": "up",
+      "rank_change_amount": 1,
+      "product_name": "One Piece - OP-04 Kingdoms of Intrigue Booster Box",
+      "set_name": "Kingdoms of Intrigue",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op04-box.jpg",
+      "metrics": {
+        "floor_price_usd": 155.75,
+        "floor_price_1d_change_pct": 1.5,
+        "daily_volume_usd": 28540.25,
+        "unified_volume_7d_ema": 27800.00,
+        "units_sold_count": 14,
+        "active_listings_count": 2450,
+        "listed_percentage": 8.9,
+        "estimated_total_supply": 27500,
+        "liquidity_score": 0.72,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 153.50},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 154.00},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 154.75},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 155.25},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 155.50},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 155.75}
+        ]
+      },
+      "reprint_risk": "LOW",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440005",
+      "rank": 5,
+      "rank_change_direction": "down",
+      "rank_change_amount": -1,
+      "product_name": "One Piece - OP-05 Awakening of the New Era Booster Box",
+      "set_name": "Awakening of the New Era",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op05-box.jpg",
+      "metrics": {
+        "floor_price_usd": 135.00,
+        "floor_price_1d_change_pct": -0.7,
+        "daily_volume_usd": 24300.00,
+        "unified_volume_7d_ema": 23500.00,
+        "units_sold_count": 10,
+        "active_listings_count": 2250,
+        "listed_percentage": 10.2,
+        "estimated_total_supply": 22000,
+        "liquidity_score": 0.58,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 135.95},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 135.50},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 135.25},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 135.00},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 135.00},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 135.00}
+        ]
+      },
+      "reprint_risk": "LOW",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440006",
+      "rank": 6,
+      "rank_change_direction": "up",
+      "rank_change_amount": 2,
+      "product_name": "One Piece - OP-06 Wings of the Captain Booster Box",
+      "set_name": "Wings of the Captain",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op06-box.jpg",
+      "metrics": {
+        "floor_price_usd": 165.50,
+        "floor_price_1d_change_pct": 3.2,
+        "daily_volume_usd": 22100.50,
+        "unified_volume_7d_ema": 21500.00,
+        "units_sold_count": 9,
+        "active_listings_count": 2050,
+        "listed_percentage": 9.5,
+        "estimated_total_supply": 21600,
+        "liquidity_score": 0.62,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 160.25},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 161.50},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 162.75},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 164.00},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 164.75},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 165.50}
+        ]
+      },
+      "reprint_risk": "MEDIUM",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440007",
+      "rank": 7,
+      "rank_change_direction": "same",
+      "rank_change_amount": 0,
+      "product_name": "One Piece - OP-07 Absolute Justice Booster Box",
+      "set_name": "Absolute Justice",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op07-box.jpg",
+      "metrics": {
+        "floor_price_usd": 145.25,
+        "floor_price_1d_change_pct": 0.2,
+        "daily_volume_usd": 19850.75,
+        "unified_volume_7d_ema": 19200.00,
+        "units_sold_count": 8,
+        "active_listings_count": 1850,
+        "listed_percentage": 8.1,
+        "estimated_total_supply": 22800,
+        "liquidity_score": 0.55,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 144.95},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 145.00},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 145.10},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 145.20},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 145.25},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 145.25}
+        ]
+      },
+      "reprint_risk": "LOW",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440008",
+      "rank": 8,
+      "rank_change_direction": "down",
+      "rank_change_amount": -1,
+      "product_name": "One Piece - OP-08 Advent of the Emperor Booster Box",
+      "set_name": "Advent of the Emperor",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op08-box.jpg",
+      "metrics": {
+        "floor_price_usd": 125.50,
+        "floor_price_1d_change_pct": -1.2,
+        "daily_volume_usd": 17650.00,
+        "unified_volume_7d_ema": 17100.00,
+        "units_sold_count": 7,
+        "active_listings_count": 1650,
+        "listed_percentage": 7.8,
+        "estimated_total_supply": 21200,
+        "liquidity_score": 0.50,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 127.00},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 126.50},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 126.00},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 125.75},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 125.50},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 125.50}
+        ]
+      },
+      "reprint_risk": "MEDIUM",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440009",
+      "rank": 9,
+      "rank_change_direction": "up",
+      "rank_change_amount": 1,
+      "product_name": "One Piece - OP-09 Age of Pirates Booster Box",
+      "set_name": "Age of Pirates",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op09-box.jpg",
+      "metrics": {
+        "floor_price_usd": 115.75,
+        "floor_price_1d_change_pct": 2.8,
+        "daily_volume_usd": 15420.50,
+        "unified_volume_7d_ema": 14800.00,
+        "units_sold_count": 6,
+        "active_listings_count": 1450,
+        "listed_percentage": 6.9,
+        "estimated_total_supply": 21000,
+        "liquidity_score": 0.48,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 112.50},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 113.25},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 114.00},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 114.75},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 115.25},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 115.75}
+        ]
+      },
+      "reprint_risk": "LOW",
+      "metric_date": "2024-01-15"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440010",
+      "rank": 10,
+      "rank_change_direction": "down",
+      "rank_change_amount": -2,
+      "product_name": "One Piece - OP-10 Dawn of the New Era Booster Box",
+      "set_name": "Dawn of the New Era",
+      "game_type": "One Piece",
+      "image_url": "https://cdn.example.com/op10-box.jpg",
+      "metrics": {
+        "floor_price_usd": 105.00,
+        "floor_price_1d_change_pct": -2.5,
+        "daily_volume_usd": 13200.00,
+        "unified_volume_7d_ema": 12800.00,
+        "units_sold_count": 5,
+        "active_listings_count": 1250,
+        "listed_percentage": 6.2,
+        "estimated_total_supply": 20200,
+        "liquidity_score": 0.42,
+        "price_sparkline_1d": [
+          {"timestamp": "2024-01-14T00:00:00Z", "price": 107.75},
+          {"timestamp": "2024-01-14T04:00:00Z", "price": 107.00},
+          {"timestamp": "2024-01-14T08:00:00Z", "price": 106.25},
+          {"timestamp": "2024-01-14T12:00:00Z", "price": 105.75},
+          {"timestamp": "2024-01-14T16:00:00Z", "price": 105.25},
+          {"timestamp": "2024-01-14T20:00:00Z", "price": 105.00}
+        ]
+      },
+      "reprint_risk": "MEDIUM",
+      "metric_date": "2024-01-15"
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "sort": "volume",
+    "sort_direction": "desc",
+    "date": "2024-01-15"
+  }
+}
+
