@@ -27,6 +27,7 @@ from app.schemas.sales_extraction import (
 from app.repositories.booster_box_repository import BoosterBoxRepository
 from app.repositories.unified_metrics_repository import UnifiedMetricsRepository
 from app.services.metrics_calculator import MetricsCalculator
+from app.services.raw_data_aggregator import RawDataAggregator
 from app.models.unified_box_metrics import UnifiedBoxMetrics
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -694,4 +695,50 @@ async def extract_bulk_sales(
         "total_processed": len(extraction.sales),
         "booster_box_id": str(box_uuid),
     }
+
+
+@router.post("/calculate-metrics-from-raw/{box_id}", response_model=MetricsResponse)
+async def calculate_metrics_from_raw_data(
+    box_id: UUID,
+    metric_date: str = Form(...),
+    use_listings: bool = Form(True),
+    use_sales: bool = Form(True),
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(verify_admin_key),
+):
+    """
+    Calculate unified metrics from raw listings/sales data
+    
+    Aggregates data from tcg_listings_raw and/or ebay_sales_raw
+    and creates/updates unified metrics with all calculated fields.
+    
+    Requires admin API key in header: X-API-Key
+    """
+    # Verify box exists
+    box = await BoosterBoxRepository.get_by_id(db, box_id)
+    if not box:
+        raise HTTPException(status_code=404, detail="Booster box not found")
+    
+    # Parse date
+    try:
+        target_date = date.fromisoformat(metric_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Aggregate raw data
+    aggregator = RawDataAggregator(db)
+    result = await aggregator.create_unified_metrics_from_raw_data(
+        box_id=box_id,
+        target_date=target_date,
+        use_listings=use_listings,
+        use_sales=use_sales
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No raw data found for box {box_id} on {metric_date}"
+        )
+    
+    return MetricsResponse.model_validate(result)
 

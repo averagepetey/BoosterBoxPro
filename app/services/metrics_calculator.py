@@ -319,6 +319,99 @@ class MetricsCalculator:
         
         return floor_price * Decimal(str(active_listings))
     
+    async def calculate_floor_price_change_pct(
+        self,
+        box_id: UUID,
+        target_date: date
+    ) -> Optional[Decimal]:
+        """
+        Calculate 1-day price change percentage
+        
+        Formula: ((price_today - price_yesterday) / price_yesterday) × 100
+        
+        Args:
+            box_id: Booster box UUID
+            target_date: Date to calculate for
+            
+        Returns:
+            Price change percentage or None if insufficient data
+        """
+        # Get current day metrics
+        current_metrics = await UnifiedMetricsRepository.get_by_box_and_date(
+            self.db, box_id, target_date
+        )
+        
+        if not current_metrics or not current_metrics.floor_price_usd:
+            return None
+        
+        # Get previous day metrics
+        previous_date = target_date - timedelta(days=1)
+        previous_metrics = await UnifiedMetricsRepository.get_by_box_and_date(
+            self.db, box_id, previous_date
+        )
+        
+        if not previous_metrics or not previous_metrics.floor_price_usd:
+            return None
+        
+        current_price = current_metrics.floor_price_usd
+        previous_price = previous_metrics.floor_price_usd
+        
+        if previous_price <= 0:
+            return None
+        
+        # Calculate percentage change
+        change_pct = ((current_price - previous_price) / previous_price) * Decimal('100')
+        
+        return change_pct
+    
+    async def calculate_days_to_20pct_increase(
+        self,
+        box_id: UUID,
+        target_date: date
+    ) -> Optional[Decimal]:
+        """
+        Calculate days until listings would need 20% price increase
+        
+        Formula: (active_listings_at_current_price × 0.2) / boxes_sold_per_day_avg
+        
+        This estimates when supply at current price level would deplete to the point
+        that prices need to increase by 20% to find more supply.
+        
+        Args:
+            box_id: Booster box UUID
+            target_date: Date to calculate for
+            
+        Returns:
+            Days to 20% increase (1-365) or None if insufficient data
+        """
+        metrics = await UnifiedMetricsRepository.get_by_box_and_date(
+            self.db, box_id, target_date
+        )
+        
+        if not metrics:
+            return None
+        
+        active_listings = metrics.active_listings_count or 0
+        if active_listings <= 0:
+            return None
+        
+        # Get average boxes sold per day
+        boxes_sold_avg = await self.calculate_boxes_sold_30d_avg(box_id, target_date)
+        
+        if not boxes_sold_avg or boxes_sold_avg <= 0:
+            return None
+        
+        # Calculate supply at 20% threshold (20% of current listings)
+        supply_at_20pct_threshold = Decimal(str(active_listings)) * Decimal('0.2')
+        
+        # Calculate days until that threshold is reached
+        days_to_20pct = supply_at_20pct_threshold / boxes_sold_avg
+        
+        # Bound to 1-365 days
+        days_to_20pct = max(Decimal('1'), min(days_to_20pct, Decimal('365')))
+        
+        return days_to_20pct
+    
     async def calculate_all_metrics(
         self,
         box_id: UUID,
@@ -362,6 +455,12 @@ class MetricsCalculator:
         results['visible_market_cap_usd'] = await self.calculate_visible_market_cap(
             box_id, target_date
         )
+        results['floor_price_1d_change_pct'] = await self.calculate_floor_price_change_pct(
+            box_id, target_date
+        )
+        results['days_to_20pct_increase'] = await self.calculate_days_to_20pct_increase(
+            box_id, target_date
+        )
         
         return results
     
@@ -401,6 +500,8 @@ class MetricsCalculator:
             'boxes_sold_30d_avg': calculated.get('boxes_sold_30d_avg'),
             'expected_days_to_sell': calculated.get('expected_days_to_sell'),
             'visible_market_cap_usd': calculated.get('visible_market_cap_usd'),
+            'floor_price_1d_change_pct': calculated.get('floor_price_1d_change_pct'),
+            'days_to_20pct_increase': calculated.get('days_to_20pct_increase'),
         }
         
         # Update existing record
