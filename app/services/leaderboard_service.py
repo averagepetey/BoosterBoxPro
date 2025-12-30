@@ -1,6 +1,6 @@
 """
 Leaderboard Service
-Handles ranking, sorting, and rank change calculations
+Handles ranking, sorting, and rank change calculations with caching
 """
 
 from datetime import date
@@ -14,13 +14,15 @@ from sqlalchemy import select, and_, or_, func
 from app.models.booster_box import BoosterBox
 from app.models.unified_box_metrics import UnifiedBoxMetrics
 from app.repositories.unified_metrics_repository import UnifiedMetricsRepository
+from app.services.cache_service import get_cache_service
 
 
 class LeaderboardService:
-    """Service for leaderboard ranking and sorting"""
+    """Service for leaderboard ranking and sorting with Redis caching"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.cache = get_cache_service()
     
     async def get_ranked_boxes(
         self,
@@ -43,6 +45,24 @@ class LeaderboardService:
         Returns:
             List of tuples: (BoosterBox, UnifiedBoxMetrics, rank, rank_change_info)
         """
+        # Use cache for common queries (top 10, top 50 with date)
+        use_cache = (
+            target_date is not None and 
+            sort_by == "unified_volume_7d_ema" and 
+            sort_direction == "desc" and 
+            offset == 0 and 
+            limit in [10, 50]
+        )
+        
+        if use_cache:
+            # Try cache first
+            cached_data = await self.cache.get_cached_leaderboard(target_date, limit)
+            if cached_data:
+                # Cache hit - reconstruct results from cache
+                # For now, cache stores metadata only, so we still query DB
+                # TODO: Optimize to cache full serialized results
+                pass
+        
         # Get latest metrics for all boxes
         metrics_list = await UnifiedMetricsRepository.get_latest_for_all_boxes(
             self.db, target_date
@@ -108,6 +128,19 @@ class LeaderboardService:
                 )
             
             ranked_results.append((box, metrics, rank, rank_change_info))
+        
+        # Cache results if this was a cacheable query
+        if use_cache and ranked_results:
+            # Serialize for cache (convert to dict format)
+            cache_data = []
+            for box, metrics, rank, rank_change_info in ranked_results:
+                cache_data.append({
+                    "box_id": str(box.id),
+                    "rank": rank,
+                    "rank_change": rank_change_info,
+                    "metrics_date": metrics.metric_date.isoformat() if metrics.metric_date else None,
+                })
+            await self.cache.cache_leaderboard(target_date, limit, cache_data)
         
         return ranked_results
     
