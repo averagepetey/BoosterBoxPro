@@ -30,6 +30,9 @@ openpyxl>=3.1.0  # Excel file support for pandas
 # HTTP Client (for testing and future API integrations)
 httpx>=0.25.0
 
+# Caching (Phase 6)
+redis>=5.0.0  # Redis client for caching
+
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0

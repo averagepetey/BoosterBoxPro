@@ -20,6 +20,18 @@ class Settings(BaseSettings):
     # Admin API Key (simple auth for manual entry endpoints)
     admin_api_key: Optional[str] = None
     
+    # Redis Cache (Phase 6)
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: Optional[str] = None
+    redis_db: int = 0
+    redis_url: Optional[str] = None  # Override host/port/password if provided (e.g., redis://localhost:6379/0)
+    
+    # Cache TTLs (in seconds)
+    cache_ttl_leaderboard: int = 900  # 15 minutes
+    cache_ttl_box_detail: int = 600  # 10 minutes
+    cache_ttl_time_series: int = 1800  # 30 minutes
+    
     # Future: Marketplace API keys
     # tcgplayer_api_key: Optional[str] = None
     # ebay_api_key: Optional[str] = None
