@@ -5,6 +5,7 @@ Main application entry point
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from app.config import settings
@@ -68,9 +69,26 @@ async def health_check():
     }
 
 
+@app.get("/admin")
+async def admin_panel():
+    """Redirect to admin panel"""
+    from fastapi.responses import FileResponse
+    import os
+    
+    admin_path = os.path.join("app", "static", "admin.html")
+    if os.path.exists(admin_path):
+        return FileResponse(admin_path)
+    else:
+        return {"message": "Admin panel not found. Access via /static/admin.html"}
+
+
+# Mount static files (for admin panel)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 # Include routers
-from app.routers import admin
+from app.routers import admin, booster_boxes
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(booster_boxes.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

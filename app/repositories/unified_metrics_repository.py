@@ -4,10 +4,11 @@ Data access layer for unified metrics operations
 """
 
 from uuid import UUID
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_, func
+from sqlalchemy.orm import aliased
 from decimal import Decimal
 
 from app.models.unified_box_metrics import UnifiedBoxMetrics
@@ -87,4 +88,135 @@ class UnifiedMetricsRepository:
             ).order_by(UnifiedBoxMetrics.metric_date.desc()).limit(1)
         )
         return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def get_latest_for_all_boxes(
+        db: AsyncSession,
+        target_date: Optional[date] = None
+    ) -> List[UnifiedBoxMetrics]:
+        """
+        Get latest metrics for all boxes, optionally filtered by date
+        
+        If target_date is provided, gets metrics for that date.
+        Otherwise, gets the most recent metrics for each box.
+        """
+        if target_date:
+            # Get metrics for specific date
+            result = await db.execute(
+                select(UnifiedBoxMetrics).where(
+                    UnifiedBoxMetrics.metric_date == target_date
+                ).order_by(UnifiedBoxMetrics.unified_volume_7d_ema.desc().nulls_last())
+            )
+        else:
+            # Get latest metrics for each box (most recent date per box)
+            # Subquery to get max date per box
+            subquery = (
+                select(
+                    UnifiedBoxMetrics.booster_box_id,
+                    func.max(UnifiedBoxMetrics.metric_date).label("max_date")
+                )
+                .group_by(UnifiedBoxMetrics.booster_box_id)
+                .subquery()
+            )
+            
+            # Join to get the actual metrics
+            result = await db.execute(
+                select(UnifiedBoxMetrics)
+                .join(
+                    subquery,
+                    and_(
+                        UnifiedBoxMetrics.booster_box_id == subquery.c.booster_box_id,
+                        UnifiedBoxMetrics.metric_date == subquery.c.max_date
+                    )
+                )
+                .order_by(UnifiedBoxMetrics.unified_volume_7d_ema.desc().nulls_last())
+            )
+        
+        return list(result.scalars().all())
+    
+    @staticmethod
+    async def get_rank_history(
+        db: AsyncSession,
+        box_id: UUID,
+        start_date: date,
+        end_date: date
+    ) -> List[dict]:
+        """
+        Get rank history for a box over a date range
+        
+        Returns list of dicts with date, rank, and rank_change
+        """
+        # Get all metrics for the date range, ordered by date
+        metrics = await UnifiedMetricsRepository.get_by_box_date_range(
+            db, box_id, start_date, end_date
+        )
+        
+        if not metrics:
+            return []
+        
+        # For each date, calculate rank based on unified_volume_7d_ema
+        rank_history = []
+        
+        for metric in metrics:
+            # Get rank for this date by counting boxes with higher volume
+            # Rank = 1 + count of boxes with higher volume (or same volume but lower UUID for tiebreaking)
+            result = await db.execute(
+                select(func.count(UnifiedBoxMetrics.id))
+                .where(
+                    and_(
+                        UnifiedBoxMetrics.metric_date == metric.metric_date,
+                        UnifiedBoxMetrics.unified_volume_7d_ema.isnot(None),
+                        or_(
+                            UnifiedBoxMetrics.unified_volume_7d_ema > metric.unified_volume_7d_ema,
+                            and_(
+                                UnifiedBoxMetrics.unified_volume_7d_ema == metric.unified_volume_7d_ema,
+                                UnifiedBoxMetrics.booster_box_id < box_id  # Tiebreaker
+                            )
+                        )
+                    )
+                )
+            )
+            rank = result.scalar() + 1  # +1 because rank starts at 1
+            
+            # Calculate rank change from previous date
+            rank_change = None
+            if rank_history:
+                previous_rank = rank_history[-1]["rank"]
+                rank_change = previous_rank - rank  # Positive = moved up, negative = moved down
+            
+            rank_history.append({
+                "date": metric.metric_date,
+                "rank": rank,
+                "rank_change": rank_change
+            })
+        
+        return rank_history
+    
+    @staticmethod
+    async def get_sparkline_data(
+        db: AsyncSession,
+        box_id: UUID,
+        days: int = 7
+    ) -> List[dict]:
+        """
+        Get sparkline price data for a box
+        
+        Returns list of dicts with timestamp and price for the last N days
+        """
+        end_date = date.today()
+        start_date = end_date - timedelta(days=days)
+        
+        metrics = await UnifiedMetricsRepository.get_by_box_date_range(
+            db, box_id, start_date, end_date
+        )
+        
+        sparkline_data = []
+        for metric in metrics:
+            if metric.floor_price_usd:
+                sparkline_data.append({
+                    "timestamp": datetime.combine(metric.metric_date, datetime.min.time()),
+                    "price": metric.floor_price_usd
+                })
+        
+        return sparkline_data
 
