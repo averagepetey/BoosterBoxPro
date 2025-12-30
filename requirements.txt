@@ -4,6 +4,7 @@
 # Web Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6  # Required for file uploads (Form data)
 
 # Database & ORM
 sqlalchemy[asyncio]>=2.0.0
@@ -24,6 +25,7 @@ pendulum>=3.0.0  # Better datetime handling
 # Data Processing (for future phases)
 pandas>=2.0.0
 numpy>=1.24.0
+openpyxl>=3.1.0  # Excel file support for pandas
 
 # HTTP Client (for testing and future API integrations)
 httpx>=0.25.0

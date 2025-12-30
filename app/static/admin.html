@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoosterBoxPro - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            color: #f1f5f9;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #334155;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #e2e8f0;
+        }
+
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #f1f5f9;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #475569;
+            color: #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #64748b;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #064e3b;
+            border: 1px solid #10b981;
+            color: #6ee7b7;
+        }
+
+        .alert-error {
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+
+        .alert-info {
+            background: #1e3a8a;
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+        }
+
+        .recent-entries {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .entry-item {
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .entry-info {
+            flex: 1;
+        }
+
+        .entry-box {
+            font-weight: 500;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+
+        .entry-meta {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #475569;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .config-section {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .config-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        #apiKeyInput {
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 BoosterBoxPro Admin Panel</h1>
+            <p class="subtitle">Manual Metrics Entry & Management</p>
+        </header>
+
+        <div class="config-section">
+            <div class="config-label">API Configuration</div>
+            <input 
+                type="text" 
+                id="apiKeyInput" 
+                placeholder="Enter API Key (optional for dev mode)" 
+                style="margin-bottom: 8px;"
+            >
+            <div class="help-text">Leave empty if no API key is required (development mode)</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('entry')">Manual Entry</button>
+            <button class="tab" onclick="showTab('screenshot')">📷 Screenshot Upload</button>
+            <button class="tab" onclick="showTab('recent')">Recent Entries</button>
+            <button class="tab" onclick="showTab('bulk')">Bulk Entry</button>
+        </div>
+
+        <!-- Manual Entry Tab -->
+        <div id="entry" class="tab-content active">
+            <div class="card">
+                <h2>Enter Metrics</h2>
+                
+                <div id="entryAlert"></div>
+
+                <form id="entryForm">
+                    <div class="form-group">
+                        <label for="boxSelect">Booster Box <span class="required">*</span></label>
+                        <select id="boxSelect" required>
+                            <option value="">Loading boxes...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="metricDate">Date <span class="required">*</span></label>
+                        <input type="date" id="metricDate" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="floorPrice">Floor Price (USD) <span class="required">*</span></label>
+                            <input type="number" id="floorPrice" step="0.01" min="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="activeListings">Active Listings Count <span class="required">*</span></label>
+                            <input type="number" id="activeListings" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dailyVolume">Daily Volume (USD)</label>
+                            <input type="number" id="dailyVolume" step="0.01" min="0">
+                            <div class="help-text">Optional: Auto-calculated if not provided</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitsSold">Units Sold Count</label>
+                            <input type="number" id="unitsSold" min="0" step="0.01">
+                            <div class="help-text">Optional: Used for volume calculation</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="marketCap">Visible Market Cap (USD)</label>
+                        <input type="number" id="marketCap" step="0.01" min="0">
+                        <div class="help-text">Optional: Auto-calculated as floor_price × active_listings if not provided</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary" id="saveBtn">
+                            Save Metrics
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                            Clear Form
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="saveAndNext()">
+                            Save & Next Box
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Entries Tab -->
+        <div id="recent" class="tab-content">
+            <div class="card">
+                <h2>Recent Entries</h2>
+                <div id="recentEntries" class="recent-entries">
+                    <div class="empty-state">Loading recent entries...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Entry Tab -->
+        <div id="bulk" class="tab-content">
+            <div class="card">
+                <h2>Bulk Entry</h2>
+                <div id="bulkAlert"></div>
+                
+                <div class="form-group">
+                    <label>JSON Array Format</label>
+                    <textarea 
+                        id="bulkJson" 
+                        rows="15" 
+                        style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #e2e8f0; font-family: monospace; font-size: 12px;"
+                        placeholder='[
+  {
+    "booster_box_id": "uuid-here",
+    "metric_date": "2024-01-15",
+    "floor_price_usd": 245.99,
+    "active_listings_count": 3044,
+    "daily_volume_usd": 45230.50,
+    "units_sold_count": 18
+  },
+  {
+    "booster_box_id": "uuid-here-2",
+    "metric_date": "2024-01-15",
+    "floor_price_usd": 120.00,
+    "active_listings_count": 1500
+  }
+]'
+                    ></textarea>
+                    <div class="help-text">Enter JSON array of metrics. Each object should have booster_box_id, metric_date, and required fields.</div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn btn-primary" onclick="submitBulk()">
+                        Submit Bulk Entry
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearBulk()">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+        let boxes = [];
+        let currentBoxIndex = 0;
+
+        // Set today's date as default
+        document.getElementById('metricDate').valueAsDate = new Date();
+
+        // Load boxes on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadBoxes();
+            await loadRecentEntries();
+            // Also load boxes into screenshot form
+            await loadScreenshotBoxes();
+        });
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data for tab
+            if (tabName === 'recent') {
+                loadRecentEntries();
+            } else if (tabName === 'screenshot') {
+                // Reset screenshot form when switching to tab
+                resetScreenshotUpload();
+            }
+        }
+
+        async function loadBoxes() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/boxes`, {
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load boxes: ${response.status}`);
+                }
+
+                const data = await response.json();
+                boxes = data.boxes || [];
+
+                const select = document.getElementById('boxSelect');
+                select.innerHTML = '<option value="">Select a box...</option>';
+                
+                boxes.forEach(box => {
+                    const option = document.createElement('option');
+                    option.value = box.id;
+                    option.textContent = `${box.product_name} (${box.set_name || 'N/A'})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showAlert('entryAlert', 'error', `Failed to load boxes: ${error.message}`);
+                document.getElementById('boxSelect').innerHTML = '<option value="">Error loading boxes</option>';
+            }
+        }
+
+        function getHeaders() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (apiKey) {
+                headers['X-API-Key'] = apiKey;
+            }
+            return headers;
+        }
+
+        document.getElementById('entryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitMetrics();
+        });
+
+        async function submitMetrics() {
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Saving...';
+
+            try {
+                const boxId = document.getElementById('boxSelect').value;
+                const metricDate = document.getElementById('metricDate').value;
+                const floorPrice = parseFloat(document.getElementById('floorPrice').value);
+                const activeListings = parseInt(document.getElementById('activeListings').value);
+                const dailyVolume = document.getElementById('dailyVolume').value ? parseFloat(document.getElementById('dailyVolume').value) : null;
+                const unitsSold = document.getElementById('unitsSold').value ? parseFloat(document.getElementById('unitsSold').value) : null;
+                const marketCap = document.getElementById('marketCap').value ? parseFloat(document.getElementById('marketCap').value) : null;
+
+                const payload = {
+                    booster_box_id: boxId,
+                    metric_date: metricDate,
+                    floor_price_usd: floorPrice,
+                    active_listings_count: activeListings,
+                };
+
+                if (dailyVolume !== null) payload.daily_volume_usd = dailyVolume;
+                if (unitsSold !== null) payload.units_sold_count = unitsSold;
+                if (marketCap !== null) payload.visible_market_cap_usd = marketCap;
+
+                const response = await fetch(`${API_BASE}/admin/manual-metrics`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('entryAlert', 'success', 'Metrics saved successfully!');
+                    clearForm();
+                    await loadRecentEntries();
+                } else {
+                    throw new Error(data.detail || 'Failed to save metrics');
+                }
+            } catch (error) {
+                showAlert('entryAlert', 'error', `Error: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function saveAndNext() {
+            await submitMetrics();
+            // Move to next box
+            if (boxes.length > 0) {
+                currentBoxIndex = (currentBoxIndex + 1) % boxes.length;
+                document.getElementById('boxSelect').value = boxes[currentBoxIndex].id;
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('entryForm').reset();
+            document.getElementById('metricDate').valueAsDate = new Date();
+        }
+
+        async function loadRecentEntries() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/recent-metrics?limit=20`, {
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load entries: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const entries = data.entries || [];
+
+                const container = document.getElementById('recentEntries');
+                if (entries.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No recent entries found.</div>';
+                    return;
+                }
+
+                container.innerHTML = entries.map(entry => `
+                    <div class="entry-item">
+                        <div class="entry-info">
+                            <div class="entry-box">${entry.box_name}</div>
+                            <div class="entry-meta">
+                                Date: ${entry.metric_date} | 
+                                Price: $${entry.floor_price_usd ? entry.floor_price_usd.toFixed(2) : 'N/A'} | 
+                                Listings: ${entry.active_listings_count || 0}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('recentEntries').innerHTML = 
+                    `<div class="empty-state" style="color: #ef4444;">Error loading entries: ${error.message}</div>`;
+            }
+        }
+
+        async function submitBulk() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Submitting...';
+
+            try {
+                const jsonText = document.getElementById('bulkJson').value.trim();
+                if (!jsonText) {
+                    throw new Error('Please enter JSON data');
+                }
+
+                const metrics = JSON.parse(jsonText);
+                if (!Array.isArray(metrics)) {
+                    throw new Error('JSON must be an array of metric objects');
+                }
+
+                const response = await fetch(`${API_BASE}/admin/manual-metrics/bulk`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ metrics })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('bulkAlert', 'success', 
+                        `Bulk entry successful! ${data.successful || 0} created, ${data.failed || 0} failed.`);
+                    if (data.errors && data.errors.length > 0) {
+                        console.error('Bulk entry errors:', data.errors);
+                    }
+                } else {
+                    throw new Error(data.detail || 'Failed to submit bulk entry');
+                }
+            } catch (error) {
+                showAlert('bulkAlert', 'error', `Error: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function clearBulk() {
+            document.getElementById('bulkJson').value = '';
+        }
+
+        // Screenshot upload handlers
+        document.getElementById('screenshotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await uploadScreenshot();
+        });
+
+        document.getElementById('extractionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await confirmExtraction();
+        });
+
+        async function uploadScreenshot() {
+            const btn = document.getElementById('uploadScreenshotBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Uploading...';
+
+            try {
+                const fileInput = document.getElementById('screenshotFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    throw new Error('Please select a file');
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const boxId = document.getElementById('screenshotBoxSelect').value;
+                const boxName = boxes.find(b => b.id === boxId)?.product_name || '';
+                const metricDate = document.getElementById('screenshotDate').value;
+
+                if (boxId) formData.append('box_id', boxId);
+                if (boxName) formData.append('box_name', boxName);
+                if (metricDate) formData.append('metric_date', metricDate);
+
+                // Get API key header
+                const apiKey = document.getElementById('apiKeyInput').value.trim();
+                const headers = {};
+                if (apiKey) {
+                    headers['X-API-Key'] = apiKey;
+                }
+
+                const response = await fetch(`${API_BASE}/admin/screenshot/upload`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('screenshotAlert', 'success', 'Screenshot uploaded! Please view and extract data below.');
+                    
+                    // Get the screenshot image
+                    const screenshotResponse = await fetch(`${API_BASE}/admin/screenshot/${data.processing_id}`, {
+                        headers: getHeaders()
+                    });
+                    const screenshotData = await screenshotResponse.json();
+                    
+                    // Display screenshot and extraction form
+                    document.getElementById('processingId').value = data.processing_id;
+                    document.getElementById('screenshotPreview').src = screenshotData.image_data_url;
+                    document.getElementById('screenshotPreviewArea').style.display = 'block';
+                    
+                    // Pre-fill extraction form if we have info
+                    if (screenshotData.box_name) {
+                        const matchingBox = boxes.find(b => b.product_name.includes(screenshotData.box_name));
+                        if (matchingBox) {
+                            document.getElementById('extractBoxId').value = matchingBox.id;
+                        }
+                    }
+                    if (screenshotData.metric_date) {
+                        document.getElementById('extractDate').value = screenshotData.metric_date;
+                    } else {
+                        document.getElementById('extractDate').valueAsDate = new Date();
+                    }
+                } else {
+                    throw new Error(data.detail || 'Failed to upload screenshot');
+                }
+            } catch (error) {
+                showAlert('screenshotAlert', 'error', `Error: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function confirmExtraction() {
+            const btn = document.getElementById('confirmExtractionBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Saving...';
+
+            try {
+                const processingId = document.getElementById('processingId').value;
+                const boxId = document.getElementById('extractBoxId').value;
+                const metricDate = document.getElementById('extractDate').value;
+                const floorPrice = parseFloat(document.getElementById('extractFloorPrice').value);
+                const activeListings = parseInt(document.getElementById('extractListings').value);
+                const dailyVolume = document.getElementById('extractVolume').value ? parseFloat(document.getElementById('extractVolume').value) : null;
+                const unitsSold = document.getElementById('extractUnitsSold').value ? parseInt(document.getElementById('extractUnitsSold').value) : null;
+
+                const payload = {
+                    processing_id: processingId,
+                    booster_box_id: boxId,
+                    metric_date: metricDate,
+                    floor_price_usd: floorPrice,
+                    active_listings_count: activeListings,
+                    daily_volume_usd: dailyVolume,
+                    units_sold_count: unitsSold,
+                };
+
+                const response = await fetch(`${API_BASE}/admin/screenshot/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        ...getHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('screenshotAlert', 'success', '✅ Metrics saved successfully! Calculations completed.');
+                    resetScreenshotUpload();
+                    await loadRecentEntries();
+                } else {
+                    throw new Error(data.detail || 'Failed to save metrics');
+                }
+            } catch (error) {
+                showAlert('screenshotAlert', 'error', `Error: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function resetScreenshotUpload() {
+            document.getElementById('screenshotForm').reset();
+            document.getElementById('extractionForm').reset();
+            document.getElementById('screenshotPreviewArea').style.display = 'none';
+            document.getElementById('screenshotFile').value = '';
+            document.getElementById('screenshotDate').valueAsDate = new Date();
+        }
+
+        function showAlert(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            container.className = `alert alert-${type} show`;
+            container.textContent = message;
+            
+            setTimeout(() => {
+                container.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+
