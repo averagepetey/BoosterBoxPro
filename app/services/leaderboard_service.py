@@ -45,103 +45,99 @@ class LeaderboardService:
         Returns:
             List of tuples: (BoosterBox, UnifiedBoxMetrics, rank, rank_change_info)
         """
-        # Use cache for common queries (top 10, top 50 with date)
-        use_cache = (
+        # Note: Caching is handled at the router level for better performance
+        # This service just returns the raw data tuples
+        
+        # Cache miss - query database
+        # Use optimized SQL query that already orders by volume_7d_ema when sorting by that
+        sql_already_sorted = (
             target_date is not None and 
             sort_by == "unified_volume_7d_ema" and 
-            sort_direction == "desc" and 
-            offset == 0 and 
-            limit in [10, 50]
+            sort_direction == "desc"
         )
         
-        if use_cache:
-            # Try cache first
-            cached_data = await self.cache.get_cached_leaderboard(target_date, limit)
-            if cached_data:
-                # Cache hit - reconstruct results from cache
-                # For now, cache stores metadata only, so we still query DB
-                # TODO: Optimize to cache full serialized results
-                pass
-        
-        # Get latest metrics for all boxes
-        metrics_list = await UnifiedMetricsRepository.get_latest_for_all_boxes(
-            self.db, target_date
-        )
+        # Get latest metrics for all boxes (with SQL ordering if applicable)
+        if sql_already_sorted:
+            metrics_list = await UnifiedMetricsRepository.get_latest_for_all_boxes(
+                self.db, target_date
+            )
+            # SQL already sorted by unified_volume_7d_ema DESC, no need to sort again
+        else:
+            metrics_list = await UnifiedMetricsRepository.get_latest_for_all_boxes(
+                self.db, target_date
+            )
+            
+            if not metrics_list:
+                return []
+            
+            # Sort metrics in Python (only when SQL didn't already sort)
+            reverse = sort_direction.lower() == "desc"
+            
+            if sort_by == "unified_volume_7d_ema":
+                metrics_list.sort(
+                    key=lambda m: m.unified_volume_7d_ema or Decimal('0'),
+                    reverse=reverse
+                )
+            elif sort_by == "liquidity_score":
+                metrics_list.sort(
+                    key=lambda m: m.liquidity_score or Decimal('0'),
+                    reverse=reverse
+                )
+            elif sort_by == "floor_price_usd":
+                metrics_list.sort(
+                    key=lambda m: m.floor_price_usd or Decimal('0'),
+                    reverse=reverse
+                )
+            elif sort_by == "active_listings_count":
+                metrics_list.sort(
+                    key=lambda m: m.active_listings_count or 0,
+                    reverse=reverse
+                )
+            else:
+                # Default to volume EMA
+                metrics_list.sort(
+                    key=lambda m: m.unified_volume_7d_ema or Decimal('0'),
+                    reverse=True
+                )
         
         if not metrics_list:
             return []
         
-        # Sort metrics
-        reverse = sort_direction.lower() == "desc"
-        
-        if sort_by == "unified_volume_7d_ema":
-            metrics_list.sort(
-                key=lambda m: m.unified_volume_7d_ema or Decimal('0'),
-                reverse=reverse
-            )
-        elif sort_by == "liquidity_score":
-            metrics_list.sort(
-                key=lambda m: m.liquidity_score or Decimal('0'),
-                reverse=reverse
-            )
-        elif sort_by == "floor_price_usd":
-            metrics_list.sort(
-                key=lambda m: m.floor_price_usd or Decimal('0'),
-                reverse=reverse
-            )
-        elif sort_by == "active_listings_count":
-            metrics_list.sort(
-                key=lambda m: m.active_listings_count or 0,
-                reverse=reverse
-            )
-        else:
-            # Default to volume EMA
-            metrics_list.sort(
-                key=lambda m: m.unified_volume_7d_ema or Decimal('0'),
-                reverse=True
-            )
-        
-        # Get boxes for these metrics
-        box_ids = [m.booster_box_id for m in metrics_list]
+        # Get boxes for these metrics (limit query to what we need)
+        metrics_to_fetch = metrics_list[offset:offset+limit]
+        box_ids = [m.booster_box_id for m in metrics_to_fetch]
         
         result = await self.db.execute(
-            select(BoosterBox)
-            .where(BoosterBox.id.in_(box_ids))
+            select(BoosterBox).where(BoosterBox.id.in_(box_ids))
         )
         boxes = {box.id: box for box in result.scalars().all()}
         
-        # Combine boxes with metrics and calculate ranks
+        # Combine boxes with metrics and use stored rank data
         ranked_results = []
-        for idx, metrics in enumerate(metrics_list[offset:offset+limit]):
+        for idx, metrics in enumerate(metrics_to_fetch):
             rank = offset + idx + 1
             box = boxes.get(metrics.booster_box_id)
             
             if not box:
                 continue
             
-            # Calculate rank change if we have previous date
+            # Use stored rank_change from metrics instead of calculating
             rank_change_info = None
-            if target_date:
-                rank_change_info = await self._calculate_rank_change(
-                    box.id,
-                    target_date
-                )
+            if metrics.rank_change is not None:
+                if metrics.rank_change > 0:
+                    direction = "up"
+                elif metrics.rank_change < 0:
+                    direction = "down"
+                else:
+                    direction = "same"
+                rank_change_info = {
+                    "direction": direction,
+                    "amount": abs(metrics.rank_change)
+                }
             
             ranked_results.append((box, metrics, rank, rank_change_info))
         
-        # Cache results if this was a cacheable query
-        if use_cache and ranked_results:
-            # Serialize for cache (convert to dict format)
-            cache_data = []
-            for box, metrics, rank, rank_change_info in ranked_results:
-                cache_data.append({
-                    "box_id": str(box.id),
-                    "rank": rank,
-                    "rank_change": rank_change_info,
-                    "metrics_date": metrics.metric_date.isoformat() if metrics.metric_date else None,
-                })
-            await self.cache.cache_leaderboard(target_date, limit, cache_data)
-        
+        # Note: Caching is handled at the router level after formatting
         return ranked_results
     
     async def _calculate_rank_change(

@@ -201,14 +201,41 @@ class CacheService:
         key = self._leaderboard_key(target_date, limit)
         return await self.set(key, data, ttl=settings.cache_ttl_leaderboard)
     
+    async def get_cached_box_detail_json(
+        self,
+        box_id: UUID,
+        target_date: date
+    ) -> Optional[str]:
+        """Get cached box detail data as raw JSON string (bypasses get() deserialization)"""
+        if not REDIS_AVAILABLE or not self.redis_client:
+            return None
+        
+        try:
+            if not self._connected:
+                try:
+                    await self.redis_client.ping()
+                    self._connected = True
+                except Exception as e:
+                    logger.warning(f"Redis ping failed: {e}")
+                    self._connected = False
+                    return None
+            
+            key = self._box_detail_key(box_id, target_date)
+            # Get raw string directly (not deserialized)
+            value = await self.redis_client.get(key)
+            return value  # Returns None if not found, or JSON string if found
+        except Exception as e:
+            logger.warning(f"Cache get error for key {key}: {e}")
+            self._connected = False
+            return None
+    
     async def get_cached_box_detail(
         self,
         box_id: UUID,
         target_date: date
-    ) -> Optional[dict]:
-        """Get cached box detail data"""
-        key = self._box_detail_key(box_id, target_date)
-        return await self.get(key)
+    ) -> Optional[str]:
+        """Get cached box detail data (returns JSON string for direct response)"""
+        return await self.get_cached_box_detail_json(box_id, target_date)
     
     async def cache_box_detail(
         self,
@@ -216,9 +243,30 @@ class CacheService:
         target_date: date,
         data: dict
     ) -> bool:
-        """Cache box detail data"""
-        key = self._box_detail_key(box_id, target_date)
-        return await self.set(key, data, ttl=settings.cache_ttl_box_detail)
+        """Cache box detail data as JSON string"""
+        if not REDIS_AVAILABLE or not self.redis_client:
+            return False
+        
+        try:
+            if not self._connected:
+                try:
+                    await self.redis_client.ping()
+                    self._connected = True
+                except Exception as e:
+                    logger.warning(f"Redis ping failed: {e}")
+                    self._connected = False
+                    return False
+            
+            key = self._box_detail_key(box_id, target_date)
+            # Serialize to JSON string and store directly
+            import json
+            json_str = json.dumps(data, default=str)
+            await self.redis_client.setex(key, settings.cache_ttl_box_detail, json_str)
+            return True
+        except Exception as e:
+            logger.warning(f"Cache set error for key {key}: {e}")
+            self._connected = False
+            return False
     
     async def get_cached_time_series(
         self,

@@ -3,13 +3,22 @@ BoosterBoxPro FastAPI Application
 Main application entry point
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_db
+from app.exceptions import BoosterBoxProError
+from app.middleware.error_handler import (
+    custom_exception_handler,
+    validation_exception_handler,
+    http_exception_handler,
+    generic_exception_handler,
+)
 
 
 @asynccontextmanager
@@ -47,6 +56,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Error handlers
+app.add_exception_handler(BoosterBoxProError, custom_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 
 @app.get("/")
@@ -86,9 +101,11 @@ async def admin_panel():
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include routers
-from app.routers import admin, booster_boxes
+from app.routers import admin, booster_boxes, auth, subscription
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(booster_boxes.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(subscription.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
