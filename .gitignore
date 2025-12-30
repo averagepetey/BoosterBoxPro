@@ -72,3 +72,7 @@ dmypy.json
 *.pyc
 __pycache__/
 
+# Markdown files (except README.md)
+*.md
+!README.md
+
