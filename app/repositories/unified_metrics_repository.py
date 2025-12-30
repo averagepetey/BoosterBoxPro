@@ -154,33 +154,36 @@ class UnifiedMetricsRepository:
         if not metrics:
             return []
         
-        # For each date, calculate rank based on unified_volume_7d_ema
+        # Use stored current_rank from metrics (much faster than calculating)
         rank_history = []
         
         for metric in metrics:
-            # Get rank for this date by counting boxes with higher volume
-            # Rank = 1 + count of boxes with higher volume (or same volume but lower UUID for tiebreaking)
-            result = await db.execute(
-                select(func.count(UnifiedBoxMetrics.id))
-                .where(
-                    and_(
-                        UnifiedBoxMetrics.metric_date == metric.metric_date,
-                        UnifiedBoxMetrics.unified_volume_7d_ema.isnot(None),
-                        or_(
-                            UnifiedBoxMetrics.unified_volume_7d_ema > metric.unified_volume_7d_ema,
-                            and_(
-                                UnifiedBoxMetrics.unified_volume_7d_ema == metric.unified_volume_7d_ema,
-                                UnifiedBoxMetrics.booster_box_id < box_id  # Tiebreaker
+            # Use stored rank if available, otherwise calculate (fallback)
+            rank = metric.current_rank
+            
+            if rank is None:
+                # Fallback: calculate rank (expensive query)
+                result = await db.execute(
+                    select(func.count(UnifiedBoxMetrics.id))
+                    .where(
+                        and_(
+                            UnifiedBoxMetrics.metric_date == metric.metric_date,
+                            UnifiedBoxMetrics.unified_volume_7d_ema.isnot(None),
+                            or_(
+                                UnifiedBoxMetrics.unified_volume_7d_ema > metric.unified_volume_7d_ema,
+                                and_(
+                                    UnifiedBoxMetrics.unified_volume_7d_ema == metric.unified_volume_7d_ema,
+                                    UnifiedBoxMetrics.booster_box_id < box_id  # Tiebreaker
+                                )
                             )
                         )
                     )
                 )
-            )
-            rank = result.scalar() + 1  # +1 because rank starts at 1
+                rank = result.scalar() + 1  # +1 because rank starts at 1
             
-            # Calculate rank change from previous date
-            rank_change = None
-            if rank_history:
+            # Use stored rank_change if available, otherwise calculate from previous
+            rank_change = metric.rank_change
+            if rank_change is None and rank_history:
                 previous_rank = rank_history[-1]["rank"]
                 rank_change = previous_rank - rank  # Positive = moved up, negative = moved down
             

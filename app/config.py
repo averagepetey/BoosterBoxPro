@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     cache_ttl_box_detail: int = 600  # 10 minutes
     cache_ttl_time_series: int = 1800  # 30 minutes
     
+    # Authentication & Security (Phase 8)
+    jwt_secret_key: str = "change-me-in-production-use-strong-random-key"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_days: int = 7
+    
+    # Stripe (Phase 8)
+    stripe_secret_key: Optional[str] = None
+    stripe_publishable_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
+    
     # Future: Marketplace API keys
     # tcgplayer_api_key: Optional[str] = None
     # ebay_api_key: Optional[str] = None
