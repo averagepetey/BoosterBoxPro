@@ -1,0 +1,200 @@
+@import "tailwindcss";
+
+:root {
+  /* Dark Mode Colors - Night Sky Theme */
+  --background: #0F172A; /* Deep slate - primary background */
+  --surface: #1E293B; /* Surface/cards */
+  --surface-hover: #334155; /* Hover states */
+  --foreground: #FFFFFF; /* Primary text - white */
+  --foreground-secondary: #CBD5E1; /* Secondary text */
+  --foreground-muted: #94A3B8; /* Muted text */
+  
+  /* Brand Colors - Logo Inspired */
+  --rocket-red: #EF4444;
+  --rocket-red-light: #F87171;
+  --rocket-red-dark: #DC2626;
+  --rocket-red-darker: #B91C1C;
+  
+  --sky-blue: #3B82F6;
+  --sky-blue-light: #60A5FA;
+  --sky-blue-dark: #2563EB;
+  
+  --flame-orange: #F59E0B;
+  --flame-yellow: #FBBF24;
+  --flame-orange-light: #FCD34D;
+  --flame-orange-dark: #D97706;
+  
+  /* Semantic Colors */
+  --success: #10B981;
+  --warning: #F59E0B; /* Flame orange */
+  --error: #DC2626; /* Darker red */
+  
+  /* Borders */
+  --border: #1E293B;
+  --border-hover: #334155;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+  
+  --color-rocket-red: var(--rocket-red);
+  --color-rocket-red-light: var(--rocket-red-light);
+  --color-rocket-red-dark: var(--rocket-red-dark);
+  --color-rocket-red-darker: var(--rocket-red-darker);
+  
+  --color-sky-blue: var(--sky-blue);
+  --color-sky-blue-light: var(--sky-blue-light);
+  --color-sky-blue-dark: var(--sky-blue-dark);
+  
+  --color-flame-orange: var(--flame-orange);
+  --color-flame-yellow: var(--flame-yellow);
+  --color-flame-orange-light: var(--flame-orange-light);
+  --color-flame-orange-dark: var(--flame-orange-dark);
+  
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Utility classes for text colors */
+.text-success {
+  color: var(--success);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+body {
+  background: #000000; /* Pure black base */
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Marketplace Leaderboard Styles */
+.marketplace-bg {
+  background: #000000; /* Pure black base */
+  background-image: 
+    radial-gradient(ellipse 120% 80% at 50% 0%, #1a0a0a 0%, #0a0a0f 25%, #000000 50%),
+    radial-gradient(circle at 25% 30%, rgba(239, 68, 68, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 75% 70%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.04) 0%, transparent 60%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.marketplace-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 25% 30%, rgba(239, 68, 68, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 75% 70%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.marketplace-row {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 200ms ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.marketplace-row:hover {
+  background: rgba(51, 65, 85, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.marketplace-row.rank-1 {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(30, 41, 59, 0.4) 100%);
+  border-color: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
+}
+
+.marketplace-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.marketplace-sparkline {
+  width: 100px;
+  height: 32px;
+  background: transparent;
+  position: relative;
+}
+
+.marketplace-sparkline-positive {
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+}
+
+.marketplace-sparkline-negative {
+  filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.4));
+}
+
+/* Financial number styling */
+.financial-number {
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+/* Accent colors for marketplace */
+.marketplace-accent {
+  color: #ec4899; /* Bright pink/magenta */
+}
+
+.marketplace-positive {
+  color: #10b981; /* Neon green */
+  font-weight: 600;
+}
+
+.marketplace-negative {
+  color: #ef4444; /* Soft red */
+  font-weight: 600;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-hover);
+}
