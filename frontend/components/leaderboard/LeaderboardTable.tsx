@@ -131,7 +131,7 @@ export function LeaderboardTable({
                   <img
                     src={box.image_url}
                     alt={box.product_name}
-                    className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                    className="w-20 h-20 object-contain rounded-lg flex-shrink-0"
                   />
                 ) : (
                   <div className="w-20 h-20 bg-surface flex items-center justify-center rounded-lg flex-shrink-0">
