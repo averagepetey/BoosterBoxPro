@@ -1,4 +1,6 @@
-"""API Routers"""
-from . import admin, booster_boxes, auth, subscription
+"""
+FastAPI Routers
+"""
 
-__all__ = ["admin", "booster_boxes", "auth", "subscription"]
+__all__ = []
+
