@@ -51,6 +51,9 @@ export default function DashboardPage() {
 
       {/* Page Content - Clean Background (No Clouds) */}
       <div className="lb-page relative">
+        {/* Side decorative clouds - Behind table, at edges, scroll with page */}
+        <div className="lb-side-clouds-left" />
+        <div className="lb-side-clouds-right" />
         <main className="container mx-auto px-6 pt-6 pb-12">
           {/* Featured Section - TODO: Build this */}
           <div className="mb-4 -mt-4">
@@ -132,10 +135,10 @@ export default function DashboardPage() {
               className="relative rounded-3xl px-6 py-6 overflow-visible"
               style={{
                 boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1px 0 rgba(255, 255, 255, 0.3) inset',
-                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.12)) !important',
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.03)) !important',
                 backdropFilter: 'blur(60px) saturate(180%) !important',
                 WebkitBackdropFilter: 'blur(60px) saturate(180%) !important',
-                border: '1px solid rgba(255, 255, 255, 0.2) !important'
+                border: '1px solid rgba(255, 255, 255, 0.15) !important'
               }}
             >
               <div className="lb-sheen" />

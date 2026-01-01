@@ -210,6 +210,90 @@ body {
   position: relative;
   z-index: 0;
   min-height: 100vh; /* Ensure it covers the full viewport */
+  overflow: visible; /* Allow clouds to be visible at edges */
+}
+
+/* Side decorative clouds - Positioned at edges, behind table, scroll with page */
+.lb-side-clouds-left,
+.lb-side-clouds-right {
+  position: absolute;
+  top: 0;
+  width: 200px;
+  height: 100%;
+  min-height: 100vh;
+  pointer-events: none;
+  z-index: 0; /* Behind table content, above background */
+  background-repeat: no-repeat;
+  opacity: 0.6;
+}
+
+.lb-side-clouds-left {
+  left: -80px; /* Position so only right edge is visible */
+  background-image: 
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png');
+  background-size: 
+    180px auto,
+    160px auto,
+    170px auto,
+    165px auto,
+    175px auto,
+    155px auto,
+    168px auto,
+    162px auto;
+  background-position: 
+    left 8%,
+    left 22%,
+    left 35%,
+    left 48%,
+    left 61%,
+    left 74%,
+    left 85%,
+    left 93%;
+}
+
+.lb-side-clouds-right {
+  right: -80px; /* Position so only left edge is visible */
+  background-image: 
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png'),
+    url('/sidecloud.png');
+  background-size: 
+    175px auto,
+    162px auto,
+    168px auto,
+    158px auto,
+    172px auto,
+    155px auto,
+    170px auto,
+    165px auto;
+  background-position: 
+    right 6%,
+    right 19%,
+    right 33%,
+    right 46%,
+    right 59%,
+    right 72%,
+    right 83%,
+    right 91%;
+  transform: scaleX(-1); /* Flip horizontally */
+}
+
+/* Ensure main content is above background */
+.lb-page > main {
+  position: relative;
+  z-index: 2;
 }
 
 /* Glass card base */
