@@ -13,7 +13,6 @@ class Base(DeclarativeBase):
 # Import models
 from .booster_box import BoosterBox
 from .unified_box_metrics import UnifiedBoxMetrics
-from .user import User, SubscriptionStatus
 
-__all__ = ["Base", "BoosterBox", "UnifiedBoxMetrics", "User", "SubscriptionStatus"]
+__all__ = ["Base", "BoosterBox", "UnifiedBoxMetrics"]
 

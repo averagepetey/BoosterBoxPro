@@ -15,6 +15,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  // TODO: Re-enable auth check once login page is set up
+  // For now, bypass auth to allow development
+  return <>{children}</>;
+  
+  /* Original auth code - uncomment when login is ready
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -28,8 +33,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Check if user has token
+  const token = getAuthToken();
+  
+  // If no token, don't show loading - let redirect happen
+  if (!token) {
+    return null;
+  }
+
   // Show loading state while checking auth
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -42,5 +55,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // User is authenticated, render children
   return <>{children}</>;
+  */
 }
 

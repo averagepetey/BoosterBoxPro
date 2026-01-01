@@ -45,13 +45,9 @@ async def init_db():
     Initialize database connection
     Can be used to test connection on startup
     """
-    try:
-        from sqlalchemy import text
-        async with engine.begin() as conn:
-            # Test connection
-            await conn.execute(text("SELECT 1"))
-        return True
-    except Exception as e:
-        print(f"⚠️  Database connection error: {e}")
-        raise
+    from sqlalchemy import text
+    async with engine.begin() as conn:
+        # Test connection
+        await conn.execute(text("SELECT 1"))
+    print("✅ Database connection successful")
 

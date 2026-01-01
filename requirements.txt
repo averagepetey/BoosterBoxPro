@@ -4,7 +4,6 @@
 # Web Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
-python-multipart>=0.0.6  # Required for file uploads (Form data)
 
 # Database & ORM
 sqlalchemy[asyncio]>=2.0.0
@@ -14,7 +13,6 @@ psycopg2-binary>=2.9.0  # PostgreSQL sync driver (required for Alembic)
 
 # Validation & Serialization
 pydantic>=2.0.0
-pydantic[email]>=2.0.0  # Email validation support
 pydantic-settings>=2.0.0  # For settings management
 
 # Environment & Configuration
@@ -26,26 +24,14 @@ pendulum>=3.0.0  # Better datetime handling
 # Data Processing (for future phases)
 pandas>=2.0.0
 numpy>=1.24.0
-openpyxl>=3.1.0  # Excel file support for pandas
 
 # HTTP Client (for testing and future API integrations)
 httpx>=0.25.0
-
-# Caching (Phase 6)
-redis>=5.0.0  # Redis client for caching
 
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
-
-# Authentication & Security (Phase 8)
-passlib[bcrypt]>=1.7.4  # Password hashing
-bcrypt<5.0  # bcrypt 5.0+ is incompatible with passlib 1.7.4
-python-jose[cryptography]>=3.3.0  # JWT tokens
-
-# Payment Processing (Phase 8)
-stripe>=7.0.0  # Stripe SDK
 
 # Development Tools
 black>=23.0.0  # Code formatter

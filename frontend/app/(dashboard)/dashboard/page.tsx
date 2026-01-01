@@ -34,13 +34,13 @@ export default function DashboardPage() {
           <div className="lb-hero-stars absolute inset-0" />
         </div>
 
-        <div className="relative z-10">
+        <div className="absolute inset-0 z-10 flex flex-col">
           <Navigation />
           
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-6 flex-1 flex flex-col justify-center">
             {/* Header */}
-            <div className="mb-4 text-center pt-12">
-              <h1 className="lb-title text-white font-extrabold tracking-tight text-5xl mb-2">Leaderboard</h1>
+            <div className="text-center" style={{ paddingTop: '3.5rem', paddingBottom: '1rem' }}>
+              <h1 className="lb-title font-extrabold tracking-tight text-5xl mb-2" style={{ color: '#FFFFFF', textShadow: '0 0 20px rgba(241, 48, 61, 0.8), 0 0 40px rgba(241, 48, 61, 0.6), 0 0 60px rgba(241, 48, 61, 0.4), 0 4px 8px rgba(0, 0, 0, 0.5)' }}>Leaderboard</h1>
               <p className="text-[color:var(--muted)] tracking-wide text-base">
                 Track the top performing TCG booster boxes
               </p>
@@ -51,16 +51,21 @@ export default function DashboardPage() {
 
       {/* Page Content - Clean Background (No Clouds) */}
       <div className="lb-page relative">
-        <main className="container mx-auto px-6 py-12">
+        <main className="container mx-auto px-6 pt-6 pb-12">
           {/* Featured Section - TODO: Build this */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-semibold text-white">New Releases</h2>
-              <button className="text-xs text-white/85 hover:text-white transition-all hover:translate-x-1">
+          <div className="mb-4 -mt-4">
+            <div>
+              <h2 className="text-base font-semibold text-white mb-1">New Releases</h2>
+              <button className="text-xs text-white/85 hover:text-white transition-all hover:translate-x-1 mb-2 block -mt-1">
                 See all →
               </button>
             </div>
-            <div className="relative rounded-2xl border border-white/15 bg-[rgba(10,24,60,0.35)] backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.20)] p-4 text-center min-h-[120px] flex items-center justify-center">
+            <div 
+              className="relative rounded-2xl border border-white/15 bg-[rgba(10,24,60,0.35)] backdrop-blur-xl p-4 text-center min-h-[120px] flex items-center justify-center"
+              style={{
+                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 18px 50px rgba(0,0,0,0.20)'
+              }}
+            >
               <p className="text-white/80 text-sm">
                 Featured sections coming soon...
               </p>
@@ -123,18 +128,41 @@ export default function DashboardPage() {
             )}
 
             {/* Table Container - Scrollable */}
-            <div className="relative rounded-3xl lb-glass px-6 py-6 overflow-visible">
+            <div 
+              className="relative rounded-3xl px-6 py-6 overflow-visible"
+              style={{
+                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1px 0 rgba(255, 255, 255, 0.3) inset',
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.12)) !important',
+                backdropFilter: 'blur(60px) saturate(180%) !important',
+                WebkitBackdropFilter: 'blur(60px) saturate(180%) !important',
+                border: '1px solid rgba(255, 255, 255, 0.2) !important'
+              }}
+            >
               <div className="lb-sheen" />
             {/* Column Headers - Sticky */}
-            <div className="sticky top-0 bg-transparent z-20 grid grid-cols-12 gap-4 px-4 mb-4 pb-3 text-white/70 uppercase tracking-widest text-xs border-b border-white/10 backdrop-blur-sm">
+            <div 
+              className="sticky top-0 z-20 grid grid-cols-12 gap-4 px-4 mb-4 pb-3 text-white/70 uppercase tracking-widest text-xs rounded-t-3xl"
+              style={{
+                background: 'transparent',
+                backgroundColor: 'transparent',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(60px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+                boxShadow: 'none',
+                paddingTop: '0.5rem',
+                paddingBottom: '0.75rem',
+                borderTopLeftRadius: '1.5rem',
+                borderTopRightRadius: '1.5rem'
+              }}
+            >
               <div className="col-span-1 text-center font-medium">
                 #
               </div>
-              <div className="col-span-3 text-left font-medium">
+              <div className="col-span-3 text-center font-medium">
                 Collection
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('floor_price_usd')}
               >
                 Floor
@@ -143,7 +171,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('floor_price_1d_change_pct')}
               >
                 1d %
@@ -152,7 +180,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('unified_volume_7d_ema')}
               >
                 Volume
@@ -161,7 +189,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('units_sold_count')}
               >
                 Sales
@@ -170,7 +198,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('listed_percentage')}
               >
                 Listed
