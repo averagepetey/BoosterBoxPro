@@ -8,6 +8,7 @@
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
+import { NewReleases } from '@/components/leaderboard/NewReleases';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useState } from 'react';
 
@@ -27,14 +28,49 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
+      <div style={{ 
+        background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)',
+        minHeight: '100vh',
+        width: '100%'
+      }}>
       {/* Hero Section with Clouds - Header Only */}
-      <section className="relative overflow-hidden lb-hero">
+      <section 
+        className="relative overflow-hidden lb-hero"
+        style={{
+          minHeight: '200px',
+          background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)',
+          width: '100%',
+          display: 'block',
+          position: 'relative'
+        }}
+      >
         <div className="pointer-events-none absolute inset-0">
-          <div className="lb-hero-sky absolute inset-0" />
-          <div className="lb-hero-stars absolute inset-0" />
+          <div 
+            className="lb-hero-sky absolute inset-0"
+            style={{
+              background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)',
+              zIndex: 0
+            }}
+          />
+          <img 
+            src="/images/headerCloud.png" 
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ zIndex: 1, opacity: 1 }}
+          />
+          <div 
+            className="lb-hero-stars absolute inset-0"
+            style={{
+              backgroundImage: 'radial-gradient(2px 2px at 20% 30%, white, transparent), radial-gradient(2px 2px at 60% 70%, white, transparent), radial-gradient(1px 1px at 50% 50%, white, transparent), radial-gradient(1px 1px at 80% 10%, white, transparent), radial-gradient(2px 2px at 90% 40%, white, transparent), radial-gradient(1px 1px at 33% 60%, white, transparent), radial-gradient(1px 1px at 15% 80%, white, transparent)',
+              backgroundRepeat: 'repeat',
+              backgroundSize: '200px 200px',
+              opacity: 0.6,
+              zIndex: 2
+            }}
+          />
         </div>
 
-        <div className="absolute inset-0 z-10 flex flex-col">
+        <div className="absolute inset-0 z-10 flex flex-col" style={{ zIndex: 10 }}>
           <Navigation />
           
           <div className="container mx-auto px-6 flex-1 flex flex-col justify-center">
@@ -50,32 +86,51 @@ export default function DashboardPage() {
       </section>
 
       {/* Page Content - Clean Background (No Clouds) */}
-      <div className="lb-page relative">
+      <div 
+        className="lb-page relative"
+        style={{
+          background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)',
+          minHeight: '100vh',
+          position: 'relative',
+          width: '100%'
+        }}
+      >
         {/* Side decorative clouds - Behind table, at edges, scroll with page */}
-        <div className="lb-side-clouds-left" />
-        <div className="lb-side-clouds-right" />
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            bottom: 0, 
+            left: 0, 
+            width: '300px', 
+            pointerEvents: 'none', 
+            zIndex: 0,
+            opacity: 1
+          }}
+        >
+          {/* Multiple clouds positioned randomly vertically on left side */}
+          <img src="/sidecloud.png" alt="" style={{ position: 'absolute', top: '60%', left: 0, opacity: 0.3, width: '220px', height: 'auto', pointerEvents: 'none' }} />
+          <img src="/sidecloud.png" alt="" style={{ position: 'absolute', top: '85%', left: 0, opacity: 0.18, width: '160px', height: 'auto', pointerEvents: 'none' }} />
+        </div>
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            bottom: 0, 
+            right: 0, 
+            width: '300px', 
+            pointerEvents: 'none', 
+            zIndex: 0,
+            opacity: 1
+          }}
+        >
+          {/* Multiple clouds positioned randomly vertically on right side */}
+          <img src="/sidecloud.png" alt="" style={{ position: 'absolute', top: '65%', right: 0, opacity: 0.3, width: '220px', height: 'auto', pointerEvents: 'none', transform: 'scaleX(-1)' }} />
+          <img src="/sidecloud.png" alt="" style={{ position: 'absolute', top: '80%', right: 0, opacity: 0.18, width: '160px', height: 'auto', pointerEvents: 'none', transform: 'scaleX(-1)' }} />
+        </div>
         <main className="container mx-auto px-6 pt-6 pb-12" style={{ maxWidth: '1400px' }}>
-          {/* Featured Section - TODO: Build this */}
-          <div className="mb-4 -mt-4">
-            <div>
-              <h2 className="text-base font-semibold text-white mb-1">New Releases</h2>
-              <button className="text-xs text-white/85 hover:text-white transition-all hover:translate-x-1 mb-2 block -mt-1">
-                See all →
-              </button>
-            </div>
-            <div 
-              className="relative rounded-2xl p-4 text-center min-h-[120px] flex items-center justify-center"
-              style={{
-                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
-                background: '#141414 !important',
-                border: '1px solid rgba(255, 255, 255, 0.15) !important'
-              }}
-            >
-              <p className="text-white/80 text-sm">
-                Featured sections coming soon...
-              </p>
-            </div>
-          </div>
+          {/* New Releases Section */}
+          <NewReleases />
 
           {/* Controls Bar */}
           <div className="mb-4 flex items-center justify-between">
@@ -135,16 +190,19 @@ export default function DashboardPage() {
 
             {/* Table Container - Scrollable */}
             <div 
-              className="relative rounded-3xl px-6 py-6 overflow-visible"
+              className="relative rounded-3xl overflow-hidden"
               style={{
                 boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
                 background: '#141414 !important',
                 border: '1px solid rgba(255, 255, 255, 0.15) !important'
               }}
             >
+            {/* Horizontal Scroll Wrapper for Mobile */}
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="min-w-[950px] sm:min-w-0 px-3 sm:px-6 py-4 sm:py-6">
             {/* Column Headers - Sticky */}
             <div 
-              className="sticky top-0 z-20 grid grid-cols-12 gap-4 px-4 mb-4 pb-3 text-white/70 uppercase tracking-widest text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-2 sm:gap-4 px-2 sm:px-4 mb-4 pb-3 text-white/70 uppercase tracking-widest text-[10px] sm:text-xs rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
@@ -202,10 +260,10 @@ export default function DashboardPage() {
               </div>
               <div 
                 className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('listed_percentage')}
+                onClick={() => handleSort('top_10_value_usd')}
               >
-                Listed
-                {sortBy === 'listed_percentage' && (
+                Top 10 Value
+                {sortBy === 'top_10_value_usd' && (
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
@@ -228,9 +286,12 @@ export default function DashboardPage() {
                 Showing {data.data.length} of {data.meta.total} boxes
               </div>
             )}
+              </div>
+            </div>
             </div>
           </div>
         </main>
+      </div>
       </div>
     </ProtectedRoute>
   );

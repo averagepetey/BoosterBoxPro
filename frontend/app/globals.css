@@ -19,8 +19,125 @@
   }
 }
 
+html {
+  background: transparent;
+  height: 100%;
+}
+
 body {
-  background: var(--background);
+  background: transparent;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+/* Leaderboard Hero Section */
+.lb-hero {
+  min-height: 200px !important;
+  position: relative !important;
+  background: linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%) !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.lb-hero-sky {
+  background: linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%);
+  z-index: 0;
+}
+
+.lb-hero-stars {
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 60% 70%, white, transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(2px 2px at 90% 40%, white, transparent),
+    radial-gradient(1px 1px at 33% 60%, white, transparent),
+    radial-gradient(1px 1px at 15% 80%, white, transparent);
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.6;
+  animation: sparkle 20s linear infinite;
+  z-index: 1;
+}
+
+@keyframes sparkle {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-200px);
+  }
+}
+
+/* Leaderboard Page Content */
+.lb-page {
+  background: linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%) !important;
+  min-height: 100vh;
+  position: relative;
+  width: 100%;
+}
+
+/* Side Decorative Clouds */
+.lb-side-clouds-left,
+.lb-side-clouds-right {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.1;
+}
+
+.lb-side-clouds-left {
+  left: 0;
+  background: radial-gradient(ellipse at left, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+}
+
+.lb-side-clouds-right {
+  right: 0;
+  background: radial-gradient(ellipse at right, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+}
+
+/* Glass Navigation */
+.glass-nav {
+  background: rgba(0, 0, 0, 0) !important;
+  backdrop-filter: blur(10px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(120%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  position: relative;
+  z-index: 50;
+  box-shadow: none;
+}
+
+/* Leaderboard Title */
+.lb-title {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Leaderboard Animation */
+.lb-anim {
+  transition: all 0.2s ease;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Marketplace Price Change Colors */
+.marketplace-positive {
+  color: #10b981 !important; /* Green for positive/up */
+}
+
+.marketplace-negative {
+  color: #ef4444 !important; /* Red for negative/down */
 }

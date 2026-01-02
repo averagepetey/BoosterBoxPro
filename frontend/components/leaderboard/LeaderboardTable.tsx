@@ -117,7 +117,7 @@ export function LeaderboardTable({
               className={`marketplace-row ${isRankOne ? 'rank-1' : ''} p-4 cursor-pointer transition-all duration-200`}
               onClick={() => (window.location.href = `/boxes/${box.id}`)}
             >
-              <div className="grid grid-cols-12 gap-4 items-center">
+              <div className="grid grid-cols-12 gap-2 sm:gap-4 items-center px-2 sm:px-0">
               {/* Rank */}
               <div className="col-span-1 text-center" style={{ height: '30px', fontFamily: 'Helvetica' }}>
                 <span className="text-sm text-foreground-muted font-mono" style={{ color: 'rgba(255, 255, 255, 1)' }}>
@@ -126,28 +126,40 @@ export function LeaderboardTable({
               </div>
 
               {/* Collection */}
-              <div className="col-span-3 flex items-center justify-center gap-4">
+              <div className="col-span-3 flex items-center justify-center gap-2 sm:gap-4 min-w-[200px]">
                 {box.image_url ? (
                   <img
                     src={box.image_url}
                     alt={box.product_name}
-                    className="w-20 h-20 object-contain rounded-lg flex-shrink-0"
+                    className="w-14 h-14 sm:w-20 sm:h-20 object-contain rounded-lg flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-20 h-20 bg-surface flex items-center justify-center rounded-lg flex-shrink-0">
+                  <div className="w-14 h-14 sm:w-20 sm:h-20 bg-surface flex items-center justify-center rounded-lg flex-shrink-0">
                     <span className="text-xs text-foreground-muted">📦</span>
                   </div>
                 )}
                 <div 
-                  className="flex-1 min-w-0"
+                  className="flex-1 min-w-[140px] sm:min-w-0"
                   title={cleanProductName(box.product_name)}
                 >
-                  <div className="text-sm font-semibold text-foreground truncate text-center">
+                  <div className="text-xs sm:text-sm md:text-base font-semibold text-foreground text-left sm:text-center break-words" style={{ 
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    lineHeight: '1.3'
+                  }}>
                     {cleanProductName(box.product_name)}
                   </div>
                   {box.set_name && (
                     <div 
-                      className="text-xs text-foreground-muted truncate text-center"
+                      className="text-[10px] sm:text-xs text-foreground-muted text-left sm:text-center break-words mt-0.5"
+                      style={{ 
+                        display: '-webkit-box',
+                        WebkitLineClamp: 1,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}
                       title={box.set_name}
                     >
                       {box.set_name}
@@ -175,7 +187,14 @@ export function LeaderboardTable({
 
               {/* Floor 1d % */}
               <div className="col-span-1 text-center relative">
-                <div className={`text-sm financial-number ${getPriceChangeColor(box.metrics.floor_price_1d_change_pct)}`}>
+                <div 
+                  className={`text-sm financial-number ${getPriceChangeColor(box.metrics.floor_price_1d_change_pct)}`}
+                  style={{
+                    color: priceChange !== null 
+                      ? (priceChange > 0 ? '#10b981' : priceChange < 0 ? '#ef4444' : undefined)
+                      : undefined
+                  }}
+                >
                   {priceChange !== null
                     ? `${isPositive ? '▲' : isNegative ? '▼' : ''} ${formatPercentage(box.metrics.floor_price_1d_change_pct)}`
                     : '--'}
@@ -196,18 +215,13 @@ export function LeaderboardTable({
                 </div>
               </div>
 
-              {/* Listed */}
+              {/* Top 10 Card Value */}
               <div className="col-span-2 text-center">
-                <div className="text-sm text-foreground financial-number">
-                  {box.metrics.listed_percentage !== null && box.metrics.listed_percentage !== undefined
-                    ? `${Number(box.metrics.listed_percentage).toFixed(1)}%`
+                <div className="text-sm font-semibold text-foreground financial-number">
+                  {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
+                    ? formatCurrency(box.metrics.top_10_value_usd)
                     : '--'}
                 </div>
-                {box.metrics.active_listings_count !== null && box.metrics.estimated_total_supply !== null && (
-                  <div className="text-xs text-foreground-muted mt-0.5 text-center">
-                    {formatNumber(box.metrics.active_listings_count)} / {formatNumber(box.metrics.estimated_total_supply)}
-                  </div>
-                )}
               </div>
 
               {/* Last 1d Sparkline */}
