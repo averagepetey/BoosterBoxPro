@@ -138,12 +138,18 @@ export function LeaderboardTable({
                     <span className="text-xs text-foreground-muted">📦</span>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
+                <div 
+                  className="flex-1 min-w-0"
+                  title={cleanProductName(box.product_name)}
+                >
                   <div className="text-sm font-semibold text-foreground truncate text-center">
                     {cleanProductName(box.product_name)}
                   </div>
                   {box.set_name && (
-                    <div className="text-xs text-foreground-muted truncate text-center">
+                    <div 
+                      className="text-xs text-foreground-muted truncate text-center"
+                      title={box.set_name}
+                    >
                       {box.set_name}
                     </div>
                   )}
