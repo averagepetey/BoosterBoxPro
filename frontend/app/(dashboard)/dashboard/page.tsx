@@ -54,7 +54,7 @@ export default function DashboardPage() {
         {/* Side decorative clouds - Behind table, at edges, scroll with page */}
         <div className="lb-side-clouds-left" />
         <div className="lb-side-clouds-right" />
-        <main className="container mx-auto px-6 pt-6 pb-12">
+        <main className="container mx-auto px-6 pt-6 pb-12" style={{ maxWidth: '1400px' }}>
           {/* Featured Section - TODO: Build this */}
           <div className="mb-4 -mt-4">
             <div>
@@ -64,9 +64,11 @@ export default function DashboardPage() {
               </button>
             </div>
             <div 
-              className="relative rounded-2xl border border-white/15 bg-[rgba(10,24,60,0.35)] backdrop-blur-xl p-4 text-center min-h-[120px] flex items-center justify-center"
+              className="relative rounded-2xl p-4 text-center min-h-[120px] flex items-center justify-center"
               style={{
-                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 18px 50px rgba(0,0,0,0.20)'
+                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
+                background: '#141414 !important',
+                border: '1px solid rgba(255, 255, 255, 0.15) !important'
               }}
             >
               <p className="text-white/80 text-sm">
@@ -100,7 +102,8 @@ export default function DashboardPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md text-white/90 shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:bg-white/16 transition lb-anim px-4 py-2 text-sm focus:outline-none"
+              className="rounded-full text-[#1b1b1b] font-semibold bg-[linear-gradient(180deg,var(--gold),var(--gold-2))] shadow-[0_10px_24px_rgba(246,195,90,0.35)] px-4 py-2 text-sm focus:outline-none relative overflow-hidden"
+              style={{ appearance: 'none', WebkitAppearance: 'none' }}
             >
               <option value="unified_volume_7d_ema">Volume (7d EMA)</option>
               <option value="floor_price_usd">Floor Price</option>
@@ -134,14 +137,11 @@ export default function DashboardPage() {
             <div 
               className="relative rounded-3xl px-6 py-6 overflow-visible"
               style={{
-                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1px 0 rgba(255, 255, 255, 0.3) inset',
-                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.03)) !important',
-                backdropFilter: 'blur(60px) saturate(180%) !important',
-                WebkitBackdropFilter: 'blur(60px) saturate(180%) !important',
+                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
+                background: '#141414 !important',
                 border: '1px solid rgba(255, 255, 255, 0.15) !important'
               }}
             >
-              <div className="lb-sheen" />
             {/* Column Headers - Sticky */}
             <div 
               className="sticky top-0 z-20 grid grid-cols-12 gap-4 px-4 mb-4 pb-3 text-white/70 uppercase tracking-widest text-xs rounded-t-3xl"
