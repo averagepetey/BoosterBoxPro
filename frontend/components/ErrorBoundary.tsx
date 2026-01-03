@@ -1,8 +1,3 @@
-/**
- * Error Boundary Component
- * Catches React errors and displays a fallback UI
- */
-
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
@@ -38,36 +33,18 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)' }}>
-          <div className="max-w-md w-full mx-4">
-            <div 
-              className="rounded-2xl p-8 text-center"
-              style={{
-                background: '#141414',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
-              }}
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+            <p className="text-gray-400 mb-4">
+              {this.state.error?.message || 'An unexpected error occurred'}
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              <div className="text-6xl mb-4">⚠️</div>
-              <h1 className="text-2xl font-bold text-white mb-2">Something went wrong</h1>
-              <p className="text-white/70 text-sm mb-6">
-                {this.state.error?.message || 'An unexpected error occurred'}
-              </p>
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-6 py-2 rounded-lg font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors"
-                >
-                  Reload Page
-                </button>
-                <button
-                  onClick={() => this.setState({ hasError: false, error: null })}
-                  className="px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white border border-white/30 hover:border-white/50 transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
+              Try again
+            </button>
           </div>
         </div>
       );
@@ -76,4 +53,5 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
 

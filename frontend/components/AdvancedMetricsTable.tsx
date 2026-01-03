@@ -43,7 +43,11 @@ export function AdvancedMetricsTable({ data, isLoading = false }: AdvancedMetric
   };
 
   const sortedData = useMemo(() => {
-    if (!sortColumn || !data.length) return data;
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log('AdvancedMetricsTable: No data to sort');
+      return [];
+    }
+    if (!sortColumn) return data;
 
     return [...data].sort((a, b) => {
       const aVal = a[sortColumn];

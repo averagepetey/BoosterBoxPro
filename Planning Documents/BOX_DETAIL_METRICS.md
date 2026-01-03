@@ -92,18 +92,7 @@
   - Source: `box_metrics_unified.liquidity_score`
   - Calculation: Blended formula (50% TCG + 30% TCG velocity + 20% eBay)
   - Display: Numeric score (e.g., "85.3")
-  - Label: "Liquidity Score"
-
-- **Active Listings Count** (`active_listings_count`)
-  - Source: `box_metrics_unified.active_listings_count` (TCGplayer)
-  - Display: Number (e.g., "3,044")
-  - Label: "Active Listings"
-
-- **Listed Percentage** (`listed_percentage`)
-  - Source: `box_metrics_unified.listed_percentage`
-  - Calculation: `(active_listings_count / estimated_total_supply) * 100`
-  - Display: Percentage (e.g., "8.3%")
-  - Alternative: Show as "3,044 / 36.6K (8.3%)" if `estimated_total_supply` available
+  - Label: "Liquidity Score" 
 
 - **Visible Market Cap** (`visible_market_cap_usd`)
   - Source: `box_metrics_unified.visible_market_cap_usd` (TCGplayer)
@@ -606,4 +595,5 @@
 
 **Last Updated**: 2025-01-01
 **Status**: Complete mapping based on all planning documents
+
 

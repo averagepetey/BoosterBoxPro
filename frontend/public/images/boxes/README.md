@@ -30,3 +30,4 @@ Images should be named according to the set identifier:
 - Recommended size: 400x400px or larger (square aspect ratio works best)
 - The images will be displayed in the leaderboard table avatars
 
+

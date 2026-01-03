@@ -26,7 +26,17 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     'floor_price', 
     timeRange === 'all' ? 365 : parseInt(timeRange)
   );
-  const { data: rankHistory, isLoading: isLoadingRankHistory } = useBoxRankHistory(id, 30);
+  // Advanced Metrics table shows one entry per month
+  const { data: allHistoricalData, isLoading: isLoadingAllHistorical } = useBoxTimeSeries(
+    id,
+    'floor_price',
+    365,  // Always fetch all available data for the table
+    true  // Filter to one entry per month
+  );
+  const { data: rankHistory, isLoading: isLoadingRankHistory } = useBoxRankHistory(
+    id, 
+    timeRange === 'all' ? 365 : parseInt(timeRange)
+  );
 
   const formatCurrency = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return '--';
@@ -268,7 +278,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                               : 'bg-white/10 text-white/70'
                           }`}>
                             {box.rank_change_direction === 'up' ? '↑' : box.rank_change_direction === 'down' ? '↓' : '→'}
-                            <span>{Math.abs(box.rank_change_amount)}</span>
+                            <span>{Math.abs(box.rank_change_amount || 0)}</span>
                           </div>
                         )}
                       </div>
@@ -379,8 +389,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div>
                     <div className="text-white/70 text-sm mb-1">Market Cap</div>
                     <div className="text-lg font-semibold text-white">
-                      {box.metrics.visible_market_cap_usd !== null && box.metrics.visible_market_cap_usd !== undefined
-                        ? formatCurrency(box.metrics.visible_market_cap_usd)
+                      {((box.metrics as any).visible_market_cap_usd !== null && (box.metrics as any).visible_market_cap_usd !== undefined)
+                        ? formatCurrency((box.metrics as any).visible_market_cap_usd)
                         : '--'}
                     </div>
                   </div>
@@ -557,7 +567,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <div>
                   <div className="text-white/70 text-xs mb-1">Daily Volume USD</div>
                   <div className="text-lg font-semibold text-white">
-                    {formatCurrency(box.metrics.unified_volume_usd || box.metrics.daily_volume_usd)}
+                    {formatCurrency((box.metrics as any).unified_volume_usd || box.metrics.daily_volume_usd)}
                   </div>
                 </div>
                 <div>
@@ -591,28 +601,30 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="text-white/70 text-xs mb-1">Volume Change</div>
                   <div className={`text-lg font-semibold ${
                     (() => {
-                      if (!timeSeriesData || timeSeriesData.length < 14) return 'text-white';
-                      const currentWeek = timeSeriesData.slice(-7);
-                      const previousWeek = timeSeriesData.slice(-14, -7);
-                      const currentAvg = currentWeek.reduce((sum: number, d: any) => sum + (d.unified_volume_7d_ema || d.unified_volume_usd || 0), 0) / currentWeek.length;
-                      const previousAvg = previousWeek.reduce((sum: number, d: any) => sum + (d.unified_volume_7d_ema || d.unified_volume_usd || 0), 0) / previousWeek.length;
-                      if (previousAvg === 0) return 'text-white';
-                      const change = ((currentAvg - previousAvg) / previousAvg) * 100;
+                      // Use monthly data for month-over-month calculation
+                      if (!allHistoricalData || allHistoricalData.length < 2) return 'text-white';
+                      const currentMonth = allHistoricalData[allHistoricalData.length - 1];
+                      const previousMonth = allHistoricalData[allHistoricalData.length - 2];
+                      const currentVolume = currentMonth?.unified_volume_usd || 0;
+                      const previousVolume = previousMonth?.unified_volume_usd || 0;
+                      if (previousVolume === 0) return 'text-white';
+                      const change = ((currentVolume - previousVolume) / previousVolume) * 100;
                       return change >= 0 ? 'text-green-400' : 'text-red-400';
                     })()
                   }`}>
                     {(() => {
-                      if (!timeSeriesData || timeSeriesData.length < 14) return '--';
-                      const currentWeek = timeSeriesData.slice(-7);
-                      const previousWeek = timeSeriesData.slice(-14, -7);
-                      const currentAvg = currentWeek.reduce((sum: number, d: any) => sum + (d.unified_volume_7d_ema || d.unified_volume_usd || 0), 0) / currentWeek.length;
-                      const previousAvg = previousWeek.reduce((sum: number, d: any) => sum + (d.unified_volume_7d_ema || d.unified_volume_usd || 0), 0) / previousWeek.length;
-                      if (previousAvg === 0) return '--';
-                      const change = ((currentAvg - previousAvg) / previousAvg) * 100;
+                      // Use monthly data for month-over-month calculation
+                      if (!allHistoricalData || allHistoricalData.length < 2) return '--';
+                      const currentMonth = allHistoricalData[allHistoricalData.length - 1];
+                      const previousMonth = allHistoricalData[allHistoricalData.length - 2];
+                      const currentVolume = currentMonth?.unified_volume_usd || 0;
+                      const previousVolume = previousMonth?.unified_volume_usd || 0;
+                      if (previousVolume === 0) return '--';
+                      const change = ((currentVolume - previousVolume) / previousVolume) * 100;
                       return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
                     })()}
                   </div>
-                  <div className="text-white/50 text-xs mt-1">Week over Week</div>
+                  <div className="text-white/50 text-xs mt-1">Month over Month</div>
                 </div>
                 {box.metrics.boxes_added_today !== null && box.metrics.boxes_added_today !== undefined && (
                   <div>
@@ -685,17 +697,35 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
             }}
           >
-            <h2 className="text-xl font-bold text-white mb-4">Rank History (30 Days)</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Rank History</h2>
+            
+            {/* Time Range Buttons */}
+            <div className="flex gap-2 mb-4">
+              {['7d', '30d', '90d', '1y', 'all'].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range as any)}
+                  className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
+                    timeRange === range
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  {range.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            
             {isLoadingRankHistory ? (
               <div className="h-48 flex items-center justify-center border border-white/10 rounded-lg bg-white/5">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/30"></div>
               </div>
             ) : rankHistory && rankHistory.length > 0 ? (
-              <div className="border border-white/10 rounded-lg bg-white/5 p-4">
+              <div className="border border-white/10 rounded-lg bg-white/5 p-4 h-64">
                 <RankHistoryChart data={rankHistory.map((d: any) => ({
                   date: d.date,
                   rank: d.rank,
-                }))} />
+                }))} height={240} />
               </div>
             ) : (
               <div className="h-48 flex items-center justify-center border border-white/10 rounded-lg bg-white/5">
@@ -714,10 +744,16 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             }}
           >
             <h2 className="text-xl font-bold text-white mb-4">Advanced Metrics</h2>
-            <AdvancedMetricsTable 
-              data={timeSeriesData || []} 
-              isLoading={isLoadingTimeSeries}
-            />
+            {isLoadingAllHistorical ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/30"></div>
+              </div>
+            ) : (
+              <AdvancedMetricsTable 
+                data={allHistoricalData || []} 
+                isLoading={isLoadingAllHistorical}
+              />
+            )}
           </div>
 
           {/* Marketplace Attribution & Context */}

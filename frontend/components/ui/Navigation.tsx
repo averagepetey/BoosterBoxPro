@@ -13,7 +13,15 @@ export function Navigation() {
   const { user, logout } = useAuth();
 
   return (
-    <nav className="glass-nav">
+    <nav 
+      className="glass-nav"
+      style={{
+        background: 'rgba(0, 0, 0, 0)',
+        backdropFilter: 'blur(10px) saturate(120%)',
+        WebkitBackdropFilter: 'blur(10px) saturate(120%)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.03)'
+      }}
+    >
       <div className="container mx-auto">
         <div className="flex items-center justify-between h-16 px-4">
           {/* Logo - Always stays left */}
