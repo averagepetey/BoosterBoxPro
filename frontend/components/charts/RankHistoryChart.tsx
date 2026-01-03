@@ -5,6 +5,8 @@
 
 'use client';
 
+import { useRef, useEffect, useState } from 'react';
+
 interface RankHistoryChartProps {
   data: Array<{
     date: string;
@@ -14,6 +16,35 @@ interface RankHistoryChartProps {
 }
 
 export function RankHistoryChart({ data, height = 200 }: RankHistoryChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(600);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setChartWidth(Math.max(rect.width, 600));
+      }
+    };
+
+    if (containerRef.current) {
+      const resizeObserver = new ResizeObserver(() => {
+        updateWidth();
+      });
+      resizeObserver.observe(containerRef.current);
+      
+      const timeoutId = setTimeout(updateWidth, 100);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        resizeObserver.disconnect();
+      };
+    }
+    
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
   if (!data || data.length === 0) {
     return (
       <div className="h-48 flex items-center justify-center">
@@ -24,7 +55,6 @@ export function RankHistoryChart({ data, height = 200 }: RankHistoryChartProps) 
 
   // Calculate chart dimensions
   const padding = { top: 20, right: 20, bottom: 40, left: 40 };
-  const chartWidth = 400;
   const chartHeight = height;
   const innerWidth = chartWidth - padding.left - padding.right;
   const innerHeight = chartHeight - padding.top - padding.bottom;
@@ -55,12 +85,14 @@ export function RankHistoryChart({ data, height = 200 }: RankHistoryChartProps) 
   };
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div ref={containerRef} className="w-full h-full min-w-0">
       <svg
-        width={chartWidth}
-        height={chartHeight}
-        className="w-full h-auto"
+        width="100%"
+        height="100%"
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full h-full"
+        style={{ minWidth: 0 }}
       >
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {

@@ -1,0 +1,2598 @@
+{
+  "550e8400-e29b-41d4-a716-446655440001": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1215.61,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:41:08.608098"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1222.09,
+      "active_listings_count": 2,
+      "boxes_sold_today": 0.0,
+      "boxes_sold_per_day": 0.0,
+      "timestamp": "2026-01-02T15:45:11.108846"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1237.77,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T15:49:09.878261"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1255.22,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:53:12.864300"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1255.22,
+      "active_listings_count": 3,
+      "boxes_sold_today": 0.0,
+      "boxes_sold_per_day": 0.0,
+      "timestamp": "2026-01-02T15:56:06.210022"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1268.01,
+      "active_listings_count": 2,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:59:36.167253"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1274.01,
+      "active_listings_count": 7,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:02:14.948360"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1260.41,
+      "active_listings_count": 5,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:05:40.436908"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1270.17,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:39:16.051120"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1295.66,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:43:11.166799"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1308.66,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:46:46.198193"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1530.67,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0.5,
+      "boxes_sold_per_day": 0.5,
+      "timestamp": "2026-01-02T16:49:39.028234"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1920.31,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.79,
+      "boxes_sold_per_day": 0.79,
+      "timestamp": "2026-01-02T16:52:18.450039"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 2256.3,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.89,
+      "boxes_sold_per_day": 0.89,
+      "timestamp": "2026-01-02T16:58:26.337823"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 2584.26,
+      "active_listings_count": 2,
+      "boxes_sold_today": 0.75,
+      "boxes_sold_per_day": 0.75,
+      "timestamp": "2026-01-02T17:01:16.146203"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 3020.64,
+      "active_listings_count": 0,
+      "boxes_sold_today": 1.79,
+      "boxes_sold_per_day": 1.79,
+      "timestamp": "2026-01-02T17:05:57.689524"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 3998.49,
+      "active_listings_count": 0,
+      "boxes_sold_today": 1.38,
+      "boxes_sold_per_day": 1.38,
+      "timestamp": "2026-01-02T17:10:02.764395"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440006": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 259.34,
+      "active_listings_count": 49,
+      "boxes_sold_today": 2.0,
+      "boxes_sold_per_day": 2.0,
+      "timestamp": "2026-01-02T15:41:08.608110"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 283.43,
+      "active_listings_count": 34,
+      "boxes_sold_today": 1.43,
+      "boxes_sold_per_day": 1.43,
+      "timestamp": "2026-01-02T15:45:11.108859"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 265.94,
+      "active_listings_count": 22,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:49:09.878274"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 280.44,
+      "active_listings_count": 36,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:53:12.864329"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 232.14,
+      "active_listings_count": 57,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:56:06.210771"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 266.67,
+      "active_listings_count": 45,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:59:36.167265"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 258.67,
+      "active_listings_count": 56,
+      "boxes_sold_today": 2.29,
+      "boxes_sold_per_day": 2.29,
+      "timestamp": "2026-01-02T16:02:14.948373"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 253.38,
+      "active_listings_count": 82,
+      "boxes_sold_today": 2.57,
+      "boxes_sold_per_day": 2.57,
+      "timestamp": "2026-01-02T16:05:40.436924"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 233.3,
+      "active_listings_count": 55,
+      "boxes_sold_today": 4.0,
+      "boxes_sold_per_day": 4.0,
+      "timestamp": "2026-01-02T16:39:16.051136"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 223.79,
+      "active_listings_count": 89,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T16:43:11.166852"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 224.81,
+      "active_listings_count": 85,
+      "boxes_sold_today": 3.14,
+      "boxes_sold_per_day": 3.14,
+      "timestamp": "2026-01-02T16:46:46.198206"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 235.92,
+      "active_listings_count": 57,
+      "boxes_sold_today": 2.25,
+      "boxes_sold_per_day": 2.25,
+      "timestamp": "2026-01-02T16:49:39.028247"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 263.67,
+      "active_listings_count": 96,
+      "boxes_sold_today": 2.5,
+      "boxes_sold_per_day": 2.5,
+      "timestamp": "2026-01-02T16:52:18.450054"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 276.54,
+      "active_listings_count": 12,
+      "boxes_sold_today": 2.57,
+      "boxes_sold_per_day": 2.57,
+      "timestamp": "2026-01-02T16:58:26.337836"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 357.99,
+      "active_listings_count": 15,
+      "boxes_sold_today": 2.75,
+      "boxes_sold_per_day": 2.75,
+      "timestamp": "2026-01-02T17:01:16.146215"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 406.72,
+      "active_listings_count": 0,
+      "boxes_sold_today": 2.14,
+      "boxes_sold_per_day": 2.14,
+      "timestamp": "2026-01-02T17:05:57.689567"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 776.05,
+      "active_listings_count": 28,
+      "boxes_sold_today": 4.64,
+      "boxes_sold_per_day": 4.64,
+      "timestamp": "2026-01-02T17:10:02.764400"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440002": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 403.88,
+      "active_listings_count": 7,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:41:08.608114"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 418.96,
+      "active_listings_count": 30,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:45:11.108862"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 423.59,
+      "active_listings_count": 28,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:49:09.878278"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 416.79,
+      "active_listings_count": 9,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:53:12.864338"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 350.15,
+      "active_listings_count": 10,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T15:56:06.210825"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 425.12,
+      "active_listings_count": 10,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:59:36.167269"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 432.29,
+      "active_listings_count": 13,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:02:14.948377"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 432.46,
+      "active_listings_count": 10,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T16:05:40.436928"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 433.53,
+      "active_listings_count": 25,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:39:16.051140"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 435.2,
+      "active_listings_count": 11,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:43:11.166859"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 436.34,
+      "active_listings_count": 7,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:46:46.198210"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 436.58,
+      "active_listings_count": 2,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T16:49:39.028252"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 465.29,
+      "active_listings_count": 2,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:52:18.450059"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 542.98,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.96,
+      "boxes_sold_per_day": 0.96,
+      "timestamp": "2026-01-02T16:58:26.337841"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 621.61,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.96,
+      "boxes_sold_per_day": 0.96,
+      "timestamp": "2026-01-02T17:01:16.146222"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 996.99,
+      "active_listings_count": 0,
+      "boxes_sold_today": 1.11,
+      "boxes_sold_per_day": 1.11,
+      "timestamp": "2026-01-02T17:05:57.689586"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 1431.94,
+      "active_listings_count": 3,
+      "boxes_sold_today": 1.86,
+      "boxes_sold_per_day": 1.86,
+      "timestamp": "2026-01-02T17:10:02.764404"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440012": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 185.39,
+      "active_listings_count": 70,
+      "boxes_sold_today": 2.14,
+      "boxes_sold_per_day": 2.14,
+      "timestamp": "2026-01-02T15:41:08.608117"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 190.55,
+      "active_listings_count": 57,
+      "boxes_sold_today": 1.43,
+      "boxes_sold_per_day": 1.43,
+      "timestamp": "2026-01-02T15:45:11.108865"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 197.82,
+      "active_listings_count": 77,
+      "boxes_sold_today": 2.0,
+      "boxes_sold_per_day": 2.0,
+      "timestamp": "2026-01-02T15:49:09.878281"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 197.58,
+      "active_listings_count": 94,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:53:12.864346"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 159.78,
+      "active_listings_count": 175,
+      "boxes_sold_today": 3.14,
+      "boxes_sold_per_day": 3.14,
+      "timestamp": "2026-01-02T15:56:06.210886"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 164.58,
+      "active_listings_count": 42,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T15:59:36.167272"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 171.2,
+      "active_listings_count": 128,
+      "boxes_sold_today": 3.0,
+      "boxes_sold_per_day": 3.0,
+      "timestamp": "2026-01-02T16:02:14.948380"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 177.99,
+      "active_listings_count": 239,
+      "boxes_sold_today": 3.0,
+      "boxes_sold_per_day": 3.0,
+      "timestamp": "2026-01-02T16:05:40.436931"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 178.1,
+      "active_listings_count": 207,
+      "boxes_sold_today": 1.86,
+      "boxes_sold_per_day": 1.86,
+      "timestamp": "2026-01-02T16:39:16.051144"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 174.61,
+      "active_listings_count": 201,
+      "boxes_sold_today": 2.71,
+      "boxes_sold_per_day": 2.71,
+      "timestamp": "2026-01-02T16:43:11.166862"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 175.08,
+      "active_listings_count": 181,
+      "boxes_sold_today": 2.29,
+      "boxes_sold_per_day": 2.29,
+      "timestamp": "2026-01-02T16:46:46.198214"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 186.9,
+      "active_listings_count": 88,
+      "boxes_sold_today": 2.5,
+      "boxes_sold_per_day": 2.5,
+      "timestamp": "2026-01-02T16:49:39.028255"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 199.3,
+      "active_listings_count": 48,
+      "boxes_sold_today": 1.68,
+      "boxes_sold_per_day": 1.68,
+      "timestamp": "2026-01-02T16:52:18.450062"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 199.2,
+      "active_listings_count": 34,
+      "boxes_sold_today": 1.46,
+      "boxes_sold_per_day": 1.46,
+      "timestamp": "2026-01-02T16:58:26.337845"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 214.22,
+      "active_listings_count": 26,
+      "boxes_sold_today": 2.18,
+      "boxes_sold_per_day": 2.18,
+      "timestamp": "2026-01-02T17:01:16.146226"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 240.41,
+      "active_listings_count": 34,
+      "boxes_sold_today": 0.68,
+      "boxes_sold_per_day": 0.68,
+      "timestamp": "2026-01-02T17:05:57.689595"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 421.27,
+      "active_listings_count": 58,
+      "boxes_sold_today": 3.93,
+      "boxes_sold_per_day": 3.93,
+      "timestamp": "2026-01-02T17:10:02.764410"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440003": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 231.36,
+      "active_listings_count": 106,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:41:08.608121"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 228.15,
+      "active_listings_count": 105,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T15:45:11.108870"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 219.23,
+      "active_listings_count": 25,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:49:09.878285"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 217.11,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:53:12.864355"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 181.38,
+      "active_listings_count": 17,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:56:06.210916"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 212.57,
+      "active_listings_count": 19,
+      "boxes_sold_today": 0.14,
+      "boxes_sold_per_day": 0.14,
+      "timestamp": "2026-01-02T15:59:36.167277"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 204.88,
+      "active_listings_count": 18,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:02:14.948386"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 203.0,
+      "active_listings_count": 23,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:05:40.436938"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 201.49,
+      "active_listings_count": 19,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:39:16.051151"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 196.88,
+      "active_listings_count": 9,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:43:11.166869"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 191.79,
+      "active_listings_count": 18,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:46:46.198220"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 202.82,
+      "active_listings_count": 21,
+      "boxes_sold_today": 0.79,
+      "boxes_sold_per_day": 0.79,
+      "timestamp": "2026-01-02T16:49:39.028262"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 210.88,
+      "active_listings_count": 25,
+      "boxes_sold_today": 0.32,
+      "boxes_sold_per_day": 0.32,
+      "timestamp": "2026-01-02T16:52:18.450068"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 214.8,
+      "active_listings_count": 18,
+      "boxes_sold_today": 0.61,
+      "boxes_sold_per_day": 0.61,
+      "timestamp": "2026-01-02T16:58:26.337851"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 229.95,
+      "active_listings_count": 55,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T17:01:16.146233"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 247.16,
+      "active_listings_count": 17,
+      "boxes_sold_today": 1.39,
+      "boxes_sold_per_day": 1.39,
+      "timestamp": "2026-01-02T17:05:57.689611"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 378.17,
+      "active_listings_count": 27,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T17:10:02.764417"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440008": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 314.36,
+      "active_listings_count": 9,
+      "boxes_sold_today": 0.14,
+      "boxes_sold_per_day": 0.14,
+      "timestamp": "2026-01-02T15:41:08.608124"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 309.42,
+      "active_listings_count": 8,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:45:11.108873"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 309.1,
+      "active_listings_count": 1,
+      "boxes_sold_today": 1.43,
+      "boxes_sold_per_day": 1.43,
+      "timestamp": "2026-01-02T15:49:09.878288"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 315.36,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:53:12.864362"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 263.79,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:56:06.210938"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 317.97,
+      "active_listings_count": 3,
+      "boxes_sold_today": 0.0,
+      "boxes_sold_per_day": 0.0,
+      "timestamp": "2026-01-02T15:59:36.167279"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 318.39,
+      "active_listings_count": 6,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T16:02:14.948390"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 318.11,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.14,
+      "boxes_sold_per_day": 0.14,
+      "timestamp": "2026-01-02T16:05:40.436941"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 319.89,
+      "active_listings_count": 24,
+      "boxes_sold_today": 0.0,
+      "boxes_sold_per_day": 0.0,
+      "timestamp": "2026-01-02T16:39:16.051172"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 322.24,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:43:11.166873"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 322.52,
+      "active_listings_count": 15,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:46:46.198223"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 317.86,
+      "active_listings_count": 3,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:49:39.028265"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 323.37,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0.5,
+      "boxes_sold_per_day": 0.5,
+      "timestamp": "2026-01-02T16:52:18.450071"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 361.61,
+      "active_listings_count": 19,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:58:26.337854"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 390.24,
+      "active_listings_count": 2,
+      "boxes_sold_today": 0.46,
+      "boxes_sold_per_day": 0.46,
+      "timestamp": "2026-01-02T17:01:16.146236"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 486.97,
+      "active_listings_count": 7,
+      "boxes_sold_today": 0.82,
+      "boxes_sold_per_day": 0.82,
+      "timestamp": "2026-01-02T17:05:57.689619"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 765.78,
+      "active_listings_count": 2,
+      "boxes_sold_today": 1.18,
+      "boxes_sold_per_day": 1.18,
+      "timestamp": "2026-01-02T17:10:02.764420"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440011": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 282.12,
+      "active_listings_count": 19,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:41:08.608127"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 281.22,
+      "active_listings_count": 20,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:45:11.108875"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 296.6,
+      "active_listings_count": 22,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T15:49:09.878291"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 292.4,
+      "active_listings_count": 39,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:53:12.864369"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 234.93,
+      "active_listings_count": 43,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:56:06.210955"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 267.2,
+      "active_listings_count": 29,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T15:59:36.167282"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 274.16,
+      "active_listings_count": 40,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:02:14.948393"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 263.94,
+      "active_listings_count": 32,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:05:40.436945"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 265.81,
+      "active_listings_count": 35,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:39:16.051180"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 257.41,
+      "active_listings_count": 35,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:43:11.166876"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 271.05,
+      "active_listings_count": 50,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:46:46.198227"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 330.9,
+      "active_listings_count": 5,
+      "boxes_sold_today": 0.46,
+      "boxes_sold_per_day": 0.46,
+      "timestamp": "2026-01-02T16:49:39.028270"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 402.16,
+      "active_listings_count": 15,
+      "boxes_sold_today": 0.68,
+      "boxes_sold_per_day": 0.68,
+      "timestamp": "2026-01-02T16:52:18.450074"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 476.9,
+      "active_listings_count": 11,
+      "boxes_sold_today": 0.5,
+      "boxes_sold_per_day": 0.5,
+      "timestamp": "2026-01-02T16:58:26.337857"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 452.62,
+      "active_listings_count": 8,
+      "boxes_sold_today": 0.5,
+      "boxes_sold_per_day": 0.5,
+      "timestamp": "2026-01-02T17:01:16.146240"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 554.59,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0.79,
+      "boxes_sold_per_day": 0.79,
+      "timestamp": "2026-01-02T17:05:57.689636"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 738.72,
+      "active_listings_count": 8,
+      "boxes_sold_today": 1.11,
+      "boxes_sold_per_day": 1.11,
+      "timestamp": "2026-01-02T17:10:02.764424"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440007": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 144.35,
+      "active_listings_count": 17,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:41:08.608130"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 139.67,
+      "active_listings_count": 14,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:45:11.108878"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 138.93,
+      "active_listings_count": 13,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T15:49:09.878294"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 148.68,
+      "active_listings_count": 26,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T15:53:12.864375"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 127.5,
+      "active_listings_count": 42,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T15:56:06.210964"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 152.0,
+      "active_listings_count": 57,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T15:59:36.167285"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 148.5,
+      "active_listings_count": 53,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:02:14.948396"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 152.47,
+      "active_listings_count": 84,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:05:40.436948"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 153.25,
+      "active_listings_count": 84,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T16:39:16.051185"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 151.18,
+      "active_listings_count": 72,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T16:43:11.166879"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 151.95,
+      "active_listings_count": 77,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:46:46.198230"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 153.44,
+      "active_listings_count": 122,
+      "boxes_sold_today": 1.5,
+      "boxes_sold_per_day": 1.5,
+      "timestamp": "2026-01-02T16:49:39.028274"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 156.79,
+      "active_listings_count": 69,
+      "boxes_sold_today": 1.54,
+      "boxes_sold_per_day": 1.54,
+      "timestamp": "2026-01-02T16:52:18.450077"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 151.05,
+      "active_listings_count": 62,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T16:58:26.337860"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 160.63,
+      "active_listings_count": 37,
+      "boxes_sold_today": 1.86,
+      "boxes_sold_per_day": 1.86,
+      "timestamp": "2026-01-02T17:01:16.146243"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 191.7,
+      "active_listings_count": 58,
+      "boxes_sold_today": 1.82,
+      "boxes_sold_per_day": 1.82,
+      "timestamp": "2026-01-02T17:05:57.689646"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 256.9,
+      "active_listings_count": 134,
+      "boxes_sold_today": 3.14,
+      "boxes_sold_per_day": 3.14,
+      "timestamp": "2026-01-02T17:10:02.764427"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440009": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 112.19,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T15:41:08.608136"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 118.07,
+      "active_listings_count": 25,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T15:45:11.108884"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 115.42,
+      "active_listings_count": 21,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T15:49:09.878302"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 118.93,
+      "active_listings_count": 46,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T15:53:12.864394"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 99.21,
+      "active_listings_count": 34,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T15:56:06.211095"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 118.47,
+      "active_listings_count": 67,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:59:36.167294"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 117.87,
+      "active_listings_count": 68,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:02:14.948404"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 118.94,
+      "active_listings_count": 68,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:05:40.436956"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 119.3,
+      "active_listings_count": 61,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:39:16.051195"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 123.85,
+      "active_listings_count": 59,
+      "boxes_sold_today": 3.29,
+      "boxes_sold_per_day": 3.29,
+      "timestamp": "2026-01-02T16:43:11.166889"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 123.44,
+      "active_listings_count": 66,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:46:46.198239"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 132.71,
+      "active_listings_count": 86,
+      "boxes_sold_today": 1.36,
+      "boxes_sold_per_day": 1.36,
+      "timestamp": "2026-01-02T16:49:39.028283"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 123.87,
+      "active_listings_count": 60,
+      "boxes_sold_today": 1.18,
+      "boxes_sold_per_day": 1.18,
+      "timestamp": "2026-01-02T16:52:18.450086"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 122.88,
+      "active_listings_count": 66,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:58:26.337871"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 122.8,
+      "active_listings_count": 51,
+      "boxes_sold_today": 0.96,
+      "boxes_sold_per_day": 0.96,
+      "timestamp": "2026-01-02T17:01:16.146255"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 122.42,
+      "active_listings_count": 8,
+      "boxes_sold_today": 1.04,
+      "boxes_sold_per_day": 1.04,
+      "timestamp": "2026-01-02T17:05:57.689697"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 192.5,
+      "active_listings_count": 38,
+      "boxes_sold_today": 3.25,
+      "boxes_sold_per_day": 3.25,
+      "timestamp": "2026-01-02T17:10:02.764440"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440013": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 91.99,
+      "active_listings_count": 337,
+      "boxes_sold_today": 3.0,
+      "boxes_sold_per_day": 3.0,
+      "timestamp": "2026-01-02T15:41:08.608139"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 102.0,
+      "active_listings_count": 296,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T15:45:11.108887"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 99.24,
+      "active_listings_count": 206,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:49:09.878304"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 98.7,
+      "active_listings_count": 156,
+      "boxes_sold_today": 2.14,
+      "boxes_sold_per_day": 2.14,
+      "timestamp": "2026-01-02T15:53:12.864400"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 80.63,
+      "active_listings_count": 145,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T15:56:06.211102"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 98.45,
+      "active_listings_count": 131,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:59:36.167297"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 94.82,
+      "active_listings_count": 144,
+      "boxes_sold_today": 1.86,
+      "boxes_sold_per_day": 1.86,
+      "timestamp": "2026-01-02T16:02:14.948407"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 96.21,
+      "active_listings_count": 300,
+      "boxes_sold_today": 2.0,
+      "boxes_sold_per_day": 2.0,
+      "timestamp": "2026-01-02T16:05:40.436959"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 96.15,
+      "active_listings_count": 288,
+      "boxes_sold_today": 1.71,
+      "boxes_sold_per_day": 1.71,
+      "timestamp": "2026-01-02T16:39:16.051198"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 92.8,
+      "active_listings_count": 133,
+      "boxes_sold_today": 3.0,
+      "boxes_sold_per_day": 3.0,
+      "timestamp": "2026-01-02T16:43:11.166892"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 98.28,
+      "active_listings_count": 236,
+      "boxes_sold_today": 2.29,
+      "boxes_sold_per_day": 2.29,
+      "timestamp": "2026-01-02T16:46:46.198242"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 99.66,
+      "active_listings_count": 137,
+      "boxes_sold_today": 1.46,
+      "boxes_sold_per_day": 1.46,
+      "timestamp": "2026-01-02T16:49:39.028286"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 99.64,
+      "active_listings_count": 109,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:52:18.450089"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 97.92,
+      "active_listings_count": 66,
+      "boxes_sold_today": 1.79,
+      "boxes_sold_per_day": 1.79,
+      "timestamp": "2026-01-02T16:58:26.337874"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 96.98,
+      "active_listings_count": 7,
+      "boxes_sold_today": 1.25,
+      "boxes_sold_per_day": 1.25,
+      "timestamp": "2026-01-02T17:01:16.146258"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 102.32,
+      "active_listings_count": 38,
+      "boxes_sold_today": 1.07,
+      "boxes_sold_per_day": 1.07,
+      "timestamp": "2026-01-02T17:05:57.689721"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 154.65,
+      "active_listings_count": 43,
+      "boxes_sold_today": 3.25,
+      "boxes_sold_per_day": 3.25,
+      "timestamp": "2026-01-02T17:10:02.764444"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440004": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 220.76,
+      "active_listings_count": 19,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:41:08.608142"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 220.56,
+      "active_listings_count": 43,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T15:45:11.108890"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 222.68,
+      "active_listings_count": 27,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:49:09.878307"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 213.86,
+      "active_listings_count": 25,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:53:12.864407"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 176.73,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T15:56:06.211107"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 208.59,
+      "active_listings_count": 17,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T15:59:36.167299"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 216.48,
+      "active_listings_count": 12,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T16:02:14.948410"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 224.28,
+      "active_listings_count": 23,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:05:40.436962"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 230.37,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:39:16.051202"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 234.18,
+      "active_listings_count": 25,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:43:11.166895"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 237.21,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T16:46:46.198245"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 239.06,
+      "active_listings_count": 8,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:49:39.028289"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 230.87,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.32,
+      "boxes_sold_per_day": 0.32,
+      "timestamp": "2026-01-02T16:52:18.450092"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 234.02,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:58:26.337877"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 279.25,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0.64,
+      "boxes_sold_per_day": 0.64,
+      "timestamp": "2026-01-02T17:01:16.146261"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 337.07,
+      "active_listings_count": 18,
+      "boxes_sold_today": 0.54,
+      "boxes_sold_per_day": 0.54,
+      "timestamp": "2026-01-02T17:05:57.689732"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 392.02,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.93,
+      "boxes_sold_per_day": 0.93,
+      "timestamp": "2026-01-02T17:10:02.764447"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440005": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 180.64,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T15:41:08.608145"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 190.43,
+      "active_listings_count": 13,
+      "boxes_sold_today": 2.0,
+      "boxes_sold_per_day": 2.0,
+      "timestamp": "2026-01-02T15:45:11.108892"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 192.39,
+      "active_listings_count": 5,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:49:09.878310"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 186.83,
+      "active_listings_count": 2,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T15:53:12.864414"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 154.57,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T15:56:06.211130"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 185.35,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T15:59:36.167302"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 185.18,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:02:14.948413"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 185.08,
+      "active_listings_count": 4,
+      "boxes_sold_today": 0.29,
+      "boxes_sold_per_day": 0.29,
+      "timestamp": "2026-01-02T16:05:40.436965"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 185.07,
+      "active_listings_count": 5,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:39:16.051205"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 185.98,
+      "active_listings_count": 6,
+      "boxes_sold_today": 0.43,
+      "boxes_sold_per_day": 0.43,
+      "timestamp": "2026-01-02T16:43:11.166898"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 188.64,
+      "active_listings_count": 15,
+      "boxes_sold_today": 0.57,
+      "boxes_sold_per_day": 0.57,
+      "timestamp": "2026-01-02T16:46:46.198248"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 192.48,
+      "active_listings_count": 11,
+      "boxes_sold_today": 0.36,
+      "boxes_sold_per_day": 0.36,
+      "timestamp": "2026-01-02T16:49:39.028292"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 196.93,
+      "active_listings_count": 14,
+      "boxes_sold_today": 0.5,
+      "boxes_sold_per_day": 0.5,
+      "timestamp": "2026-01-02T16:52:18.450095"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 215.4,
+      "active_listings_count": 18,
+      "boxes_sold_today": 0.68,
+      "boxes_sold_per_day": 0.68,
+      "timestamp": "2026-01-02T16:58:26.337880"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 247.36,
+      "active_listings_count": 8,
+      "boxes_sold_today": 0.61,
+      "boxes_sold_per_day": 0.61,
+      "timestamp": "2026-01-02T17:01:16.146264"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 242.55,
+      "active_listings_count": 24,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T17:05:57.689740"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 365.23,
+      "active_listings_count": 13,
+      "boxes_sold_today": 0.96,
+      "boxes_sold_per_day": 0.96,
+      "timestamp": "2026-01-02T17:10:02.764450"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440010": [
+    {
+      "date": "2025-04-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 95.54,
+      "active_listings_count": 239,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T15:41:08.608149"
+    },
+    {
+      "date": "2025-05-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 97.62,
+      "active_listings_count": 223,
+      "boxes_sold_today": 1.57,
+      "boxes_sold_per_day": 1.57,
+      "timestamp": "2026-01-02T15:45:11.108895"
+    },
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 96.62,
+      "active_listings_count": 169,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T15:49:09.878312"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 94.67,
+      "active_listings_count": 112,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T15:53:12.864421"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 83.0,
+      "active_listings_count": 166,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T15:56:06.211157"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 102.46,
+      "active_listings_count": 201,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T15:59:36.167305"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 102.51,
+      "active_listings_count": 252,
+      "boxes_sold_today": 1.71,
+      "boxes_sold_per_day": 1.71,
+      "timestamp": "2026-01-02T16:02:14.948416"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 104.23,
+      "active_listings_count": 326,
+      "boxes_sold_today": 1.43,
+      "boxes_sold_per_day": 1.43,
+      "timestamp": "2026-01-02T16:05:40.436968"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 106.08,
+      "active_listings_count": 314,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T16:39:16.051207"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 107.61,
+      "active_listings_count": 296,
+      "boxes_sold_today": 0.86,
+      "boxes_sold_per_day": 0.86,
+      "timestamp": "2026-01-02T16:43:11.166901"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 107.68,
+      "active_listings_count": 279,
+      "boxes_sold_today": 1.14,
+      "boxes_sold_per_day": 1.14,
+      "timestamp": "2026-01-02T16:46:46.198251"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 105.74,
+      "active_listings_count": 249,
+      "boxes_sold_today": 0.82,
+      "boxes_sold_per_day": 0.82,
+      "timestamp": "2026-01-02T16:49:39.028295"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 110.66,
+      "active_listings_count": 232,
+      "boxes_sold_today": 0.82,
+      "boxes_sold_per_day": 0.82,
+      "timestamp": "2026-01-02T16:52:18.450098"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 108.45,
+      "active_listings_count": 252,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T16:58:26.337883"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 100.62,
+      "active_listings_count": 54,
+      "boxes_sold_today": 0.71,
+      "boxes_sold_per_day": 0.71,
+      "timestamp": "2026-01-02T17:01:16.146267"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 109.01,
+      "active_listings_count": 91,
+      "boxes_sold_today": 0.61,
+      "boxes_sold_per_day": 0.61,
+      "timestamp": "2026-01-02T17:05:57.689752"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 153.22,
+      "active_listings_count": 72,
+      "boxes_sold_today": 1.96,
+      "boxes_sold_per_day": 1.96,
+      "timestamp": "2026-01-02T17:10:02.764454"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440014": [
+    {
+      "date": "2025-05-14",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 186.18,
+      "active_listings_count": 260,
+      "boxes_sold_today": 6.57,
+      "boxes_sold_per_day": 6.57,
+      "timestamp": "2026-01-02T15:49:09.878299"
+    },
+    {
+      "date": "2025-05-21",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 182.47,
+      "active_listings_count": 114,
+      "boxes_sold_today": 3.29,
+      "boxes_sold_per_day": 3.29,
+      "timestamp": "2026-01-02T15:53:12.864387"
+    },
+    {
+      "date": "2025-05-28",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 152.78,
+      "active_listings_count": 95,
+      "boxes_sold_today": 2.71,
+      "boxes_sold_per_day": 2.71,
+      "timestamp": "2026-01-02T15:56:06.211086"
+    },
+    {
+      "date": "2025-06-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 182.01,
+      "active_listings_count": 99,
+      "boxes_sold_today": 2.0,
+      "boxes_sold_per_day": 2.0,
+      "timestamp": "2026-01-02T15:59:36.167291"
+    },
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 180.03,
+      "active_listings_count": 113,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T16:02:14.948402"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 171.4,
+      "active_listings_count": 116,
+      "boxes_sold_today": 1.29,
+      "boxes_sold_per_day": 1.29,
+      "timestamp": "2026-01-02T16:05:40.436953"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 176.29,
+      "active_listings_count": 135,
+      "boxes_sold_today": 1.57,
+      "boxes_sold_per_day": 1.57,
+      "timestamp": "2026-01-02T16:39:16.051191"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 171.39,
+      "active_listings_count": 106,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T16:43:11.166885"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 174.88,
+      "active_listings_count": 107,
+      "boxes_sold_today": 2.43,
+      "boxes_sold_per_day": 2.43,
+      "timestamp": "2026-01-02T16:46:46.198236"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 173.33,
+      "active_listings_count": 60,
+      "boxes_sold_today": 0.82,
+      "boxes_sold_per_day": 0.82,
+      "timestamp": "2026-01-02T16:49:39.028279"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 192.58,
+      "active_listings_count": 75,
+      "boxes_sold_today": 0.93,
+      "boxes_sold_per_day": 0.93,
+      "timestamp": "2026-01-02T16:52:18.450083"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 214.67,
+      "active_listings_count": 69,
+      "boxes_sold_today": 1.04,
+      "boxes_sold_per_day": 1.04,
+      "timestamp": "2026-01-02T16:58:26.337867"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 232.77,
+      "active_listings_count": 36,
+      "boxes_sold_today": 0.64,
+      "boxes_sold_per_day": 0.64,
+      "timestamp": "2026-01-02T17:01:16.146252"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 260.52,
+      "active_listings_count": 0,
+      "boxes_sold_today": 1.0,
+      "boxes_sold_per_day": 1.0,
+      "timestamp": "2026-01-02T17:05:57.689680"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 445.0,
+      "active_listings_count": 6,
+      "boxes_sold_today": 1.46,
+      "boxes_sold_per_day": 1.46,
+      "timestamp": "2026-01-02T17:10:02.764437"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440015": [
+    {
+      "date": "2025-06-11",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 134.94,
+      "active_listings_count": 161,
+      "boxes_sold_today": 4.86,
+      "boxes_sold_per_day": 4.86,
+      "timestamp": "2026-01-02T16:02:14.948383"
+    },
+    {
+      "date": "2025-06-18",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 126.28,
+      "active_listings_count": 500,
+      "boxes_sold_today": 3.57,
+      "boxes_sold_per_day": 3.57,
+      "timestamp": "2026-01-02T16:05:40.436935"
+    },
+    {
+      "date": "2025-06-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 125.4,
+      "active_listings_count": 414,
+      "boxes_sold_today": 3.0,
+      "boxes_sold_per_day": 3.0,
+      "timestamp": "2026-01-02T16:39:16.051148"
+    },
+    {
+      "date": "2025-07-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 122.08,
+      "active_listings_count": 170,
+      "boxes_sold_today": 2.71,
+      "boxes_sold_per_day": 2.71,
+      "timestamp": "2026-01-02T16:43:11.166866"
+    },
+    {
+      "date": "2025-07-09",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 135.66,
+      "active_listings_count": 196,
+      "boxes_sold_today": 3.71,
+      "boxes_sold_per_day": 3.71,
+      "timestamp": "2026-01-02T16:46:46.198217"
+    },
+    {
+      "date": "2025-08-07",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 132.37,
+      "active_listings_count": 60,
+      "boxes_sold_today": 2.71,
+      "boxes_sold_per_day": 2.71,
+      "timestamp": "2026-01-02T16:49:39.028259"
+    },
+    {
+      "date": "2025-09-04",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 134.83,
+      "active_listings_count": 92,
+      "boxes_sold_today": 1.18,
+      "boxes_sold_per_day": 1.18,
+      "timestamp": "2026-01-02T16:52:18.450065"
+    },
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 153.93,
+      "active_listings_count": 449,
+      "boxes_sold_today": 1.36,
+      "boxes_sold_per_day": 1.36,
+      "timestamp": "2026-01-02T16:58:26.337848"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 139.1,
+      "active_listings_count": 90,
+      "boxes_sold_today": 1.64,
+      "boxes_sold_per_day": 1.64,
+      "timestamp": "2026-01-02T17:01:16.146229"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 167.07,
+      "active_listings_count": 104,
+      "boxes_sold_today": 2.89,
+      "boxes_sold_per_day": 2.89,
+      "timestamp": "2026-01-02T17:05:57.689603"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 244.32,
+      "active_listings_count": 16,
+      "boxes_sold_today": 4.54,
+      "boxes_sold_per_day": 4.54,
+      "timestamp": "2026-01-02T17:10:02.764414"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440016": [
+    {
+      "date": "2025-10-02",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 96.07,
+      "active_listings_count": 261,
+      "boxes_sold_today": 1.46,
+      "boxes_sold_per_day": 1.46,
+      "timestamp": "2026-01-02T16:58:26.337865"
+    },
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 106.65,
+      "active_listings_count": 430,
+      "boxes_sold_today": 3.04,
+      "boxes_sold_per_day": 3.04,
+      "timestamp": "2026-01-02T17:01:16.146249"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 104.22,
+      "active_listings_count": 217,
+      "boxes_sold_today": 1.5,
+      "boxes_sold_per_day": 1.5,
+      "timestamp": "2026-01-02T17:05:57.689667"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 145.27,
+      "active_listings_count": 46,
+      "boxes_sold_today": 4.57,
+      "boxes_sold_per_day": 4.57,
+      "timestamp": "2026-01-02T17:10:02.764434"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440017": [
+    {
+      "date": "2025-10-30",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 163.39,
+      "active_listings_count": 217,
+      "boxes_sold_today": 3.61,
+      "boxes_sold_per_day": 3.61,
+      "timestamp": "2026-01-02T17:01:16.146246"
+    },
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 176.87,
+      "active_listings_count": 79,
+      "boxes_sold_today": 2.14,
+      "boxes_sold_per_day": 2.14,
+      "timestamp": "2026-01-02T17:05:57.689660"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 245.8,
+      "active_listings_count": 14,
+      "boxes_sold_today": 2.71,
+      "boxes_sold_per_day": 2.71,
+      "timestamp": "2026-01-02T17:10:02.764431"
+    }
+  ],
+  "550e8400-e29b-41d4-a716-446655440018": [
+    {
+      "date": "2025-11-27",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 182.19,
+      "active_listings_count": 87,
+      "boxes_sold_today": 8.39,
+      "boxes_sold_per_day": 8.39,
+      "timestamp": "2026-01-02T17:05:57.689497"
+    },
+    {
+      "date": "2025-12-25",
+      "source": "spreadsheet_import",
+      "data_type": "combined",
+      "floor_price_usd": 362.52,
+      "active_listings_count": 22,
+      "boxes_sold_today": 19.32,
+      "boxes_sold_per_day": 19.32,
+      "timestamp": "2026-01-02T17:10:02.764375"
+    }
+  ]
+}

@@ -56,16 +56,13 @@ export function useBoxDetail(id: string) {
 
     return () => {
       cancelled = true;
-      if (abortController) {
-        abortController.abort();
-      }
     };
   }, [id]);
 
   return { box, isLoading, error };
 }
 
-export function useBoxTimeSeries(id: string, metric: string = 'floor_price', days: number = 30) {
+export function useBoxTimeSeries(id: string, metric: string = 'floor_price', days: number = 30, onePerMonth: boolean = false) {
   const [data, setData] = useState<TimeSeriesDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -78,7 +75,7 @@ export function useBoxTimeSeries(id: string, metric: string = 'floor_price', day
       setError(null);
 
       try {
-        const timeSeriesData = await getBoxTimeSeries(id, metric, days);
+        const timeSeriesData = await getBoxTimeSeries(id, metric, days, onePerMonth);
         if (!cancelled) {
           setData(timeSeriesData);
         }
@@ -100,7 +97,7 @@ export function useBoxTimeSeries(id: string, metric: string = 'floor_price', day
     return () => {
       cancelled = true;
     };
-  }, [id, metric, days]);
+  }, [id, metric, days, onePerMonth]);
 
   return { data, isLoading, error };
 }

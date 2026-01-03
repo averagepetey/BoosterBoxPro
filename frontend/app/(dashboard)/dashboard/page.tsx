@@ -216,14 +216,14 @@ export default function DashboardPage() {
                 borderTopRightRadius: '1.5rem'
               }}
             >
-              <div className="col-span-1 text-center font-medium">
+              <div className="col-span-1 text-left font-medium">
                 #
               </div>
-              <div className="col-span-3 text-center font-medium">
+              <div className="col-span-4 text-center font-medium">
                 Collection
               </div>
               <div 
-                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('floor_price_usd')}
               >
                 Floor
@@ -232,16 +232,16 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('floor_price_1d_change_pct')}
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort('floor_price_30d_change_pct')}
               >
-                1d %
-                {sortBy === 'floor_price_1d_change_pct' && (
+                30d %
+                {sortBy === 'floor_price_30d_change_pct' && (
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
               <div 
-                className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('unified_volume_7d_ema')}
               >
                 Volume
@@ -250,7 +250,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('units_sold_count')}
               >
                 Sales
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('top_10_value_usd')}
               >
                 Top 10 Value
@@ -270,6 +270,7 @@ export default function DashboardPage() {
               <div className="col-span-1 text-center font-medium">
                 1d
               </div>
+              <div className="col-span-1"></div>
             </div>
 
             {!isLoading && !error && (
