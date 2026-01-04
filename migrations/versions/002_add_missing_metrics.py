@@ -17,17 +17,25 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Check if columns already exist (in case they were added manually)
+    connection = op.get_bind()
+    inspector = sa.inspect(connection)
+    columns = [col['name'] for col in inspector.get_columns('box_metrics_unified')]
+    
     # Add unified_volume_30d_sma - 30-day Simple Moving Average of volume
-    op.add_column('box_metrics_unified', 
-                  sa.Column('unified_volume_30d_sma', sa.Numeric(12, 2), nullable=True))
+    if 'unified_volume_30d_sma' not in columns:
+        op.add_column('box_metrics_unified', 
+                      sa.Column('unified_volume_30d_sma', sa.Numeric(12, 2), nullable=True))
     
     # Add volume_mom_change_pct - Month-over-month volume change percentage
-    op.add_column('box_metrics_unified',
-                  sa.Column('volume_mom_change_pct', sa.Numeric(6, 2), nullable=True))
+    if 'volume_mom_change_pct' not in columns:
+        op.add_column('box_metrics_unified',
+                      sa.Column('volume_mom_change_pct', sa.Numeric(6, 2), nullable=True))
     
     # Add avg_boxes_added_per_day - 30-day average of boxes added per day (capped at 30d avg)
-    op.add_column('box_metrics_unified',
-                  sa.Column('avg_boxes_added_per_day', sa.Numeric(8, 2), nullable=True))
+    if 'avg_boxes_added_per_day' not in columns:
+        op.add_column('box_metrics_unified',
+                      sa.Column('avg_boxes_added_per_day', sa.Numeric(8, 2), nullable=True))
 
 
 def downgrade() -> None:

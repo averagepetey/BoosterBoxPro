@@ -10,10 +10,9 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
 import { use } from 'react';
 import Link from 'next/link';
-import { useBoxDetail, useBoxTimeSeries, useBoxRankHistory } from '@/hooks/useBoxDetail';
+import { useBoxDetail, useBoxTimeSeries } from '@/hooks/useBoxDetail';
 import { useState } from 'react';
 import { PriceChart } from '@/components/charts/PriceChart';
-import { RankHistoryChart } from '@/components/charts/RankHistoryChart';
 import { AdvancedMetricsTable } from '@/components/AdvancedMetricsTable';
 
 export default function BoxDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,10 +31,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     'floor_price',
     365,  // Always fetch all available data for the table
     true  // Filter to one entry per month
-  );
-  const { data: rankHistory, isLoading: isLoadingRankHistory } = useBoxRankHistory(
-    id, 
-    timeRange === 'all' ? 365 : parseInt(timeRange)
   );
 
   const formatCurrency = (value: number | null | undefined): string => {
@@ -686,52 +681,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Rank History Chart Section */}
-          <div 
-            className="rounded-3xl p-6 mb-6"
-            style={{
-              background: '#141414',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
-            }}
-          >
-            <h2 className="text-xl font-bold text-white mb-4">Rank History</h2>
-            
-            {/* Time Range Buttons */}
-            <div className="flex gap-2 mb-4">
-              {['7d', '30d', '90d', '1y', 'all'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range as any)}
-                  className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
-                    timeRange === range
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10'
-                  }`}
-                >
-                  {range.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            
-            {isLoadingRankHistory ? (
-              <div className="h-48 flex items-center justify-center border border-white/10 rounded-lg bg-white/5">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/30"></div>
-              </div>
-            ) : rankHistory && rankHistory.length > 0 ? (
-              <div className="border border-white/10 rounded-lg bg-white/5 p-4 h-64">
-                <RankHistoryChart data={rankHistory.map((d: any) => ({
-                  date: d.date,
-                  rank: d.rank,
-                }))} height={240} />
-              </div>
-            ) : (
-              <div className="h-48 flex items-center justify-center border border-white/10 rounded-lg bg-white/5">
-                <p className="text-white/50 text-sm">No rank history available</p>
-              </div>
-            )}
           </div>
 
           {/* Advanced Metrics Table Section */}

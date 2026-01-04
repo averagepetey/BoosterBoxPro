@@ -64,6 +64,9 @@ export function RankHistoryChart({ data, height = 200 }: RankHistoryChartProps) 
   const minRank = Math.min(...ranks);
   const maxRank = Math.max(...ranks);
   const rankRange = maxRank - minRank || 1;
+  
+  // Get unique rank values for Y-axis labels (avoid duplicates)
+  const uniqueRanks = Array.from(new Set(ranks)).sort((a, b) => a - b);
 
   // Create points for the line (inverted so rank 1 is at top)
   const points = data.map((d, i) => {
@@ -94,16 +97,15 @@ export function RankHistoryChart({ data, height = 200 }: RankHistoryChartProps) 
         className="w-full h-full"
         style={{ minWidth: 0 }}
       >
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const y = padding.top + ratio * innerHeight;
-          const rank = Math.round(minRank + ratio * rankRange);
+        {/* Grid lines - use unique rank values to avoid duplicate labels */}
+        {uniqueRanks.map((rank) => {
+          const y = padding.top + ((rank - minRank) / rankRange) * innerHeight;
           return (
-            <g key={ratio}>
+            <g key={rank}>
               <line
                 x1={padding.left}
-                y1={y}
                 x2={padding.left + innerWidth}
+                y1={y}
                 y2={y}
                 stroke="rgba(255, 255, 255, 0.05)"
                 strokeWidth="1"
@@ -182,4 +184,3 @@ export function RankHistoryChart({ data, height = 200 }: RankHistoryChartProps) 
     </div>
   );
 }
-
