@@ -19,7 +19,7 @@ export function LeaderboardTable({
   boxes,
   isLoading = false,
   onSort,
-  currentSort = 'unified_volume_7d_ema',
+  currentSort = 'unified_volume_usd',
 }: LeaderboardTableProps) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -127,7 +127,7 @@ export function LeaderboardTable({
               </div>
 
               {/* Collection */}
-              <div className="col-span-4 flex items-center gap-2 sm:gap-4 min-h-[56px] sm:min-h-[80px]">
+              <div className="col-span-3 flex items-center gap-2 sm:gap-4 min-h-[56px] sm:min-h-[80px]">
                 <div className="flex-shrink-0 w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center">
                   {box.image_url ? (
                     <img
@@ -196,10 +196,12 @@ export function LeaderboardTable({
                 </div>
               </div>
 
-              {/* Volume */}
-              <div className="col-span-1 text-right">
+              {/* 30d Volume */}
+              <div className="col-span-2 text-right">
                 <div className="text-sm font-semibold text-foreground financial-number">
-                  {formatCurrency(box.metrics.unified_volume_7d_ema)}
+                  {box.metrics.unified_volume_usd !== null && box.metrics.unified_volume_usd !== undefined
+                    ? formatCurrency(box.metrics.unified_volume_usd)
+                    : '--'}
                 </div>
               </div>
 
@@ -208,12 +210,14 @@ export function LeaderboardTable({
                 <div className="text-sm text-foreground financial-number">
                   {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
                     ? formatNumber(box.metrics.boxes_sold_30d_avg)
+                    : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
+                    ? formatNumber(box.metrics.boxes_sold_per_day)
                     : formatNumber(box.metrics.units_sold_count)}
                 </div>
               </div>
 
               {/* Top 10 Card Value */}
-              <div className="col-span-1 text-right">
+              <div className="col-span-2 text-right">
                 <div className="text-sm font-semibold text-foreground financial-number">
                   {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
                     ? formatCurrency(box.metrics.top_10_value_usd)
@@ -237,9 +241,6 @@ export function LeaderboardTable({
                   </svg>
                 </div>
               </div>
-
-              {/* Empty column for alignment */}
-              <div className="col-span-1"></div>
             </div>
             </div>
           </div>

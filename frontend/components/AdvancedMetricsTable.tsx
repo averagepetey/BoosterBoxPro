@@ -11,8 +11,8 @@ interface MetricRow {
   date: string;
   floor_price_usd?: number | null;
   floor_price_1d_change_pct?: number | null;
-  unified_volume_usd?: number | null;
   unified_volume_7d_ema?: number | null;
+  unified_volume_usd?: number | null;
   active_listings_count?: number | null;
   visible_market_cap_usd?: number | null;
   units_sold_count?: number | null;
@@ -88,7 +88,7 @@ export function AdvancedMetricsTable({ data, isLoading = false }: AdvancedMetric
 
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
   const formatNumber = (value: number | null | undefined): string => {
@@ -153,6 +153,12 @@ export function AdvancedMetricsTable({ data, isLoading = false }: AdvancedMetric
             </th>
             <th
               className="text-right py-3 px-4 text-white/70 font-medium cursor-pointer hover:text-white transition-colors"
+              onClick={() => handleSort('unified_volume_usd')}
+            >
+              30d Volume <SortIcon column="unified_volume_usd" />
+            </th>
+            <th
+              className="text-right py-3 px-4 text-white/70 font-medium cursor-pointer hover:text-white transition-colors"
               onClick={() => handleSort('active_listings_count')}
             >
               Listings <SortIcon column="active_listings_count" />
@@ -189,6 +195,7 @@ export function AdvancedMetricsTable({ data, isLoading = false }: AdvancedMetric
                 {formatPercentage(row.floor_price_1d_change_pct)}
               </td>
               <td className="py-3 px-4 text-right text-white/90">{formatCurrency(row.unified_volume_7d_ema)}</td>
+              <td className="py-3 px-4 text-right text-white/90">{formatCurrency(row.unified_volume_usd)}</td>
               <td className="py-3 px-4 text-right text-white/90">{formatNumber(row.active_listings_count)}</td>
               <td className="py-3 px-4 text-right text-white/90">{formatNumber(row.units_sold_count)}</td>
               <td className="py-3 px-4 text-right text-white/90">
