@@ -115,11 +115,14 @@ export function useBoxRankHistory(id: string, days: number = 30) {
       setError(null);
 
       try {
+        console.log('useBoxRankHistory: Fetching rank history for ID:', id, 'days:', days);
         const rankData = await getBoxRankHistory(id, days);
+        console.log('useBoxRankHistory: Rank history received:', rankData);
         if (!cancelled) {
           setData(rankData);
         }
       } catch (err) {
+        console.error('useBoxRankHistory: Error fetching rank history:', err);
         if (!cancelled) {
           setError(err instanceof Error ? err : new Error('Failed to load rank history'));
         }

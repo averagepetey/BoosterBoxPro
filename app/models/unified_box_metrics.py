@@ -98,6 +98,10 @@ class UnifiedBoxMetrics(Base):
     # Expected days to sell (NEW metric)
     expected_days_to_sell: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
     
+    # Ranking fields
+    current_rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    previous_rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP,

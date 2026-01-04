@@ -353,53 +353,14 @@ async def get_box_time_series(
         return {"data": []}
 
 
-# Historical rank history endpoint
-@app.get("/booster-boxes/{box_id}/rank-history")
-async def get_box_rank_history(
-    box_id: str,
-    days: int = 30
-):
-    """
-    Get historical rank history for a box based on monthly rankings calculated from historical data
-    """
-    import json
-    from pathlib import Path
-    
-    try:
-        from app.services.historical_data import get_box_rank_history
-        
-        # Handle numeric box_id (rank) by finding the actual box ID
-        if box_id.isdigit():
-            # Load leaderboard to find box by rank
-            data_file = Path(__file__).parent / "data" / "leaderboard.json"
-            leaderboard_file = Path(__file__).parent / "mock_data" / "leaderboard.json"
-            
-            leaderboard_data = None
-            if data_file.exists():
-                with open(data_file, "r") as f:
-                    leaderboard_data = json.load(f)
-            elif leaderboard_file.exists():
-                with open(leaderboard_file, "r") as f:
-                    leaderboard_data = json.load(f)
-            
-            if leaderboard_data:
-                boxes = leaderboard_data.get("data", [])
-                rank = int(box_id)
-                box = next((b for b in boxes if b.get("rank") == rank), None)
-                if box:
-                    box_id = box.get("id")
-        
-        # Get historical rank data
-        rank_history = get_box_rank_history(box_id, days=days if days > 0 else None)
-        
-        return {"data": rank_history}
-    
-    except Exception as e:
-        print(f"Error fetching rank history: {e}")
-        import traceback
-        traceback.print_exc()
-        # Fallback to empty data
-        return {"data": []}
+# Rank history endpoint - DISABLED for now
+# @app.get("/booster-boxes/{box_id}/rank-history")
+# async def get_box_rank_history(
+#     box_id: str,
+#     days: int = None
+# ):
+#     """Rank history endpoint disabled"""
+#     return {"data": []}
 
 
 if __name__ == "__main__":
