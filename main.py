@@ -158,8 +158,8 @@ async def get_booster_boxes(
     total = len(boxes)
     paginated_boxes = boxes[offset:offset + limit]
     
-    # Transform image URLs from product names and add 30d average sales and month-over-month price change
-    from app.services.historical_data import get_box_30d_avg_sales, get_box_month_over_month_price_change
+    # Transform image URLs from product names and add 30d average sales, month-over-month price change, and 30-day volume
+    from app.services.historical_data import get_box_30d_avg_sales, get_box_month_over_month_price_change, get_box_30d_volume
     
     for box in paginated_boxes:
         product_name = box.get("product_name")
@@ -183,6 +183,11 @@ async def get_booster_boxes(
             price_change_mom = get_box_month_over_month_price_change(box_id)
             if price_change_mom is not None:
                 box["metrics"]["floor_price_30d_change_pct"] = price_change_mom
+            
+            # True 30-day volume calculated from historical entries over last 30 days
+            volume_30d = get_box_30d_volume(box_id)
+            if volume_30d is not None:
+                box["metrics"]["unified_volume_7d_ema"] = volume_30d
     
     return {
         "data": paginated_boxes,

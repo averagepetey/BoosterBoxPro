@@ -42,6 +42,22 @@ The AI will extract any visible data from the screenshot:
 - ✅ Boxes added today
 - ✅ Estimated total supply
 
+## Calculation Rules
+
+When processing screenshot data, follow these rules:
+
+1. **Floor Price Calculation**: 
+   - Calculate **price + shipping** as the total floor price
+   - The floor price should reflect the total cost to purchase (item price + shipping cost)
+
+2. **Platform Equality**:
+   - Treat **eBay and TCGPlayer as equal** sources
+   - Do not weight one platform higher than the other when calculating floor prices
+
+3. **Sales Filtering**:
+   - **Do not count super low sales** when calculating metrics
+   - Filter out anomalously low sales that don't reflect true market value
+
 ## Duplicate Detection
 
 The system automatically checks if data already exists:
