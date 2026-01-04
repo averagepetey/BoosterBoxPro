@@ -47,22 +47,51 @@ class MetricsCalculator:
         floor_prices = [d.get("floor_price_usd") for d in sorted_data if d.get("floor_price_usd") is not None]
         if floor_prices:
             metrics["floor_price_usd"] = floor_prices[-1]  # Current
+            # Calculate 1-day change
             if len(floor_prices) > 1:
                 metrics["floor_price_1d_change_pct"] = self._calculate_percentage_change(
                     floor_prices[-2], floor_prices[-1]
                 )
             else:
-                metrics["floor_price_1d_change_pct"] = 0.0
+                metrics["floor_price_1d_change_pct"] = None
+            
+            # Calculate 30-day change
+            if len(floor_prices) >= 30:
+                metrics["floor_price_30d_change_pct"] = self._calculate_percentage_change(
+                    floor_prices[-30], floor_prices[-1]
+                )
+            else:
+                metrics["floor_price_30d_change_pct"] = None
         
         # Daily volume - use provided or calculate from sales
-        volumes = [d.get("daily_volume_usd") for d in sorted_data if d.get("daily_volume_usd") is not None]
+        volumes = [d.get("daily_volume_usd") or d.get("unified_volume_usd") for d in sorted_data]
+        volumes = [v for v in volumes if v is not None]
         if volumes:
-            metrics["daily_volume_usd"] = volumes[-1]
-            # Calculate 7-day EMA for volume
+            metrics["unified_volume_usd"] = volumes[-1]  # Current day volume
+            metrics["daily_volume_usd"] = volumes[-1]  # Alias for compatibility
+            
+            # Calculate 7-day EMA for volume (PRIMARY RANKING METRIC)
             if len(volumes) >= 7:
                 metrics["unified_volume_7d_ema"] = self._calculate_ema(volumes[-7:], alpha=0.3)
             else:
                 metrics["unified_volume_7d_ema"] = statistics.mean(volumes) if volumes else None
+            
+            # Calculate 30-day SMA for volume
+            if len(volumes) >= 30:
+                metrics["unified_volume_30d_sma"] = statistics.mean(volumes[-30:])
+            else:
+                metrics["unified_volume_30d_sma"] = statistics.mean(volumes) if volumes else None
+            
+            # Calculate month-over-month volume change
+            if len(volumes) >= 60:  # Need at least 2 months of data
+                current_month_avg = statistics.mean(volumes[-30:])
+                previous_month_avg = statistics.mean(volumes[-60:-30])
+                if previous_month_avg > 0:
+                    metrics["volume_mom_change_pct"] = ((current_month_avg - previous_month_avg) / previous_month_avg) * 100
+                else:
+                    metrics["volume_mom_change_pct"] = None
+            else:
+                metrics["volume_mom_change_pct"] = None
         
         # Units sold
         units_sold = [d.get("boxes_sold_today") or d.get("units_sold_count") for d in sorted_data]
@@ -81,7 +110,11 @@ class MetricsCalculator:
         boxes_added = [d.get("boxes_added_today") for d in sorted_data if d.get("boxes_added_today") is not None]
         if boxes_added:
             metrics["boxes_added_today"] = boxes_added[-1]
-            metrics["avg_boxes_added_per_day"] = statistics.mean(boxes_added[-7:]) if len(boxes_added) >= 7 else statistics.mean(boxes_added) if boxes_added else None
+            # Calculate 30-day average (capped at 30-day average)
+            if len(boxes_added) >= 30:
+                metrics["avg_boxes_added_per_day"] = statistics.mean(boxes_added[-30:])
+            else:
+                metrics["avg_boxes_added_per_day"] = statistics.mean(boxes_added) if boxes_added else None
         
         # Listed percentage
         if metrics.get("active_listings_count") is not None and today_data.get("estimated_total_supply"):
@@ -109,11 +142,13 @@ class MetricsCalculator:
             else:
                 metrics["liquidity_score"] = 0.0
         
-        # Days to 20% increase (simplified)
-        if metrics.get("floor_price_1d_change_pct") and metrics["floor_price_1d_change_pct"] > 0:
-            metrics["days_to_20pct_increase"] = 20.0 / metrics["floor_price_1d_change_pct"]
-        else:
-            metrics["days_to_20pct_increase"] = None
+        # Days to 20% increase - Calculate using T₊ / net_burn_rate
+        metrics["days_to_20pct_increase"] = self._calculate_days_to_20pct_increase(
+            metrics.get("floor_price_usd"),
+            price_ladder_data=today_data.get("price_ladder"),  # Individual listings with prices/quantities
+            boxes_sold_30d_avg=metrics.get("boxes_sold_30d_avg"),
+            avg_boxes_added_per_day=metrics.get("avg_boxes_added_per_day")
+        )
         
         # Expected days to sell
         if metrics.get("active_listings_count") and metrics.get("boxes_sold_per_day"):
@@ -250,6 +285,82 @@ class MetricsCalculator:
             return abs(existing - new) > numeric_tolerance
         
         return existing != new
+    
+    def _calculate_days_to_20pct_increase(
+        self,
+        floor_price_usd: Optional[float],
+        price_ladder_data: Optional[List[Dict[str, Any]]],
+        boxes_sold_30d_avg: Optional[float],
+        avg_boxes_added_per_day: Optional[float]
+    ) -> Optional[float]:
+        """
+        Calculate days to 20% price increase using T₊ / net_burn_rate formula
+        
+        Formula:
+        P₊ = floor_price_usd × 1.2
+        T₊ = SUM(quantities of listings where price < P₊)
+        net_burn_rate = boxes_sold_30d_avg - avg_boxes_added_per_day
+        days_to_20pct_increase = T₊ / net_burn_rate
+        
+        Args:
+            floor_price_usd: Current floor price
+            price_ladder_data: List of listings with 'price' and 'quantity' keys
+            boxes_sold_30d_avg: Average boxes sold per day (30-day average)
+            avg_boxes_added_per_day: Average boxes added per day (30-day average)
+        
+        Returns:
+            Days to 20% increase, or None if cannot be calculated
+        """
+        # Check if we have required data
+        if not floor_price_usd or floor_price_usd <= 0:
+            return None
+        
+        if boxes_sold_30d_avg is None:
+            return None
+        
+        if avg_boxes_added_per_day is None:
+            avg_boxes_added_per_day = 0.0
+        
+        # Calculate target price (P₊)
+        target_price = floor_price_usd * 1.2
+        
+        # Calculate T₊ (inventory below +20% tier)
+        # If price_ladder_data is available, use it
+        if price_ladder_data and isinstance(price_ladder_data, list):
+            inventory_to_clear = 0
+            for listing in price_ladder_data:
+                listing_price = float(listing.get("price", 0))
+                listing_quantity = int(listing.get("quantity", 0))
+                if listing_price < target_price:
+                    inventory_to_clear += listing_quantity
+        else:
+            # Price ladder data not available - cannot calculate T₊
+            return None
+        
+        if inventory_to_clear <= 0:
+            # No inventory below +20% tier
+            return None
+        
+        # Calculate net burn rate
+        net_burn_rate = boxes_sold_30d_avg - avg_boxes_added_per_day
+        
+        # Check guardrails
+        if net_burn_rate <= 0:
+            # Supply not tightening
+            return None
+        
+        if net_burn_rate < 0.05:
+            # Too slow to be meaningful
+            return None
+        
+        # Calculate days
+        days = inventory_to_clear / net_burn_rate
+        
+        # Clamp maximum at 180 days
+        if days > 180:
+            return 180.0
+        
+        return days
 
 
 # Global instance

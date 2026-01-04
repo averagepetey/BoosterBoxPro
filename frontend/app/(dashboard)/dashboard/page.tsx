@@ -244,7 +244,7 @@ export default function DashboardPage() {
                 className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('unified_volume_7d_ema')}
               >
-                Volume
+                30d Volume
                 {sortBy === 'unified_volume_7d_ema' && (
                   <span className="ml-1 text-[10px] font-bold">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}

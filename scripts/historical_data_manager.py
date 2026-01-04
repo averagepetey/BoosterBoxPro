@@ -59,7 +59,9 @@ class HistoricalDataManager:
                 - boxes_added_today: int or None
                 - visible_market_cap_usd: float or None
                 - estimated_total_supply: int or None
-                - raw_sales_data: List of individual sales (optional)
+                - price_ladder: List of {price, quantity} dicts for T₊ calculation (optional)
+                - raw_listings: List of individual listings (optional)
+                - raw_sales: List of individual sales (optional)
                 - screenshot_metadata: Dict with extraction info (optional)
         """
         all_data = self.load_historical_data()
