@@ -21,10 +21,179 @@ def load_historical_entries() -> Dict[str, List[Dict[str, Any]]]:
         return json.load(f)
 
 
+# Mapping of database UUIDs to old leaderboard UUIDs
+# This allows merging historical data that was saved under different IDs
+DB_TO_LEADERBOARD_UUID_MAP = {
+    # Blue/White variants
+    "860ffe3f-9286-42a9-ad4e-d079a6add6f4": "550e8400-e29b-41d4-a716-446655440001",  # OP-01 Blue
+    "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": "550e8400-e29b-41d4-a716-446655440002",  # OP-01 White
+    # Main sets
+    "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": "550e8400-e29b-41d4-a716-446655440003",  # OP-02
+    "d3929fc6-6afa-468a-b7a1-ccc0f392131a": "550e8400-e29b-41d4-a716-446655440004",  # OP-03
+    "526c28b7-bc13-449b-a521-e63bdd81811a": "550e8400-e29b-41d4-a716-446655440005",  # OP-04
+    "6ea1659d-7b86-46c5-8fb2-0596262b8e68": "550e8400-e29b-41d4-a716-446655440006",  # OP-05
+    "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": "550e8400-e29b-41d4-a716-446655440007",  # OP-06
+    "9bfebc47-4a92-44b3-b157-8c53d6a6a064": "550e8400-e29b-41d4-a716-446655440009",  # OP-07
+    "d0faf871-a930-4c80-a981-9df8741c90a9": "550e8400-e29b-41d4-a716-446655440010",  # OP-08
+    "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": "550e8400-e29b-41d4-a716-446655440012",  # OP-09
+    "3429708c-43c3-4ed8-8be3-706db8b062bd": "550e8400-e29b-41d4-a716-446655440013",  # OP-10
+    "46039dfc-a980-4bbd-aada-8cc1e124b44b": "550e8400-e29b-41d4-a716-446655440015",  # OP-11
+    "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": "550e8400-e29b-41d4-a716-446655440016",  # OP-12
+    "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": "550e8400-e29b-41d4-a716-446655440018",  # OP-13
+    # Extra boosters
+    "3b17b708-b35b-4008-971e-240ade7afc9c": "550e8400-e29b-41d4-a716-446655440008",  # EB-01
+    "7509a855-f6da-445e-b445-130824d81d04": "550e8400-e29b-41d4-a716-446655440014",  # EB-02
+    # Premium boosters
+    "743bf253-98ca-49d5-93fe-a3eaef9f72c1": "550e8400-e29b-41d4-a716-446655440011",  # PRB-01
+    "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": "550e8400-e29b-41d4-a716-446655440017",  # PRB-02
+}
+
+# Reverse mapping
+LEADERBOARD_TO_DB_UUID_MAP = {v: k for k, v in DB_TO_LEADERBOARD_UUID_MAP.items()}
+
+
+def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Merge multiple entries for the same date into a single consolidated entry.
+    Sums up sales data and takes the best available values for other metrics.
+    """
+    from collections import defaultdict
+    
+    # Group entries by date
+    by_date = defaultdict(list)
+    for entry in entries:
+        date_str = entry.get('date', '')
+        if date_str:
+            by_date[date_str].append(entry)
+    
+    # Merge entries for each date
+    merged = []
+    for date_str in sorted(by_date.keys()):
+        date_entries = by_date[date_str]
+        
+        if len(date_entries) == 1:
+            merged.append(date_entries[0])
+            continue
+        
+        # Merge multiple entries for the same date
+        base = date_entries[0].copy()
+        
+        # Sum up sales data
+        total_boxes_sold = 0
+        total_listings = 0
+        all_sales = []
+        all_listings = []
+        
+        for entry in date_entries:
+            # Collect raw sales and listings
+            if entry.get('raw_sales'):
+                all_sales.extend(entry.get('raw_sales', []))
+            if entry.get('raw_listings'):
+                all_listings.extend(entry.get('raw_listings', []))
+            
+            # Sum boxes sold from the field (as fallback)
+            boxes_sold = entry.get('boxes_sold_today') or entry.get('boxes_sold_per_day') or 0
+            total_boxes_sold += boxes_sold
+            
+            # Take the max listings count
+            entry_listings = entry.get('active_listings_count') or 0
+            if entry_listings > total_listings:
+                total_listings = entry_listings
+            
+            # Take the floor price from entry with listings (current market price)
+            # If no listings, use the lowest price available
+            entry_listings_count = entry.get('active_listings_count', 0) or 0
+            entry_has_listings = entry_listings_count > 0 or entry.get('raw_listings')
+            
+            if entry.get('floor_price_usd') and entry['floor_price_usd'] > 0:
+                if entry_has_listings:
+                    # Prioritize floor price from entries with listings (current market)
+                    base['floor_price_usd'] = entry['floor_price_usd']
+                elif not base.get('floor_price_usd') or entry['floor_price_usd'] < base['floor_price_usd']:
+                    # If no listings in any entry, use lowest price
+                    base['floor_price_usd'] = entry['floor_price_usd']
+            
+            # Take the best unified_volume_7d_ema if available
+            if entry.get('unified_volume_7d_ema') and entry['unified_volume_7d_ema'] > 0:
+                base['unified_volume_7d_ema'] = entry['unified_volume_7d_ema']
+        
+        # Count actual sales from raw_sales if available (more accurate than boxes_sold fields)
+        if all_sales:
+            # Count unique sales (sum quantities)
+            actual_sales_count = sum(s.get('quantity', 1) for s in all_sales)
+            total_boxes_sold = actual_sales_count
+        
+        # Count listings added from raw_listings if available
+        # This counts the number of listings, not total quantity of boxes
+        total_listings_added = 0
+        if all_listings:
+            total_listings_added = len(all_listings)
+        else:
+            # Fallback to summing boxes_added_today fields
+            for entry in date_entries:
+                total_listings_added += entry.get('boxes_added_today', 0) or 0
+        
+        # Count active listings within 20% of floor price
+        floor_price = base.get('floor_price_usd')
+        if floor_price and floor_price > 0 and all_listings:
+            max_price = floor_price * 1.20  # 20% above floor
+            listings_within_20pct = [
+                l for l in all_listings
+                if (l.get('price', 0) or 0) + (l.get('shipping', 0) or 0) <= max_price
+            ]
+            total_listings = len(listings_within_20pct)
+        elif floor_price and floor_price > 0:
+            # If we have floor price but no raw_listings, filter by active_listings_count
+            # (assuming it was already filtered during processing)
+            total_listings = total_listings  # Keep existing count
+        # else: total_listings stays as max from entries
+        
+        # Update merged entry
+        base['boxes_sold_today'] = total_boxes_sold
+        base['boxes_sold_per_day'] = total_boxes_sold
+        base['boxes_added_today'] = total_listings_added
+        base['active_listings_count'] = total_listings
+        if all_sales:
+            base['raw_sales'] = all_sales
+        if all_listings:
+            base['raw_listings'] = all_listings
+        
+        merged.append(base)
+    
+    return merged
+
+
 def get_box_historical_data(box_id: str) -> List[Dict[str, Any]]:
-    """Get historical data for a specific box"""
+    """
+    Get historical data for a specific box.
+    Merges data from both database UUID and old leaderboard UUID if they differ.
+    Also consolidates multiple entries for the same date.
+    """
     historical_data = load_historical_entries()
-    return historical_data.get(box_id, [])
+    
+    # Get data under the provided box_id
+    entries = list(historical_data.get(box_id, []))
+    
+    # Check if there's an alternate UUID to look up
+    alternate_id = None
+    if box_id in DB_TO_LEADERBOARD_UUID_MAP:
+        alternate_id = DB_TO_LEADERBOARD_UUID_MAP[box_id]
+    elif box_id in LEADERBOARD_TO_DB_UUID_MAP:
+        alternate_id = LEADERBOARD_TO_DB_UUID_MAP[box_id]
+    
+    # Merge data from alternate UUID if it exists
+    if alternate_id and alternate_id in historical_data:
+        alternate_entries = historical_data[alternate_id]
+        # Add all alternate entries
+        entries.extend(alternate_entries)
+    
+    # Merge entries with the same date
+    entries = merge_same_date_entries(entries)
+    
+    # Sort by date
+    entries.sort(key=lambda x: x.get('date', ''))
+    
+    return entries
 
 
 def filter_to_one_per_month(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -85,7 +254,14 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             continue
         
         floor_price = entry.get('floor_price_usd', 0)
-        boxes_sold_per_day = entry.get('boxes_sold_per_day', 0)
+        
+        # Recalculate boxes_sold_per_day from raw_sales if available (more accurate)
+        boxes_sold_per_day = entry.get('boxes_sold_per_day', 0) or 0
+        if entry.get('raw_sales'):
+            # Count actual boxes sold from raw_sales
+            total_sold = sum(s.get('quantity', 1) for s in entry.get('raw_sales', []))
+            if total_sold > 0:
+                boxes_sold_per_day = total_sold
         
         # Calculate 1-day change percentage
         floor_price_1d_change_pct = None
@@ -136,6 +312,7 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
         # Strategy: Use market efficiency factor with adjustments based on available data
         # When daily snapshots are available, we can calculate true rolling averages
         unified_volume_usd = None
+        daily_volume_usd = None
         if floor_price and boxes_sold_per_day:
             # Market efficiency factor: accounts for sales above and below floor
             # Base factor: 92% of floor price (accounts for private sales, quick sales, etc.)
@@ -167,13 +344,20 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             adjusted_factor = max(0.85, min(0.98, adjusted_factor))  # Clamp between 85% and 98%
             average_sale_price = floor_price * adjusted_factor
             
-            # Calculate daily volume using average sale price
-            daily_volume = average_sale_price * boxes_sold_per_day
+            # Calculate daily volume - use actual sales data if available, otherwise estimate
+            daily_volume_usd = None
+            if entry.get('raw_sales'):
+                # Use actual sales data for accurate daily volume
+                raw_sales = entry.get('raw_sales', [])
+                daily_volume_usd = sum((s.get('price', 0) + s.get('shipping', 0)) * s.get('quantity', 1) for s in raw_sales)
+            else:
+                # Estimate daily volume using average sale price
+                daily_volume_usd = average_sale_price * boxes_sold_per_day
             
             # For 30-day volume, multiply daily by 30
             # NOTE: When daily snapshots are available, we'll sum actual daily volumes
             # instead of extrapolating from a single day's rate
-            unified_volume_usd = daily_volume * 30
+            unified_volume_usd = daily_volume_usd * 30 if daily_volume_usd else None
         elif floor_price and units_sold_count and units_sold_count > 0:
             # Fallback: if we have units_sold_count but no daily rate, estimate daily
             # This handles cases where boxes_sold_per_day might be missing
@@ -181,7 +365,8 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                 estimated_daily = units_sold_count / days_between
                 market_efficiency_factor = 0.92
                 average_sale_price = floor_price * market_efficiency_factor
-                unified_volume_usd = average_sale_price * estimated_daily * 30
+                daily_volume_usd = average_sale_price * estimated_daily
+                unified_volume_usd = daily_volume_usd * 30
         
         # Ensure date is in correct format (YYYY-MM-DD)
         date_str = entry.get('date')
@@ -193,25 +378,42 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             except:
                 pass  # Keep original if parsing fails
         
-        # Calculate 7-day EMA of 30-day volume (for smoothing)
-        # EMA = (Current Value * (2 / (Period + 1))) + (Previous EMA * (1 - (2 / (Period + 1))))
+        # Calculate 7-day EMA of daily volume
+        # All volume metrics must be calculated from daily_volume_usd, not estimates
         unified_volume_7d_ema = None
-        if unified_volume_usd:
+        if daily_volume_usd:
             if i == 0:
-                # First entry: use current volume as initial EMA
-                unified_volume_7d_ema = unified_volume_usd
+                # First entry: use current daily volume as initial EMA
+                unified_volume_7d_ema = daily_volume_usd
             else:
-                # Get previous EMA from result
+                # Get previous EMA from result (this accumulates across entries)
                 prev_ema = result[-1].get('unified_volume_7d_ema') if result else None
                 
                 if prev_ema:
                     # Calculate EMA with smoothing factor for 7-day period
-                    # This smooths the 30-day volume over a 7-day window
-                    alpha = 2 / (7 + 1)  # Smoothing factor for 7-day EMA
-                    unified_volume_7d_ema = (unified_volume_usd * alpha) + (prev_ema * (1 - alpha))
+                    # Alpha = 2/(N+1) where N=7 for 7-day EMA
+                    alpha = 2 / (7 + 1)  # Smoothing factor = 0.25
+                    calculated_ema = (daily_volume_usd * alpha) + (prev_ema * (1 - alpha))
+                    # Ensure EMA is at least equal to current daily volume
+                    # This ensures the metric reflects current activity level
+                    unified_volume_7d_ema = max(calculated_ema, daily_volume_usd)
                 else:
-                    # Fallback: use current volume
-                    unified_volume_7d_ema = unified_volume_usd
+                    # Fallback: use current daily volume
+                    unified_volume_7d_ema = daily_volume_usd
+        elif unified_volume_usd:
+            # Fallback: if no daily volume, derive from 30-day estimate
+            # This should rarely happen if we have proper daily data
+            daily_proxy = unified_volume_usd / 30 if unified_volume_usd else None
+            if daily_proxy:
+                if i == 0:
+                    unified_volume_7d_ema = daily_proxy
+                else:
+                    prev_ema = result[-1].get('unified_volume_7d_ema') if result else None
+                    if prev_ema:
+                        alpha = 2 / (7 + 1)
+                        unified_volume_7d_ema = (daily_proxy * alpha) + (prev_ema * (1 - alpha))
+                    else:
+                        unified_volume_7d_ema = daily_proxy
         
         result.append({
             'date': date_str,
@@ -219,6 +421,8 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             'floor_price_1d_change_pct': floor_price_1d_change_pct,
             'active_listings_count': entry.get('active_listings_count'),
             'boxes_sold_per_day': boxes_sold_per_day,
+            'boxes_added_today': entry.get('boxes_added_today'),
+            'daily_volume_usd': daily_volume_usd,
             'unified_volume_usd': unified_volume_usd,
             'unified_volume_7d_ema': unified_volume_7d_ema,
             'units_sold_count': units_sold_count,

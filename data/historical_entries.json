@@ -2594,5 +2594,2006 @@
       "boxes_sold_per_day": 19.32,
       "timestamp": "2026-01-02T17:10:02.764375"
     }
+  ],
+  "46039dfc-a980-4bbd-aada-8cc1e124b44b": [
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 20,
+      "price_ladder": [
+        {
+          "price": 315.99,
+          "quantity": 1
+        },
+        {
+          "price": 324.12,
+          "quantity": 1
+        },
+        {
+          "price": 344.98,
+          "quantity": 1
+        },
+        {
+          "price": 344.98,
+          "quantity": 1
+        },
+        {
+          "price": 348.98,
+          "quantity": 1
+        },
+        {
+          "price": 348.99,
+          "quantity": 8
+        },
+        {
+          "price": 349.0,
+          "quantity": 5
+        },
+        {
+          "price": 349.97,
+          "quantity": 2
+        },
+        {
+          "price": 350.0,
+          "quantity": 1
+        },
+        {
+          "price": 350.0,
+          "quantity": 1
+        },
+        {
+          "price": 374.99,
+          "quantity": 1
+        },
+        {
+          "price": 379.99,
+          "quantity": 5
+        },
+        {
+          "price": 380.0,
+          "quantity": 8
+        },
+        {
+          "price": 389.99,
+          "quantity": 1
+        },
+        {
+          "price": 389.99,
+          "quantity": 5
+        },
+        {
+          "price": 399.99,
+          "quantity": 12
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 403.98,
+          "quantity": 2
+        },
+        {
+          "price": 407.98,
+          "quantity": 1
+        },
+        {
+          "price": 444.99,
+          "quantity": 1
+        }
+      ],
+      "raw_listings": [
+        {
+          "price": 315.99,
+          "quantity": 1,
+          "seller": "Tsuta Ledger",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 324.12,
+          "quantity": 1,
+          "seller": "UpperTunnel",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 344.98,
+          "quantity": 1,
+          "seller": "NE Arkys Store",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 344.98,
+          "quantity": 1,
+          "seller": "Showdown Value Cards",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 348.98,
+          "quantity": 1,
+          "seller": "BMC Collectibles TCG",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 348.99,
+          "quantity": 8,
+          "seller": "MultiMonster Deals",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 349.0,
+          "quantity": 5,
+          "seller": "blujay",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 349.97,
+          "quantity": 2,
+          "seller": "mnbaseball",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 350.0,
+          "quantity": 1,
+          "seller": "GX Shops",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 350.0,
+          "quantity": 1,
+          "seller": "JY Production",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 374.99,
+          "quantity": 1,
+          "seller": "GameRave",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 379.99,
+          "quantity": 5,
+          "seller": "Stacked Deck LLC",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 380.0,
+          "quantity": 8,
+          "seller": "WildCardCyclone",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 389.99,
+          "quantity": 1,
+          "seller": "Miami Card Supply",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 389.99,
+          "quantity": 5,
+          "seller": "Rivero Press",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.99,
+          "quantity": 12,
+          "seller": "RR Precon",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.99,
+          "quantity": 1,
+          "seller": "BoosterBooster TCG",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 403.98,
+          "quantity": 2,
+          "seller": "Token TCG",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 407.98,
+          "quantity": 1,
+          "seller": "OmniKing",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 444.99,
+          "quantity": 1,
+          "seller": "Blacktokyo",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        }
+      ],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T03:10:34.034485"
+    },
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 0,
+      "boxes_sold_today": 1,
+      "daily_volume_usd": 300.0,
+      "boxes_added_today": 0,
+      "price_ladder": [],
+      "raw_listings": [],
+      "raw_sales": [
+        {
+          "price": 300.0,
+          "quantity": 1,
+          "date": "2026-01-04",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 324.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 310.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 320.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 285.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 285.0,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 310.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 329.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 316.0,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 316.0,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 316.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "OP-11 Booster Box",
+          "platform": "tcgplayer",
+          "sale_id": "",
+          "description": ""
+        }
+      ],
+      "timestamp": "2026-01-04T03:17:35.100974"
+    },
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 6,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 6,
+      "price_ladder": [
+        {
+          "price": 335.0,
+          "quantity": 1
+        },
+        {
+          "price": 374.95,
+          "quantity": 1
+        },
+        {
+          "price": 357.36,
+          "quantity": 1
+        },
+        {
+          "price": 385.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        }
+      ],
+      "raw_listings": [
+        {
+          "price": 335.0,
+          "quantity": 1,
+          "seller": "ebay_seller1",
+          "title": "One Piece Card Game A Fist of Divine Speed Booster Box OP-11",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 374.95,
+          "quantity": 1,
+          "seller": "ebay_seller2",
+          "title": "One Piece Card Game OP-11 A Fist of Divine Speed English Booster Box",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 357.36,
+          "quantity": 1,
+          "seller": "ebay_seller3",
+          "title": "ONE PIECE ENGLISH A FIST OF DIVINE SPEED OP-11 BOOSTER BOX",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 385.0,
+          "quantity": 1,
+          "seller": "ebay_seller4",
+          "title": "One Piece A Fist of Divine Speed OP-11 Booster Box",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.0,
+          "quantity": 1,
+          "seller": "ebay_seller5",
+          "title": "One Piece OP-11 A Fist of Divine Speed English 1x Booster Box",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.99,
+          "quantity": 1,
+          "seller": "ebay_seller6",
+          "title": "ONE PIECE ENGLISH A FIST OF DIVINE SPEED OP-11 BOOSTER BOX",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        }
+      ],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T03:24:21.310182"
+    },
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 1,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 1,
+      "price_ladder": [
+        {
+          "price": 393.90000000000003,
+          "quantity": 1
+        },
+        {
+          "price": 399.98,
+          "quantity": 1
+        }
+      ],
+      "raw_listings": [
+        {
+          "price": 399.98,
+          "quantity": 1,
+          "seller": "ebay_seller8",
+          "title": "One Piece Card Game OP-11 A Fist of Divine Speed English Booster Box",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        }
+      ],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T03:25:17.968205"
+    },
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 3,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 3,
+      "price_ladder": [
+        {
+          "price": 395.27,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 378.99,
+          "quantity": 1
+        }
+      ],
+      "raw_listings": [
+        {
+          "price": 395.27,
+          "quantity": 1,
+          "seller": "ebay_seller9",
+          "title": "One Piece A Fist of Divine Speed OP-11 Booster Box",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.99,
+          "quantity": 1,
+          "seller": "ebay_seller10",
+          "title": "One Piece Card Game A Fist of Divine Speed OP-11 Sealed Booster Box",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 378.99,
+          "quantity": 1,
+          "seller": "ebay_seller11",
+          "title": "One Piece OP-11 A Fist of Divine Speed Booster Box ENGLISH",
+          "platform": "ebay",
+          "listing_id": "",
+          "description": ""
+        }
+      ],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T03:26:13.812517"
+    },
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 395.27,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 378.99,
+          "quantity": 1
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [
+        {
+          "price": 349.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "couragedcowardlydog",
+          "title": "One Piece Card Game A FIST OF DIVINE SPEED OP-11 Booster Box English SEALED",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 349.98,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "and1morethingvintage",
+          "title": "ONE PIECE Card Game A Fist of Divine Speed OP-11 ENG Factory Sealed Bandai",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 349.95,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "jjasonl2013",
+          "title": "One Piece Card Game OP-11 A Fist of Divine Speed English Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        }
+      ],
+      "timestamp": "2026-01-04T03:28:06.972724"
+    },
+    {
+      "date": "2026-01-04",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 315.99,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [],
+      "raw_listings": [],
+      "raw_sales": [
+        {
+          "price": 337.36,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "tocr6981",
+          "title": "One Piece TCG OP-11 A Fist of Divine Speed English Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 318.87,
+          "quantity": 1,
+          "date": "2026-01-02",
+          "seller": "worldofcollections",
+          "title": "One Piece Card Game A FIST OF DIVINE SPEED OP-11 Booster Box English SEALED",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        }
+      ],
+      "timestamp": "2026-01-04T03:29:53.610166"
+    }
+  ],
+  "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": [
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 380.0,
+      "active_listings_count": 0,
+      "boxes_sold_today": 34,
+      "daily_volume_usd": 13450.969999999998,
+      "boxes_added_today": 0,
+      "price_ladder": [],
+      "raw_listings": [],
+      "raw_sales": [
+        {
+          "price": 397.5,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 384.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 390.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 380.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 382.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 396.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 396.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 396.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 396.0,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.95,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 398.74,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.0,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 2,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 395.98,
+          "quantity": 3,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 397.99,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 395.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 395.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        },
+        {
+          "price": 395.0,
+          "quantity": 1,
+          "date": "2026-01-03",
+          "seller": "unknown",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "ebay",
+          "sale_id": "",
+          "description": ""
+        }
+      ],
+      "timestamp": "2026-01-04T04:36:13.202461"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 20,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [
+        {
+          "price": 397.99,
+          "quantity": 141,
+          "seller": "Devastation",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.74,
+          "quantity": 1,
+          "seller": "Kuma Kollectibles",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 400.0,
+          "quantity": 1,
+          "seller": "Wicked Kingdom",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 402.0,
+          "quantity": 1,
+          "seller": "Nudist Beach Inc",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 402.0,
+          "quantity": 1,
+          "seller": "Snow Drift Comics",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 399.99,
+          "quantity": 1,
+          "seller": "YugiohFreeMarket",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 404.98,
+          "quantity": 2,
+          "seller": "Voss Media",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 405.0,
+          "quantity": 1,
+          "seller": "GX Shops",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 424.99,
+          "quantity": 1,
+          "seller": "BigCards BigMoney",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 429.68,
+          "quantity": 1,
+          "seller": "Milk Carton Cards",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 431.68,
+          "quantity": 2,
+          "seller": "Collectors Coalition",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 439.99,
+          "quantity": 1,
+          "seller": "dmikenel",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 444.98,
+          "quantity": 2,
+          "seller": "NE Arkys Store",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 445.69,
+          "quantity": 1,
+          "seller": "DibbysTCG",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 449.99,
+          "quantity": 1,
+          "seller": "Miami Card Supply",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 456.53,
+          "quantity": 1,
+          "seller": "Hikouki TCG",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 458.98,
+          "quantity": 1,
+          "seller": "YourMomLovesMyStore",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 459.99,
+          "quantity": 2,
+          "seller": "PBS Collect",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 460.69,
+          "quantity": 1,
+          "seller": "Glixsy",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        },
+        {
+          "price": 464.99,
+          "quantity": 7,
+          "seller": "ProfessorP",
+          "title": "One Piece OP-13 Carrying on His Will Booster Box",
+          "platform": "tcgplayer",
+          "listing_id": "",
+          "description": ""
+        }
+      ],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:38:22.717777"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:40:30.865138"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:41:21.237087"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:42:00.013488"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:43:03.316593"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:43:25.113107"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:44:03.033393"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 0,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:44:20.859704"
+    },
+    {
+      "date": "2026-01-03",
+      "source": "screenshot",
+      "data_type": "combined",
+      "floor_price_usd": 397.74,
+      "active_listings_count": 20,
+      "boxes_sold_today": 0,
+      "daily_volume_usd": 0.0,
+      "boxes_added_today": 0,
+      "price_ladder": [
+        {
+          "price": 397.99,
+          "quantity": 141
+        },
+        {
+          "price": 399.74,
+          "quantity": 1
+        },
+        {
+          "price": 400.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 402.0,
+          "quantity": 1
+        },
+        {
+          "price": 399.99,
+          "quantity": 1
+        },
+        {
+          "price": 404.98,
+          "quantity": 2
+        },
+        {
+          "price": 405.0,
+          "quantity": 1
+        },
+        {
+          "price": 424.99,
+          "quantity": 1
+        },
+        {
+          "price": 429.68,
+          "quantity": 1
+        },
+        {
+          "price": 431.68,
+          "quantity": 2
+        },
+        {
+          "price": 439.99,
+          "quantity": 1
+        },
+        {
+          "price": 444.98,
+          "quantity": 2
+        },
+        {
+          "price": 445.69,
+          "quantity": 1
+        },
+        {
+          "price": 449.99,
+          "quantity": 1
+        },
+        {
+          "price": 456.53,
+          "quantity": 1
+        },
+        {
+          "price": 458.98,
+          "quantity": 1
+        },
+        {
+          "price": 459.99,
+          "quantity": 2
+        },
+        {
+          "price": 460.69,
+          "quantity": 1
+        },
+        {
+          "price": 464.99,
+          "quantity": 7
+        }
+      ],
+      "raw_listings": [],
+      "raw_sales": [],
+      "timestamp": "2026-01-04T04:44:45.504307"
+    }
   ]
 }

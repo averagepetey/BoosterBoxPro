@@ -13,7 +13,7 @@ import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useState } from 'react';
 
 export default function DashboardPage() {
-  const [sortBy, setSortBy] = useState('unified_volume_7d_ema');
+  const [sortBy, setSortBy] = useState('unified_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const { data, isLoading, error } = useLeaderboard({
     sort: sortBy,
@@ -219,7 +219,7 @@ export default function DashboardPage() {
               <div className="col-span-1 text-left font-medium">
                 #
               </div>
-              <div className="col-span-4 text-center font-medium">
+              <div className="col-span-3 text-left font-medium">
                 Collection
               </div>
               <div 
@@ -241,25 +241,25 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('unified_volume_7d_ema')}
+                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                onClick={() => handleSort('unified_volume_usd')}
               >
                 30d Volume
-                {sortBy === 'unified_volume_7d_ema' && (
+                {sortBy === 'unified_volume_usd' && (
                   <span className="ml-1 text-[10px] font-bold">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
               <div 
                 className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('units_sold_count')}
+                onClick={() => handleSort('boxes_sold_30d_avg')}
               >
                 Sales
-                {sortBy === 'units_sold_count' && (
+                {sortBy === 'boxes_sold_30d_avg' && (
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors"
                 onClick={() => handleSort('top_10_value_usd')}
               >
                 Top 10 Value
@@ -270,7 +270,6 @@ export default function DashboardPage() {
               <div className="col-span-1 text-center font-medium">
                 1d
               </div>
-              <div className="col-span-1"></div>
             </div>
 
             {!isLoading && !error && (

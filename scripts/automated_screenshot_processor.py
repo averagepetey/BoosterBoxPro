@@ -124,12 +124,17 @@ class AutomatedScreenshotProcessor:
                     "duplicate_sales": len(duplicate_sales)
                 }
                 
-                # Step 6: Aggregate data
+                # Step 6: Aggregate data (only count listings within 20% of floor price)
+                # Use filtered_listings for active_listings_count (all current market listings)
+                # Use new_listings for boxes_added_today (only new listings)
                 aggregated = self._aggregate_data(
-                    new_listings=new_listings,
+                    new_listings=filtered_listings,  # Count all filtered listings, not just new ones
                     new_sales=new_sales,
-                    entry_date=entry_date
+                    entry_date=entry_date,
+                    floor_price=formatted_data.get("floor_price_usd")
                 )
+                # Track boxes_added_today separately (only new listings)
+                aggregated["boxes_added_today"] = len(new_listings)
                 result["steps"]["aggregation"] = "success"
                 
                 # Step 7: Get historical data for calculations
@@ -181,6 +186,48 @@ class AutomatedScreenshotProcessor:
                 self.historical_manager.add_entry(str(box.id), historical_entry)
                 result["steps"]["historical_save"] = "success"
                 
+                # Recalculate active_listings_count from all listings for this date
+                # Include the listings we just added + any existing ones for this date
+                all_listings_for_date = list(new_listings) if new_listings else []  # Start with current listings
+                floor_price_for_counting = formatted_data.get("floor_price_usd")
+                
+                # Also collect from existing historical entries for this date
+                all_entries = self.historical_manager.get_box_history(str(box.id))
+                for e in all_entries:
+                    if str(e.get("date")) == str(entry_date):  # Ensure date match
+                        if e.get("raw_listings"):
+                            # Add listings that aren't already in our list (avoid duplicates)
+                            existing_prices = {(l.get("price", 0), l.get("shipping", 0)) for l in all_listings_for_date}
+                            for listing in e.get("raw_listings", []):
+                                listing_key = (listing.get("price", 0) or 0, listing.get("shipping", 0) or 0)
+                                if listing_key not in existing_prices:
+                                    all_listings_for_date.append(listing)
+                                    existing_prices.add(listing_key)
+                        # Use floor price from entry with listings (prioritize current market)
+                        if e.get("raw_listings") and e.get("floor_price_usd"):
+                            floor_price_for_counting = e.get("floor_price_usd")
+                
+                # If no floor price yet, calculate from lowest listing
+                if (not floor_price_for_counting or floor_price_for_counting <= 0) and all_listings_for_date:
+                    listing_totals = [
+                        (l.get("price", 0) or 0) + (l.get("shipping", 0) or 0)
+                        for l in all_listings_for_date
+                    ]
+                    if listing_totals:
+                        floor_price_for_counting = min(listing_totals)
+                
+                # Count listings within 20% of floor price
+                if floor_price_for_counting and floor_price_for_counting > 0:
+                    max_price = floor_price_for_counting * 1.20
+                    listings_within_20pct = [
+                        l for l in all_listings_for_date
+                        if (l.get("price", 0) or 0) + (l.get("shipping", 0) or 0) <= max_price
+                    ]
+                    aggregated["active_listings_count"] = len(listings_within_20pct)
+                elif all_listings_for_date:
+                    # If no floor price but we have listings, count all (shouldn't happen)
+                    aggregated["active_listings_count"] = len(all_listings_for_date)
+                
                 result["success"] = True
                 result["message"] = f"Successfully processed screenshot data for {box_name}"
                 
@@ -216,11 +263,38 @@ class AutomatedScreenshotProcessor:
         self,
         new_listings: List[Dict[str, Any]],
         new_sales: List[Dict[str, Any]],
-        entry_date: str
+        entry_date: str,
+        floor_price: Optional[float] = None
     ) -> Dict[str, Any]:
         """Aggregate filtered and deduplicated data"""
+        # Calculate floor price from listings if not provided
+        # Floor price = lowest (price + shipping) from all listings
+        if not floor_price or floor_price <= 0:
+            if new_listings:
+                # Find lowest listing price (price + shipping)
+                listing_totals = [
+                    (l.get("price", 0) or 0) + (l.get("shipping", 0) or 0)
+                    for l in new_listings
+                ]
+                if listing_totals:
+                    floor_price = min(listing_totals)
+        
+        # Only count listings within 20% of floor price
+        listings_within_20pct = []
+        if floor_price and floor_price > 0:
+            max_price = floor_price * 1.20  # 20% above floor
+            for listing in new_listings:
+                listing_price = listing.get("price", 0) or 0
+                listing_shipping = listing.get("shipping", 0) or 0
+                total_price = listing_price + listing_shipping
+                if total_price <= max_price:
+                    listings_within_20pct.append(listing)
+        else:
+            # If still no floor price (no listings), count all (should be empty)
+            listings_within_20pct = new_listings
+        
         aggregated = {
-            "active_listings_count": len(new_listings),
+            "active_listings_count": len(listings_within_20pct),
             "boxes_sold_today": 0,
             "daily_volume_usd": 0.0
         }
