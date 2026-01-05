@@ -14,10 +14,10 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: 32,
-  md: 40,
-  lg: 64,
-  xl: 120,
+  sm: 96,
+  md: 120,
+  lg: 192,
+  xl: 360,
 };
 
 export function Logo({ 
@@ -31,7 +31,7 @@ export function Logo({
   const logoElement = (
     <div className={`flex items-center gap-3 ${className}`}>
       <Image
-        src="/images/logo.png"
+        src="/images/BoosterProTextLogo.png"
         alt="BoosterBoxPro Logo"
         width={logoSize}
         height={logoSize}

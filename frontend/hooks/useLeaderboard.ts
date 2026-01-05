@@ -9,7 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getLeaderboard, LeaderboardParams, LeaderboardResponse } from '@/lib/api/leaderboard';
 import { getBoxImageUrl } from '@/lib/utils/boxImages';
 
-// Temporary mock data for development when API is not available
+// Mock data - only used when NEXT_PUBLIC_USE_MOCK_DATA=true is set
+// Default behavior: API failures will show error state, not mock data
 const MOCK_DATA: LeaderboardResponse = {
   data: [
     {
@@ -465,15 +466,24 @@ const MOCK_DATA: LeaderboardResponse = {
 };
 
 export function useLeaderboard(params: LeaderboardParams = {}) {
+  // Check if mock data fallback is enabled via environment variable
+  const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+  
   return useQuery<LeaderboardResponse>({
     queryKey: ['leaderboard', params],
     queryFn: async () => {
       try {
         return await getLeaderboard(params);
       } catch (error) {
-        // If API fails, return empty mock data so UI can still render
-        console.warn('API call failed, using empty data:', error);
-        return MOCK_DATA;
+        // Only use mock data if explicitly enabled via environment variable
+        if (useMockData) {
+          console.warn('API call failed, using mock data (USE_MOCK_DATA=true):', error);
+          return MOCK_DATA;
+        } else {
+          // Re-throw error to show proper error state in UI
+          console.error('API call failed and mock data is disabled:', error);
+          throw error;
+        }
       }
     },
     staleTime: 60 * 1000, // 1 minute

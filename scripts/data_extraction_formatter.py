@@ -213,3 +213,4 @@ class DataExtractionFormatter:
 # Global instance
 data_extraction_formatter = DataExtractionFormatter()
 
+

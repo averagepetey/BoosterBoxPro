@@ -214,9 +214,7 @@ export default function ArticleDetailPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{
-        background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)',
-      }}>
+      <div className="min-h-screen lb-page">
         <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8" style={{ maxWidth: '900px' }}>
           {/* Back Button */}
           <Link
@@ -233,7 +231,7 @@ export default function ArticleDetailPage() {
           <div
             className="rounded-3xl overflow-hidden"
             style={{
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
               background: '#141414',
               border: '1px solid rgba(255, 255, 255, 0.15)',
             }}

@@ -97,7 +97,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)' }}>
+        <div className="min-h-screen lb-page">
           <Navigation />
           <div className="container mx-auto px-4 py-8">
             <div className="text-center py-16">
@@ -113,7 +113,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   if (error || !box) {
   return (
     <ProtectedRoute>
-        <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)' }}>
+        <div className="min-h-screen lb-page">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
             <Link 
@@ -139,7 +139,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%)' }}>
+      <div className="min-h-screen lb-page">
         <Navigation />
         <div className="container mx-auto px-3 lg:px-6 py-2 lg:py-8" style={{ maxWidth: '1400px' }}>
           {/* Back Button - Mobile: just icon, Desktop: icon + text */}
@@ -161,7 +161,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             style={{
               background: '#141414',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
             }}
           >
             {/* Mobile: Title, Image, then 3 key metrics */}
@@ -735,7 +735,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             style={{
               background: '#141414',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
             }}
           >
             <h2 className="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4">Notes</h2>
@@ -750,7 +750,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             style={{
               background: '#141414',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
             }}
           >
             <h2 className="text-lg lg:text-xl font-bold text-white mb-4 lg:mb-6">Complete Metrics Overview</h2>
@@ -901,7 +901,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             style={{
               background: '#141414',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
             }}
           >
             <h2 className="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4">Advanced Metrics</h2>
@@ -923,7 +923,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             style={{
               background: '#141414',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
             }}
           >
             <h2 className="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4">Data Sources & Context</h2>
