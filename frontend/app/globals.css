@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: transparent;
   --foreground: #171717;
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: transparent;
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -14,92 +14,47 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: transparent;
     --foreground: #ededed;
   }
 }
 
 html {
-  background: transparent;
   height: 100%;
+  background: #000000;
+  background-color: #000000;
 }
 
 body {
-  background: transparent;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   margin: 0;
   padding: 0;
+  min-height: 100vh;
+  background: #000000;
+  background-color: #000000;
+}
+
+#__next {
   min-height: 100%;
+  background: #000000;
+  background-color: #000000;
 }
 
 /* Leaderboard Hero Section */
 .lb-hero {
-  min-height: 200px !important;
-  position: relative !important;
-  background: linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%) !important;
-  width: 100% !important;
-  display: block !important;
-}
-
-.lb-hero-sky {
-  background: linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%);
-  z-index: 0;
-}
-
-.lb-hero-stars {
-  background-image: 
-    radial-gradient(2px 2px at 20% 30%, white, transparent),
-    radial-gradient(2px 2px at 60% 70%, white, transparent),
-    radial-gradient(1px 1px at 50% 50%, white, transparent),
-    radial-gradient(1px 1px at 80% 10%, white, transparent),
-    radial-gradient(2px 2px at 90% 40%, white, transparent),
-    radial-gradient(1px 1px at 33% 60%, white, transparent),
-    radial-gradient(1px 1px at 15% 80%, white, transparent);
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  opacity: 0.6;
-  animation: sparkle 20s linear infinite;
-  z-index: 1;
-}
-
-@keyframes sparkle {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-200px);
-  }
-}
-
-/* Leaderboard Page Content */
-.lb-page {
-  background: linear-gradient(180deg, #396EF0 0%, #2d5fe8 30%, #2563eb 60%, #1b5fd8 100%) !important;
-  min-height: 100vh;
+  min-height: 200px;
   position: relative;
   width: 100%;
 }
 
-/* Side Decorative Clouds */
-.lb-side-clouds-left,
-.lb-side-clouds-right {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 300px;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.1;
-}
-
-.lb-side-clouds-left {
-  left: 0;
-  background: radial-gradient(ellipse at left, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-}
-
-.lb-side-clouds-right {
-  right: 0;
-  background: radial-gradient(ellipse at right, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+/* Leaderboard Page Content */
+.lb-page {
+  background-color: #000000 !important;
+  background-image: none !important;
+  min-height: 100vh;
+  position: relative;
+  width: 100%;
 }
 
 /* Glass Navigation */
@@ -121,6 +76,61 @@ body {
 /* Leaderboard Animation */
 .lb-anim {
   transition: all 0.2s ease;
+}
+
+/* Header Fade-in Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-fade-in {
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.header-fade-in-delay {
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out 0.3s forwards;
+}
+
+/* Lava Lamp Animation */
+@keyframes lavaLamp {
+  0% {
+    background-position: 0% 0%, 100% 100%, 50% 50%, 60% 25%, 30% 80%, 85% 85%;
+    background-size: 150% 150%, 120% 120%, 180% 180%, 140% 140%, 130% 130%, 145% 145%;
+  }
+  20% {
+    background-position: 100% 0%, 0% 100%, 10% 10%, 90% 70%, 70% 20%, 75% 90%;
+    background-size: 180% 180%, 150% 150%, 120% 120%, 160% 160%, 140% 140%, 155% 155%;
+  }
+  40% {
+    background-position: 100% 100%, 0% 0%, 90% 90%, 20% 50%, 80% 80%, 90% 75%;
+    background-size: 120% 120%, 180% 180%, 150% 150%, 130% 130%, 160% 160%, 135% 135%;
+  }
+  60% {
+    background-position: 0% 100%, 100% 0%, 20% 80%, 80% 20%, 50% 50%, 95% 80%;
+    background-size: 160% 160%, 130% 130%, 140% 140%, 150% 150%, 120% 120%, 165% 165%;
+  }
+  80% {
+    background-position: 50% 0%, 50% 100%, 80% 20%, 20% 80%, 10% 50%, 80% 95%;
+    background-size: 140% 140%, 160% 160%, 130% 130%, 170% 170%, 150% 150%, 150% 150%;
+  }
+  100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%, 60% 25%, 30% 80%, 85% 85%;
+    background-size: 150% 150%, 120% 120%, 180% 180%, 140% 140%, 130% 130%, 145% 145%;
+  }
+}
+
+.gradient-animated {
+  animation: lavaLamp 15s ease-in-out infinite !important;
+  will-change: background-position, background-size;
 }
 
 /* Hide scrollbar for horizontal scroll */

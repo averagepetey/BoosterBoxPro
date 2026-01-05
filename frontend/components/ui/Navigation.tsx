@@ -22,15 +22,15 @@ export function Navigation() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.03)'
       }}
     >
-      <div className="container mx-auto">
-        <div className="flex items-center justify-between h-16 px-4">
+      <div className="w-full max-w-full">
+        <div className="flex items-center justify-between h-16" style={{ paddingLeft: '1rem', paddingRight: '1rem' }}>
           {/* Logo - Always stays left */}
-          <div className="flex-shrink-0 -ml-4">
+          <div className="flex-shrink-0">
             <Logo size="lg" href="/dashboard" />
           </div>
           
-          {/* Navigation Links */}
-          <div className="flex items-center gap-6">
+          {/* Navigation Links - Hug right corner with consistent padding */}
+          <div className="flex items-center gap-6 flex-shrink-0">
             <Link
               href="/dashboard"
               className="text-white/85 hover:text-white transition-colors"

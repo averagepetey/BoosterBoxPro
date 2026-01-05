@@ -110,3 +110,4 @@ Once all monthly snapshots are processed:
 Just send your first monthly screenshot and specify the date! I'll process it and guide you through the rest.
 
 
+

@@ -250,3 +250,4 @@ Every time a daily screenshot is processed:
 
 **Daily observations overwrite historical baseline on overlap, but both contribute to the unified timeline used for all calculations.**
 
+

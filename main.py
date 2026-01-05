@@ -37,9 +37,16 @@ app = FastAPI(
 )
 
 # Configure CORS
+# In development, allow all origins for mobile testing
+# In production, restrict to specific domains
+allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+if settings.environment == "development":
+    # Allow all origins in development for mobile testing
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly allow OPTIONS for preflight
     allow_headers=["*"],

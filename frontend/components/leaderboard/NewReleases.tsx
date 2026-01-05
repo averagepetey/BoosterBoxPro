@@ -31,6 +31,18 @@ interface NewReleasesProps {
 // Mock data for new releases - will be replaced with API data later
 const mockNewReleases: NewReleaseArticle[] = [
   {
+    id: '7',
+    title: 'TCG Market Analysis',
+    set_name: 'Market Insights',
+    set_code: 'ANALYSIS',
+    release_date: '2026-01-05',
+    excerpt: 'Comprehensive market analysis and trends for TCG collectors.',
+    youtube_url: 'https://www.youtube.com/watch?v=rUu_WpCVGxQ',
+    game_type: 'One Piece',
+    author: 'TCG Insights',
+    published_date: '2026-01-05',
+  },
+  {
     id: '6',
     title: 'TCG Market Update',
     set_name: 'Market Analysis',
@@ -149,7 +161,7 @@ export function NewReleases({ articles = mockNewReleases }: NewReleasesProps) {
 
   return (
     <div className="mb-4 sm:mb-6">
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <div className="flex items-center justify-between mb-1 sm:mb-2">
         <h2 className="text-base sm:text-lg font-semibold text-white">New Releases</h2>
         <Link
           href="/releases"
@@ -162,10 +174,20 @@ export function NewReleases({ articles = mockNewReleases }: NewReleasesProps) {
       
       {/* Single Container with Horizontal Scroll */}
       <div 
-        className="overflow-x-auto scrollbar-hide rounded-2xl"
+        className="overflow-x-auto scrollbar-hide rounded-2xl gradient-animated"
         style={{
-          boxShadow: '0 0 20px rgba(241, 48, 61, 0.6), 0 0 40px rgba(241, 48, 61, 0.4), 0 0 60px rgba(241, 48, 61, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
-          background: '#141414',
+          boxShadow: 'none',
+          backgroundImage: 
+            'radial-gradient(ellipse 400px 300px at 20% 30%, #73788D 0%, rgba(115, 120, 141, 0.6) 20%, rgba(115, 120, 141, 0.3) 40%, rgba(115, 120, 141, 0.1) 60%, transparent 80%),' +
+            'radial-gradient(ellipse 350px 400px at 80% 70%, #343839 0%, rgba(52, 56, 57, 0.6) 20%, rgba(52, 56, 57, 0.3) 40%, rgba(52, 56, 57, 0.1) 60%, transparent 80%),' +
+            'radial-gradient(ellipse 300px 350px at 50% 50%, #1a1a1a 0%, rgba(26, 26, 26, 0.7) 25%, rgba(26, 26, 26, 0.4) 50%, rgba(26, 26, 26, 0.2) 70%, transparent 90%),' +
+            'radial-gradient(ellipse 450px 380px at 60% 25%, rgba(200, 40, 40, 0.9) 0%, rgba(200, 40, 40, 0.7) 15%, rgba(200, 40, 40, 0.5) 30%, rgba(200, 40, 40, 0.3) 45%, rgba(200, 40, 40, 0.15) 60%, rgba(200, 40, 40, 0.05) 75%, transparent 90%),' +
+            'radial-gradient(ellipse 320px 380px at 30% 80%, rgba(255, 165, 0, 0.5) 0%, rgba(255, 165, 0, 0.3) 25%, rgba(255, 165, 0, 0.15) 45%, rgba(255, 165, 0, 0.05) 65%, transparent 85%),' +
+            'radial-gradient(ellipse 400px 350px at 85% 85%, rgba(200, 40, 40, 0.8) 0%, rgba(200, 40, 40, 0.6) 15%, rgba(200, 40, 40, 0.4) 30%, rgba(200, 40, 40, 0.2) 45%, rgba(200, 40, 40, 0.1) 60%, rgba(200, 40, 40, 0.05) 75%, transparent 90%)',
+          backgroundSize: '150% 150%, 120% 120%, 180% 180%, 140% 140%, 130% 130%, 145% 145%',
+          backgroundPosition: '0% 0%, 100% 100%, 50% 50%, 60% 20%, 30% 80%, 85% 85%',
+          backgroundRepeat: 'no-repeat',
+          backgroundColor: '#2a2a2a',
           border: '1px solid rgba(255, 255, 255, 0.15)',
         }}
       >
@@ -285,22 +307,6 @@ export function NewReleases({ articles = mockNewReleases }: NewReleasesProps) {
                     )}
                   </div>
                 </Link>
-                
-                {/* YouTube Link Button - Separate from card link */}
-                {article.youtube_url && (
-                  <a
-                    href={article.youtube_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-2 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 transition-colors text-white text-sm font-medium"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                    </svg>
-                    Watch Video
-                  </a>
-                )}
               </div>
             );
           })}
