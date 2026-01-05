@@ -243,7 +243,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <div className="border-r border-white/10">
                   <div className="text-white/50 text-[10px]">Sold/Day</div>
                   <div className="text-sm font-bold text-white">
-                    {box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
+                    {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
+                      ? Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10
+                      : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
                       ? Math.round(box.metrics.boxes_sold_per_day * 10) / 10
                       : '--'}
                   </div>
@@ -555,7 +557,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div>
                     <div className="text-white/70 text-sm mb-1">Sold/Day</div>
                     <div className="text-lg font-semibold text-white">
-                      {box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
+                      {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
+                        ? Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10
+                        : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
                         ? Math.round(box.metrics.boxes_sold_per_day * 10) / 10
                         : '--'}
                     </div>
@@ -859,13 +863,15 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <div>
                   <div className="text-white/70 text-xs mb-1">Boxes Sold/Day</div>
                   <div className="text-lg font-semibold text-white">
-                    {box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
+                    {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
+                      ? Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10
+                      : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
                       ? Math.round(box.metrics.boxes_sold_per_day * 10) / 10
                       : '--'}
                   </div>
-                  {box.metrics.boxes_sold_30d_avg && (
+                  {box.metrics.boxes_sold_per_day && box.metrics.boxes_sold_per_day !== box.metrics.boxes_sold_30d_avg && (
                     <div className="text-white/50 text-xs mt-1">
-                      30-Day Avg: {Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10}/day
+                      All-Time Avg: {Math.round(box.metrics.boxes_sold_per_day * 10) / 10}/day
                     </div>
                   )}
                 </div>

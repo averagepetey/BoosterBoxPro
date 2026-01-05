@@ -535,9 +535,15 @@ def calculate_monthly_rankings() -> Dict[str, Dict[str, int]]:
 def get_box_30d_avg_sales(box_id: str) -> Optional[float]:
     """
     Calculate the 30-day average boxes sold per day for a box.
+    Uses screenshot data from database when available, falls back to JSON historical data.
     Returns the average of boxes_sold_per_day from entries in the last 30 days.
     Includes all values (including zeros) for a true 30-day average.
+    
+    NOTE: For screenshot data, averages are calculated during processing and stored
+    in boxes_sold_30d_avg in the database. This function primarily serves as a
+    fallback for JSON-based data or when database values aren't available.
     """
+    # Use historical data (which may include database entries merged in)
     entries = get_box_historical_data(box_id)
     
     if not entries:
@@ -554,7 +560,11 @@ def get_box_30d_avg_sales(box_id: str) -> Optional[float]:
         return None
     
     # Get all boxes_sold_per_day values (including zeros) for true average
-    daily_sales = [e.get('boxes_sold_per_day', 0) or 0 for e in recent_entries]
+    # Prioritize boxes_sold_today if boxes_sold_per_day is not available
+    daily_sales = []
+    for e in recent_entries:
+        sold = e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0
+        daily_sales.append(float(sold) if sold else 0.0)
     
     if not daily_sales:
         return 0.0
