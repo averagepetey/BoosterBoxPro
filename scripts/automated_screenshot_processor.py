@@ -138,7 +138,47 @@ class AutomatedScreenshotProcessor:
                 result["steps"]["aggregation"] = "success"
                 
                 # Step 7: Get historical data for calculations
+                # Start with JSON data
                 historical_entries = self.historical_manager.get_box_history(str(box.id))
+                
+                # CRITICAL: Include database entries (screenshot data) for accurate averaging
+                # Query database for all existing metrics entries to ensure averages include all screenshot data
+                db_stmt = select(UnifiedBoxMetrics).where(
+                    UnifiedBoxMetrics.booster_box_id == box.id
+                ).order_by(UnifiedBoxMetrics.metric_date)
+                db_result = await db.execute(db_stmt)
+                db_metrics = db_result.scalars().all()
+                
+                # Convert database entries to historical format and merge with JSON entries
+                db_entries_by_date = {}
+                for metric in db_metrics:
+                    date_str = metric.metric_date.isoformat()
+                    # Only include if not already in historical_entries (avoid duplicates)
+                    if not any(e.get('date') == date_str for e in historical_entries):
+                        db_entries_by_date[date_str] = {
+                            "date": date_str,
+                            "floor_price_usd": float(metric.floor_price_usd) if metric.floor_price_usd else None,
+                            "active_listings_count": metric.active_listings_count,
+                            "boxes_sold_today": float(metric.boxes_sold_per_day) if metric.boxes_sold_per_day else 0,
+                            "boxes_sold_per_day": float(metric.boxes_sold_per_day) if metric.boxes_sold_per_day else 0,
+                            "daily_volume_usd": float(metric.unified_volume_usd) if metric.unified_volume_usd else 0,
+                            "boxes_added_today": metric.boxes_added_today or 0,
+                            "unified_volume_7d_ema": float(metric.unified_volume_7d_ema) if metric.unified_volume_7d_ema else None,
+                        }
+                    else:
+                        # Update existing entry with database data (database is more accurate for screenshot data)
+                        for e in historical_entries:
+                            if e.get('date') == date_str:
+                                if metric.boxes_sold_per_day is not None:
+                                    e['boxes_sold_today'] = float(metric.boxes_sold_per_day)
+                                    e['boxes_sold_per_day'] = float(metric.boxes_sold_per_day)
+                                if metric.unified_volume_usd is not None:
+                                    e['daily_volume_usd'] = float(metric.unified_volume_usd)
+                                break
+                
+                # Add database entries that don't exist in JSON
+                for date_str, entry in db_entries_by_date.items():
+                    historical_entries.append(entry)
                 
                 # Add current entry to historical data (for calculations)
                 current_entry = {
@@ -146,11 +186,15 @@ class AutomatedScreenshotProcessor:
                     "floor_price_usd": formatted_data.get("floor_price_usd"),
                     "active_listings_count": aggregated["active_listings_count"],
                     "boxes_sold_today": aggregated["boxes_sold_today"],
+                    "boxes_sold_per_day": aggregated["boxes_sold_today"],  # Use actual sales count for this day
                     "daily_volume_usd": aggregated["daily_volume_usd"],
                     "boxes_added_today": len(new_listings),
                     "price_ladder": formatted_data.get("price_ladder", [])
                 }
                 historical_entries.append(current_entry)
+                
+                # Sort by date to ensure proper averaging
+                historical_entries.sort(key=lambda x: x.get('date', ''))
                 
                 # Step 8: Calculate all metrics
                 calculated_metrics = metrics_calculator.calculate_daily_metrics(

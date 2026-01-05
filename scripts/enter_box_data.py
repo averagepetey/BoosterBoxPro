@@ -46,7 +46,7 @@ BOX_NAME_MAP = {
     "op-13": "One Piece - OP-13 Carrying on His Will Booster Box",
     "eb-01": "One Piece - EB-01 Memorial Collection Booster Box",
     "eb-02": "One Piece - EB-02 Anime 25th Collection Booster Box",
-    "prb-01": "One Piece - PRB-01 Premium Booster Booster Box",
+    "prb-01": "One Piece - PRB-01 Premium Booster Box (The Best)",
 }
 
 
@@ -112,73 +112,21 @@ async def process_data(box_name: str, entry_date: str, raw_data: dict):
 # ============================================================================
 
 # Box identifier (use short name like "op-11" or full name)
-BOX_NAME = "op-13"
+BOX_NAME = "eb-02"
 
 # Entry date (YYYY-MM-DD format, or None for today)
-ENTRY_DATE = "2026-01-03"
+ENTRY_DATE = "2026-01-04"
 
 # Floor price (lowest listing price, not including shipping)
-FLOOR_PRICE = 397.74
+FLOOR_PRICE = 599.00
 FLOOR_SHIPPING = 0.00
 
-# Listings data - OP-13 listings for January 3, 2026
-LISTINGS = [
-    {"price": 397.99, "shipping": 0.00, "quantity": 141, "seller": "Devastation", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 397.74, "shipping": 2.00, "quantity": 1, "seller": "Kuma Kollectibles", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 400.00, "shipping": 0.00, "quantity": 1, "seller": "Wicked Kingdom", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 400.00, "shipping": 2.00, "quantity": 1, "seller": "Nudist Beach Inc", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 400.00, "shipping": 2.00, "quantity": 1, "seller": "Snow Drift Comics", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 399.99, "shipping": 0.00, "quantity": 1, "seller": "YugiohFreeMarket", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 399.99, "shipping": 4.99, "quantity": 2, "seller": "Voss Media", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 400.00, "shipping": 5.00, "quantity": 1, "seller": "GX Shops", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 417.00, "shipping": 7.99, "quantity": 1, "seller": "BigCards BigMoney", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 420.69, "shipping": 8.99, "quantity": 1, "seller": "Milk Carton Cards", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 420.69, "shipping": 10.99, "quantity": 2, "seller": "Collectors Coalition", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 425.00, "shipping": 14.99, "quantity": 1, "seller": "dmikenel", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 429.99, "shipping": 14.99, "quantity": 2, "seller": "NE Arkys Store", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 445.69, "shipping": 0.00, "quantity": 1, "seller": "DibbysTCG", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 449.99, "shipping": 0.00, "quantity": 1, "seller": "Miami Card Supply", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 456.53, "shipping": 0.00, "quantity": 1, "seller": "Hikouki TCG", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 449.99, "shipping": 8.99, "quantity": 1, "seller": "YourMomLovesMyStore", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 450.00, "shipping": 9.99, "quantity": 2, "seller": "PBS Collect", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 450.69, "shipping": 10.00, "quantity": 1, "seller": "Glixsy", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-    {"price": 450.00, "shipping": 14.99, "quantity": 7, "seller": "ProfessorP", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "tcgplayer"},
-]
+# Listings data - none for this run
+LISTINGS = []
 
-# Sales data - add each sale as a dictionary
-# OP-13 sales for January 3, 2026
-# Filtered out: Japanese items, non-booster box items (X6 packs, etc.)
+# Sales data - EB-02 corrected sales for January 4, 2026 (1 sale, not 0)
 SALES = [
-    {"price": 397.50, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 384.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 390.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 400.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "Carrying On His Will Sealed Booster Box w/3rd Anniversary Treasure Campaign Pack", "platform": "ebay"},
-    {"price": 380.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 2, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 382.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 396.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 396.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 396.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 396.00, "shipping": 0.00, "quantity": 2, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.95, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 398.74, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.00, "shipping": 0.00, "quantity": 2, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 2, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 2, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 395.98, "shipping": 0.00, "quantity": 3, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 397.99, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 395.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 395.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    {"price": 395.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-03", "seller": "unknown", "title": "One Piece OP-13 Carrying on His Will Booster Box", "platform": "ebay"},
-    # Excluded: Japanese items ($85.00, $96.95, $86.74, $99.99)
-    # Excluded: Non-booster box items (X6 packs, tournament packs, etc.)
+    {"price": 599.00, "shipping": 0.00, "quantity": 1, "date": "2026-01-04", "seller": "unknown", "title": "One Piece EB-02 Anime 25th Collection Booster Box", "platform": "ebay"},
 ]
 
 # ============================================================================

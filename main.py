@@ -168,11 +168,17 @@ async def get_booster_boxes(
         
         # Build result list with live metrics from database
         result_boxes = []
+        seen_product_names = set()  # Track seen product names to prevent duplicates
         
         for db_box in db_boxes:
             # Skip test boxes
             if "(Test)" in db_box.product_name or "Test Box" in db_box.product_name:
                 continue
+            
+            # Skip if we've already added this product_name (prevent duplicates)
+            if db_box.product_name in seen_product_names:
+                continue
+            seen_product_names.add(db_box.product_name)
             # Get the latest metrics for this box
             metrics_stmt = select(UnifiedBoxMetrics).where(
                 UnifiedBoxMetrics.booster_box_id == db_box.id
@@ -212,6 +218,9 @@ async def get_booster_boxes(
             elif json_box.get("metrics"):
                 box_data["metrics"] = json_box["metrics"]
                 box_data["metric_date"] = json_box.get("metric_date")
+            else:
+                # Skip boxes with no metrics and no JSON data
+                continue
             
             # Add 30d change and get accurate metrics from historical data service
             from app.services.historical_data import get_box_month_over_month_price_change, get_box_price_history, get_box_30d_avg_sales
@@ -379,6 +388,16 @@ async def get_box_detail(box_id: str):
         price_change_30d = get_box_month_over_month_price_change(str(db_box.id))
         if price_change_30d is not None:
             box_metrics["floor_price_30d_change_pct"] = price_change_30d
+        
+        # Add 30d average sales (same logic as leaderboard - use from latest historical entry if available)
+        if historical_data and latest.get("boxes_sold_30d_avg") is not None:
+            box_metrics["boxes_sold_30d_avg"] = latest.get("boxes_sold_30d_avg")
+        else:
+            # Fallback to calculated value
+            from app.services.historical_data import get_box_30d_avg_sales
+            avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+            if avg_sales_30d is not None:
+                box_metrics["boxes_sold_30d_avg"] = avg_sales_30d
         
         return {
             "data": {
