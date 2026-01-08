@@ -211,3 +211,20 @@ body {
 .marketplace-negative {
   color: #ef4444 !important; /* Red for negative/down */
 }
+
+/* Leaderboard Container - Mobile Optimizations */
+.leaderboard-container {
+  /* Remove glow and side borders on mobile */
+  box-shadow: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* Restore glow and borders on desktop */
+@media (min-width: 640px) {
+  .leaderboard-container {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
+}

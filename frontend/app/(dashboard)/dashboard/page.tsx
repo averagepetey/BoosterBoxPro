@@ -150,9 +150,9 @@ export default function DashboardPage() {
                   opacity: isMounted ? 1 : 0
                 }}
               >
-                <h1 className="lb-title font-extrabold tracking-tight text-7xl mb-2" style={{ color: '#FFFFFF', textShadow: '0 0 20px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7), 0 0 60px rgba(255, 255, 255, 0.5), 0 4px 8px rgba(0, 0, 0, 0.8)', position: 'relative', zIndex: 10 }}>Leaderboard</h1>
+                <h1 className="lb-title font-extrabold tracking-tight text-4xl sm:text-6xl lg:text-7xl mb-2" style={{ color: '#FFFFFF', textShadow: '0 0 20px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7), 0 0 60px rgba(255, 255, 255, 0.5), 0 4px 8px rgba(0, 0, 0, 0.8)', position: 'relative', zIndex: 10 }}>Leaderboard</h1>
                 <p 
-                  className={`text-[color:var(--muted)] tracking-wide text-base font-bold ${isMounted ? 'header-fade-in-delay' : ''}`} 
+                  className={`text-[color:var(--muted)] tracking-wide text-sm sm:text-base font-bold ${isMounted ? 'header-fade-in-delay' : ''}`} 
                   style={{ 
                     textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)', 
                     position: 'relative', 
@@ -169,20 +169,20 @@ export default function DashboardPage() {
         </section>
 
         {/* Page Content */}
-        <main className="container mx-auto px-6 pt-6 pb-12" style={{ maxWidth: '1400px' }}>
+        <main className="container mx-auto px-0 sm:px-6 pt-6 pb-12" style={{ maxWidth: '1400px' }}>
           {/* New Releases Section */}
           <div style={{ marginTop: '-95px' }}>
             <NewReleases />
           </div>
 
           {/* Controls Bar */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="mb-4 flex items-center justify-between px-3 sm:px-0 gap-1.5 sm:gap-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Time Range Buttons */}
               <div className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1">
                 <button 
                   onClick={() => handleTimeRangeChange('24h')}
-                  className={`transition lb-anim px-4 py-1.5 text-xs font-medium rounded-full ${
+                  className={`transition lb-anim px-2.5 sm:px-4 py-1.5 text-xs font-medium rounded-full ${
                     timeRange === '24h' 
                       ? 'text-[#1b1b1b] font-semibold bg-[linear-gradient(180deg,var(--gold),var(--gold-2))] shadow-[0_10px_24px_rgba(246,195,90,0.35)] relative overflow-hidden' 
                       : 'text-white/85 hover:bg-white/10'
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                 </button>
                 <button 
                   onClick={() => handleTimeRangeChange('7d')}
-                  className={`transition lb-anim px-4 py-1.5 text-xs font-medium rounded-full ${
+                  className={`transition lb-anim px-2.5 sm:px-4 py-1.5 text-xs font-medium rounded-full ${
                     timeRange === '7d' 
                       ? 'text-[#1b1b1b] font-semibold bg-[linear-gradient(180deg,var(--gold),var(--gold-2))] shadow-[0_10px_24px_rgba(246,195,90,0.35)] relative overflow-hidden' 
                       : 'text-white/85 hover:bg-white/10'
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                 </button>
                 <button 
                   onClick={() => handleTimeRangeChange('30d')}
-                  className={`transition lb-anim px-4 py-1.5 text-xs font-medium rounded-full ${
+                  className={`transition lb-anim px-2.5 sm:px-4 py-1.5 text-xs font-medium rounded-full ${
                     timeRange === '30d' 
                       ? 'text-[#1b1b1b] font-semibold bg-[linear-gradient(180deg,var(--gold),var(--gold-2))] shadow-[0_10px_24px_rgba(246,195,90,0.35)] relative overflow-hidden' 
                       : 'text-white/85 hover:bg-white/10'
@@ -222,16 +222,16 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* Top Boxes Title */}
-            <h2 className="text-xl font-semibold text-white lb-title">Top Boxes</h2>
+            {/* Top Boxes Title - Center on all screens */}
+            <h2 className="text-sm sm:text-xl font-semibold text-white lb-title whitespace-nowrap flex-shrink-0 mx-1 sm:mx-0">Top Boxes</h2>
             
             {/* Sort Dropdown */}
-            <div className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1 relative">
+            <div className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1 relative flex-shrink-0">
               <div className="relative">
                 <select
                   value={sortBy === 'daily_volume_usd' || sortBy === 'unified_volume_7d_ema' || sortBy === 'unified_volume_usd' ? 'volume' : sortBy}
                   onChange={(e) => handleSortChange(e.target.value)}
-                  className="text-transparent font-medium bg-red-600/80 hover:bg-red-600/90 transition lb-anim pl-16 pr-8 py-1.5 text-xs rounded-full border-none focus:outline-none cursor-pointer appearance-none relative overflow-hidden"
+                  className="text-transparent font-medium bg-red-600/80 hover:bg-red-600/90 transition lb-anim pl-8 sm:pl-16 pr-5 sm:pr-8 py-1.5 text-xs rounded-full border-none focus:outline-none cursor-pointer appearance-none relative overflow-hidden"
                   style={{ WebkitAppearance: 'none', MozAppearance: 'none', color: 'transparent' }}
                 >
                   <option value="volume" className="bg-[#2a2a2a] text-white">Volume</option>
@@ -239,20 +239,20 @@ export default function DashboardPage() {
                   <option value="liquidity_score" className="bg-[#2a2a2a] text-white">Liquidity Score</option>
                   <option value="units_sold_count" className="bg-[#2a2a2a] text-white">Sales</option>
                 </select>
-                {/* "Sort by:" Text Overlay */}
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white text-xs font-semibold z-10">
+                {/* "Sort by:" Text Overlay - Hidden on mobile, shown on desktop */}
+                <span className="hidden sm:block pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white text-xs font-semibold z-10">
                   Sort by:
                 </span>
-                {/* Current Selection Display */}
-                <span className="pointer-events-none absolute left-20 top-1/2 -translate-y-1/2 text-white text-xs font-semibold z-10">
+                {/* Current Selection Display - Adjusted for mobile */}
+                <span className="pointer-events-none absolute left-2 sm:left-20 top-1/2 -translate-y-1/2 text-white text-[10px] sm:text-xs font-semibold z-10">
                   {getSortLabel(sortBy)}
                 </span>
                 {/* Shiny Gradient Overlay */}
                 <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
               </div>
               {/* Dropdown Triangle Indicator */}
-              <div className="absolute right-3 pointer-events-none z-20">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="absolute right-2 sm:right-3 pointer-events-none z-20">
+                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -282,19 +282,18 @@ export default function DashboardPage() {
 
             {/* Table Container - Scrollable */}
             <div 
-              className="relative rounded-3xl overflow-hidden"
+              className="relative rounded-none sm:rounded-3xl overflow-hidden leaderboard-container"
               style={{
-                boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)',
                 background: '#141414 !important',
                 border: '1px solid rgba(255, 255, 255, 0.15) !important'
               }}
             >
             {/* Horizontal Scroll Wrapper for Mobile */}
             <div className="overflow-x-auto scrollbar-hide">
-              <div className="min-w-[950px] sm:min-w-0 px-3 sm:px-6 py-4 sm:py-6">
+              <div className="min-w-[950px] sm:min-w-0 px-2 sm:px-6 py-2 sm:py-6">
             {/* Column Headers - Sticky */}
             <div 
-              className="sticky top-0 z-20 grid grid-cols-12 gap-2 sm:gap-4 px-2 sm:px-4 mb-4 pb-3 text-white/70 uppercase tracking-widest text-[10px] sm:text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-1 sm:gap-4 px-1 sm:px-4 mb-2 sm:mb-4 pb-2 sm:pb-3 text-white/70 uppercase tracking-widest text-[9px] sm:text-xs rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
@@ -302,8 +301,8 @@ export default function DashboardPage() {
                 backdropFilter: 'blur(60px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(60px) saturate(180%)',
                 boxShadow: 'none',
-                paddingTop: '0.5rem',
-                paddingBottom: '0.75rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '0.5rem',
                 borderTopLeftRadius: '1.5rem',
                 borderTopRightRadius: '1.5rem'
               }}
