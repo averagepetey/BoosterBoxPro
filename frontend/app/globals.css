@@ -3,6 +3,8 @@
 :root {
   --background: transparent;
   --foreground: #171717;
+  --gold: #F6C35A;
+  --gold-2: #F4B942;
 }
 
 @theme inline {
@@ -227,4 +229,61 @@ body {
     border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
   }
+}
+
+/* Animated Gold Gradient for Market Text */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.market-gradient-animated {
+  background: linear-gradient(
+    90deg,
+    #FFD700 0%,
+    #FFA500 25%,
+    #FFD700 50%,
+    #FFA500 75%,
+    #FFD700 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Scrolling Reviews Animation */
+@keyframes scroll-right {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.scroll-right-animation {
+  display: flex;
+  animation: scroll-right 22s linear infinite;
+  will-change: transform;
+}
+
+.scroll-left-animation {
+  display: flex;
+  animation: scroll-left 22s linear infinite;
+  will-change: transform;
 }

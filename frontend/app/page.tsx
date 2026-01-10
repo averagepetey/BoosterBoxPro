@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 
 export default function Home() {
-  redirect('/dashboard');
+  // Redirect to landing page for now
+  // Later we can add logic to redirect authenticated users to dashboard
+  redirect('/landing');
 }
