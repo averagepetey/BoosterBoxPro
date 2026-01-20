@@ -18,7 +18,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ sticky = true }: NavigationProps) {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
@@ -63,6 +63,15 @@ export function Navigation({ sticky = true }: NavigationProps) {
                 >
                   Dashboard
                 </Link>
+                {/* Admin-only: Screenshot Tool */}
+                {isAdmin && (
+                  <Link
+                    href="/admin/screenshots"
+                    className="text-yellow-400/85 hover:text-yellow-400 transition-colors flex items-center h-full"
+                  >
+                    📷 Admin Tools
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   className="text-white/85 hover:text-white transition-colors flex items-center h-full"
@@ -72,6 +81,7 @@ export function Navigation({ sticky = true }: NavigationProps) {
                 {user && (
                   <span className="text-white/70 text-sm flex items-center h-full">
                     {user.email}
+                    {isAdmin && <span className="ml-1 text-yellow-400 text-xs">(Admin)</span>}
                   </span>
                 )}
                 <button
@@ -144,6 +154,16 @@ export function Navigation({ sticky = true }: NavigationProps) {
                   >
                     Dashboard
                   </Link>
+                  {/* Admin-only: Screenshot Tool (Mobile) */}
+                  {isAdmin && (
+                    <Link
+                      href="/admin/screenshots"
+                      onClick={closeMobileMenu}
+                      className="text-yellow-400/85 hover:text-yellow-400 transition-colors px-4 py-3 min-h-[44px] flex items-center"
+                    >
+                      📷 Admin Tools
+                    </Link>
+                  )}
                   <Link
                     href="/account"
                     onClick={closeMobileMenu}
@@ -154,6 +174,7 @@ export function Navigation({ sticky = true }: NavigationProps) {
                   {user && (
                     <div className="text-white/70 text-sm px-4 py-3 min-h-[44px] flex items-center border-b border-white/10">
                       {user.email}
+                      {isAdmin && <span className="ml-1 text-yellow-400 text-xs">(Admin)</span>}
                     </div>
                   )}
                   <button

@@ -36,11 +36,13 @@ class LoginRequest(BaseModel):
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    is_admin: bool = False
 
 
 class UserResponse(BaseModel):
     id: str
     email: str
+    is_admin: bool = False
 
 
 def hash_password(password: str) -> str:
@@ -55,7 +57,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
-def create_access_token(user_id: str, email: str) -> str:
+def create_access_token(user_id: str, email: str, is_admin: bool = False) -> str:
     """Create a JWT access token"""
     expires_delta = timedelta(days=settings.jwt_expire_days)
     expire = datetime.utcnow() + expires_delta
@@ -63,6 +65,7 @@ def create_access_token(user_id: str, email: str) -> str:
     payload = {
         "sub": str(user_id),
         "email": email,
+        "is_admin": is_admin,
         "exp": expire,
         "iat": datetime.utcnow(),
     }
@@ -199,14 +202,16 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
             detail="Invalid email or password"
         )
     
-    # Create access token
-    access_token = create_access_token(str(user.id), user.email)
+    # Create access token with admin status
+    is_admin = user.is_superuser if user.is_superuser else False
+    access_token = create_access_token(str(user.id), user.email, is_admin=is_admin)
     
-    return AuthResponse(access_token=access_token, token_type="bearer")
+    return AuthResponse(access_token=access_token, token_type="bearer", is_admin=is_admin)
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
-    return UserResponse(id=str(current_user.id), email=current_user.email)
+    is_admin = current_user.is_superuser if current_user.is_superuser else False
+    return UserResponse(id=str(current_user.id), email=current_user.email, is_admin=is_admin)
 

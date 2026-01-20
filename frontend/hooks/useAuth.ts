@@ -70,9 +70,13 @@ export function useAuth() {
     router.push('/landing');
   };
 
+  // Check if user is admin
+  const isAdmin = user?.is_admin ?? false;
+
   return {
     user,
     isAuthenticated,
+    isAdmin,
     isLoading: isLoadingUser,
     error: userError,
     login: loginMutation.mutate,
