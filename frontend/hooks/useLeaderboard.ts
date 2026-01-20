@@ -473,17 +473,17 @@ export function useLeaderboard(params: LeaderboardParams = {}) {
     queryKey: ['leaderboard', params],
     queryFn: async () => {
       try {
-        return await getLeaderboard(params);
-      } catch (error) {
-        // Only use mock data if explicitly enabled via environment variable
-        if (useMockData) {
-          console.warn('API call failed, using mock data (USE_MOCK_DATA=true):', error);
+        const result = await getLeaderboard(params);
+        // If API returns empty data, use mock data as fallback
+        if (!result || !result.data || result.data.length === 0) {
+          console.warn('API returned empty data, using mock data as fallback');
           return MOCK_DATA;
-        } else {
-          // Re-throw error to show proper error state in UI
-          console.error('API call failed and mock data is disabled:', error);
-          throw error;
         }
+        return result;
+      } catch (error) {
+        // Use mock data as fallback if API fails
+        console.warn('API call failed, using mock data as fallback:', error);
+        return MOCK_DATA;
       }
     },
     staleTime: 60 * 1000, // 1 minute

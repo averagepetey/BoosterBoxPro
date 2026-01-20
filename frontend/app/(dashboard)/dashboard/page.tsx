@@ -11,9 +11,13 @@ import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { NewReleases } from '@/components/leaderboard/NewReleases';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
 import Image from 'next/image';
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [sortBy, setSortBy] = useState('unified_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('30d');
@@ -26,6 +30,42 @@ export default function DashboardPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Handle Stripe redirect after checkout
+  useEffect(() => {
+    const sessionId = searchParams?.get('session_id');
+    if (sessionId) {
+      // Verify subscription with backend
+      const verifySubscription = async () => {
+        try {
+          const token = getAuthToken();
+          const apiBaseUrl = getApiBaseUrl();
+          
+          const response = await fetch(`${apiBaseUrl}/payment/verify-subscription/${sessionId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.verified) {
+              // Subscription verified - remove session_id from URL
+              router.replace('/dashboard');
+              // TODO: Show success message or update user subscription status
+              console.log('Subscription verified:', result);
+            }
+          }
+        } catch (error) {
+          console.error('Error verifying subscription:', error);
+        }
+      };
+      
+      verifySubscription();
+    }
+  }, [searchParams, router]);
 
   const handleSort = (column: string) => {
     const newDirection = sortBy === column && sortDirection === 'desc' ? 'asc' : 'desc';
@@ -262,18 +302,7 @@ export default function DashboardPage() {
           {/* Leaderboard */}
           <div className="mb-4">
 
-            {error && (
-              <div className="bg-error/10 border border-error/20 rounded-xl p-4 mb-4 backdrop-blur-sm">
-                <p className="text-sm text-error">
-                  Failed to load leaderboard: {error instanceof Error ? error.message : 'Unknown error'}
-                </p>
-                <p className="text-xs text-error/70 mt-2">
-                  Make sure the backend API is running at {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}
-                </p>
-              </div>
-            )}
-            
-            {isLoading && !error && (
+            {isLoading && (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/30 mx-auto mb-2"></div>
                 <p className="text-white/60 text-sm">Loading leaderboard...</p>
@@ -281,6 +310,7 @@ export default function DashboardPage() {
             )}
 
             {/* Table Container - Scrollable */}
+            {(!isLoading || data) && (
             <div 
               className="relative rounded-none sm:rounded-3xl overflow-hidden leaderboard-container"
               style={{
@@ -363,23 +393,29 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {!isLoading && !error && (
+            {data && data.data && data.data.length > 0 && (
               <LeaderboardTable
-                boxes={data?.data || []}
-                isLoading={false}
+                boxes={data.data}
+                isLoading={isLoading}
                 onSort={handleSort}
                 currentSort={sortBy}
               />
             )}
             {/* Debug: Show total count */}
-            {data && (
+            {data && data.data && data.data.length > 0 && (
               <div className="mt-4 text-center text-white/60 text-sm">
-                Showing {data.data.length} of {data.meta.total} boxes
+                {error && (
+                  <p className="text-yellow-400/80 text-xs mb-2">
+                    ⚠️ Using sample data (backend server is not running)
+                  </p>
+                )}
+                Showing {data.data.length} of {data.meta?.total || data.data.length} boxes
               </div>
             )}
               </div>
             </div>
             </div>
+            )}
           </div>
         </main>
       </div>

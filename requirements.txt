@@ -33,6 +33,13 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 
+# Payment Processing
+stripe>=7.0.0
+
+# Authentication & Security
+bcrypt>=4.0.0
+python-jose[cryptography]>=3.3.0
+
 # Development Tools
 black>=23.0.0  # Code formatter
 ruff>=0.1.0  # Fast linter
