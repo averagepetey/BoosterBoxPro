@@ -3,11 +3,14 @@ BoosterBoxPro - FastAPI Application Entry Point
 Main entry point for running the API server
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 import uvicorn
+import traceback
 
 from app.config import settings
 from app.database import init_db
@@ -37,21 +40,29 @@ app = FastAPI(
 )
 
 # Configure CORS
-# In development, allow all origins for mobile testing
+# In development, allow all origins (without credentials restriction)
 # In production, restrict to specific domains
-allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 if settings.environment == "development":
-    # Allow all origins in development for mobile testing
-    allowed_origins = ["*"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly allow OPTIONS for preflight
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+    # Development: allow all origins but disable credentials to work with wildcard
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow all origins in development
+        allow_credentials=False,  # Must be False when using "*"
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+else:
+    # Production: specific origins with credentials
+    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
 
 
 # Health check endpoint
@@ -67,11 +78,43 @@ async def health():
     return {"status": "healthy"}
 
 
-# Import routers (when they're created)
-# from app.routers import booster_boxes, auth, users
-# app.include_router(booster_boxes.router, prefix="/api/v1/booster-boxes", tags=["booster-boxes"])
-# app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-# app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+# Global exception handler to ensure CORS headers are included in error responses
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler that ensures CORS headers are included"""
+    import traceback
+    error_detail = str(exc)
+    error_traceback = traceback.format_exc()
+    
+    # Log the error (in production, use proper logging)
+    print(f"⚠️  Unhandled exception: {error_detail}")
+    print(error_traceback)
+    
+    # Return response with CORS headers
+    response = JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": error_detail}
+    )
+    
+    # Add CORS headers manually if needed (CORS middleware should handle this, but ensure it)
+    origin = request.headers.get("origin")
+    if origin or settings.environment == "development":
+        response.headers["Access-Control-Allow-Origin"] = "*" if settings.environment == "development" else origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    return response
+
+
+# Import auth router
+try:
+    from app.routers import auth
+    app.include_router(auth.router)
+    print("✅ Auth router loaded successfully")
+except ImportError as e:
+    print(f"⚠️  Auth router not available: {e}")
+except Exception as e:
+    print(f"⚠️  Error loading auth router: {e}")
 
 # Import admin router for data entry
 try:
@@ -86,6 +129,13 @@ try:
     app.include_router(chat_data_entry.router)
 except ImportError:
     pass  # Chat data entry router not available
+
+# Import payment router
+try:
+    from app.routers import payment
+    app.include_router(payment.router)
+except ImportError:
+    pass  # Payment router not available
 
 
 def get_box_image_url(product_name: str | None) -> str | None:

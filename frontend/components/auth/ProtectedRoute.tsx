@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { getAuthToken } from '@/lib/api/client';
@@ -15,46 +15,64 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  // TODO: Re-enable auth check once login page is set up
-  // For now, bypass auth to allow development
-  return <>{children}</>;
-  
-  /* Original auth code - uncomment when login is ready
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Check if user has token
-    const token = getAuthToken();
+    // Give a small delay to check auth state properly
+    const checkAuth = async () => {
+      // Small delay to ensure auth state is initialized
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const token = getAuthToken();
+      
+      if (!token && !isLoading) {
+        // No token, redirect to landing page (where they can click Sign In to open modal)
+        router.push('/landing');
+        setIsChecking(false);
+      } else if (token) {
+        // Has token, allow access (even if still loading user data)
+        setIsChecking(false);
+      } else if (isLoading) {
+        // Still loading, keep checking
+        // This will resolve when isLoading becomes false
+      }
+    };
     
-    if (!token && !isLoading) {
-      // No token, redirect to login
-      router.push('/login');
-    }
+    checkAuth();
   }, [isAuthenticated, isLoading, router]);
 
   // Check if user has token
   const token = getAuthToken();
   
-  // If no token, don't show loading - let redirect happen
-  if (!token) {
-    return null;
-  }
-
   // Show loading state while checking auth
-  if (isLoading) {
+  if (isLoading || isChecking || (!token && isLoading)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rocket-red mx-auto mb-4"></div>
-          <p className="text-foreground-secondary">Loading...</p>
+      <div 
+        className="min-h-screen bg-black flex items-center justify-center"
+        style={{
+          backgroundImage: 'url(/gradient2background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundColor: '#000000'
+        }}
+      >
+        <div className="text-center relative z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-white/70">Loading...</p>
         </div>
       </div>
     );
   }
+  
+  // If no token after checking, don't render (redirect is happening)
+  if (!token) {
+    return null;
+  }
 
   // User is authenticated, render children
   return <>{children}</>;
-  */
 }
 

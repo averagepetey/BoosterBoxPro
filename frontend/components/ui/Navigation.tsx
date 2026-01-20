@@ -10,14 +10,18 @@ import { Logo } from './Logo';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
+import { LoginModal } from '@/components/auth/LoginModal';
+import { SignupModal } from '@/components/auth/SignupModal';
 
 interface NavigationProps {
   sticky?: boolean;
 }
 
 export function Navigation({ sticky = true }: NavigationProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -51,29 +55,48 @@ export function Navigation({ sticky = true }: NavigationProps) {
           
           {/* Desktop Navigation Links */}
           <div className="hidden sm:flex items-center gap-6 flex-shrink-0 h-full">
-            <Link
-              href="/dashboard"
-              className="text-white/85 hover:text-white transition-colors flex items-center h-full"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/account"
-              className="text-white/85 hover:text-white transition-colors flex items-center h-full"
-            >
-              Account
-            </Link>
-            {user && (
-              <span className="text-white/70 text-sm flex items-center h-full">
-                {user.email}
-              </span>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="text-white/85 hover:text-white transition-colors flex items-center h-full"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/account"
+                  className="text-white/85 hover:text-white transition-colors flex items-center h-full"
+                >
+                  Account
+                </Link>
+                {user && (
+                  <span className="text-white/70 text-sm flex items-center h-full">
+                    {user.email}
+                  </span>
+                )}
+                <button
+                  onClick={logout}
+                  className="text-white/85 hover:text-white transition-colors flex items-center h-full"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="text-white/85 hover:text-white transition-colors flex items-center h-full"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setIsSignupModalOpen(true)}
+                  className="px-4 py-2 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors"
+                >
+                  Sign Up
+                </button>
+              </>
             )}
-            <button
-              onClick={logout}
-              className="text-white/85 hover:text-white transition-colors flex items-center h-full"
-            >
-              Logout
-            </button>
           </div>
 
           {/* Mobile Hamburger Menu Button */}
@@ -112,38 +135,83 @@ export function Navigation({ sticky = true }: NavigationProps) {
         {isMobileMenuOpen && (
           <div className="sm:hidden border-t border-white/10 bg-black/50 backdrop-blur-md">
             <div className="flex flex-col py-2">
-              <Link
-                href="/dashboard"
-                onClick={closeMobileMenu}
-                className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/account"
-                onClick={closeMobileMenu}
-                className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center"
-              >
-                Account
-              </Link>
-              {user && (
-                <div className="text-white/70 text-sm px-4 py-3 min-h-[44px] flex items-center border-b border-white/10">
-                  {user.email}
-                </div>
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={closeMobileMenu}
+                    className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/account"
+                    onClick={closeMobileMenu}
+                    className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center"
+                  >
+                    Account
+                  </Link>
+                  {user && (
+                    <div className="text-white/70 text-sm px-4 py-3 min-h-[44px] flex items-center border-b border-white/10">
+                      {user.email}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      closeMobileMenu();
+                      logout();
+                    }}
+                    className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center text-left"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsLoginModalOpen(true);
+                      closeMobileMenu();
+                    }}
+                    className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center text-left"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsSignupModalOpen(true);
+                      closeMobileMenu();
+                    }}
+                    className="px-4 py-3 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors text-center min-h-[44px] flex items-center justify-center mx-4 mt-2"
+                  >
+                    Sign Up
+                  </button>
+                </>
               )}
-              <button
-                onClick={() => {
-                  closeMobileMenu();
-                  logout();
-                }}
-                className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center text-left"
-              >
-                Logout
-              </button>
             </div>
           </div>
         )}
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)}
+        onSwitchToSignup={() => {
+          setIsLoginModalOpen(false);
+          setIsSignupModalOpen(true);
+        }}
+      />
+      
+      {/* Signup Modal */}
+      <SignupModal 
+        isOpen={isSignupModalOpen} 
+        onClose={() => setIsSignupModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsSignupModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
     </nav>
   );
 }

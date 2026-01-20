@@ -7,6 +7,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
 interface PricingTier {
   id: number;
@@ -77,6 +78,8 @@ const pricingTiers: PricingTier[] = [
 ];
 
 export function PricingSection() {
+  const { openSignup } = useAuthModals();
+  
   return (
     <section 
       id="pricing"
@@ -157,8 +160,8 @@ export function PricingSection() {
               </div>
 
               {/* CTA Button */}
-              <Link
-                href={tier.ctaHref}
+              <button
+                onClick={openSignup}
                 className={`block w-full text-center px-4 py-2.5 sm:py-3 rounded-full font-semibold transition-all text-sm sm:text-base min-h-[44px] flex items-center justify-center ${
                   tier.highlighted
                     ? 'bg-[linear-gradient(180deg,var(--gold, #F6C35A),var(--gold-2, #F4B942))] text-[#1b1b1b] shadow-[0_10px_24px_rgba(246,195,90,0.35)] hover:shadow-[0_0_20px_rgba(246,195,90,0.8),0_0_40px_rgba(246,195,90,0.6),0_0_60px_rgba(246,195,90,0.4)]'
@@ -166,7 +169,7 @@ export function PricingSection() {
                 }`}
               >
                 {tier.ctaText}
-              </Link>
+              </button>
             </div>
           ))}
         </div>

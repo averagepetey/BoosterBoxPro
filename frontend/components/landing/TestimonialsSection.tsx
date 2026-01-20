@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
 interface Testimonial {
   id: number;
@@ -113,6 +114,7 @@ const testimonials: Testimonial[] = [
 ];
 
 export function TestimonialsSection() {
+  const { openSignup } = useAuthModals();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -243,12 +245,12 @@ export function TestimonialsSection() {
 
           {/* Join Now Button (replaces pagination dots) */}
           <div className="flex justify-center mt-3 sm:mt-4">
-            <Link
-              href="/signup"
+            <button
+              onClick={openSignup}
               className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-yellow-400 hover:bg-yellow-300 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(234,179,8,0.35)] hover:shadow-[0_0_20px_rgba(234,179,8,0.8),0_0_40px_rgba(234,179,8,0.6),0_0_60px_rgba(234,179,8,0.4)]"
             >
               Join Now
-            </Link>
+            </button>
           </div>
         </div>
 

@@ -11,8 +11,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
 export function HeroSection() {
+  const { openSignup } = useAuthModals();
 
   return (
     <section className="relative min-h-screen flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-12 max-w-7xl mx-auto" style={{ marginTop: '-20px' }}>
@@ -47,19 +49,19 @@ export function HeroSection() {
 
         {/* Call-to-Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-5 lg:mb-6">
-          <Link
-            href="/signup"
+          <button
+            onClick={openSignup}
             className="inline-flex items-center justify-center px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white font-semibold transition-all text-sm sm:text-base min-h-[44px] shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)] relative overflow-hidden lb-anim"
           >
             <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
             <span className="relative z-10">Join Now</span>
-          </Link>
-          <Link
-            href="/signup"
+          </button>
+          <button
+            onClick={openSignup}
             className="inline-flex items-center justify-center px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-white/12 border border-white/15 backdrop-blur-md hover:bg-white/20 text-white font-semibold transition-all text-sm sm:text-base min-h-[44px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:shadow-[0_0_20px_rgba(255,255,255,0.6),0_0_40px_rgba(255,255,255,0.4),0_0_60px_rgba(255,255,255,0.2)] lb-anim"
           >
             Start Free Trial
-          </Link>
+          </button>
         </div>
 
         {/* Key Metrics */}

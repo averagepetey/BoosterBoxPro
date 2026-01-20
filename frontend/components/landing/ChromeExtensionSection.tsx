@@ -7,8 +7,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
 export function ChromeExtensionSection() {
+  const { openSignup } = useAuthModals();
+  
   return (
     <section 
       id="chrome-extension"
@@ -94,15 +97,15 @@ export function ChromeExtensionSection() {
 
             {/* CTA Button */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
-              <Link
-                href="/signup"
+              <button
+                onClick={openSignup}
                 className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)] relative overflow-hidden lb-anim"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                 </svg>
                 <span>Install Chrome Extension</span>
-              </Link>
+              </button>
             </div>
 
             {/* Small text */}

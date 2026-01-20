@@ -14,27 +14,29 @@ import { MarketEdgeSection } from '@/components/landing/MarketEdgeSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { FAQSection } from '@/components/landing/FAQSection';
 import { Navigation } from '@/components/ui/Navigation';
+import { AuthModalsProvider } from '@/components/auth/AuthModalsProvider';
 
 export default function LandingPage() {
   return (
-    <div 
-      className="min-h-screen relative"
-      style={{
-        backgroundImage: 'url(/gradient2background.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundColor: '#000000'
-      }}
-    >
-      {/* Overlay to ensure content is readable */}
-      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-      
-      {/* Navigation - NOT sticky */}
-      <div className="relative z-10">
-        <Navigation sticky={false} />
-      </div>
+    <AuthModalsProvider>
+      <div 
+        className="min-h-screen relative"
+        style={{
+          backgroundImage: 'url(/gradient2background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          backgroundColor: '#000000'
+        }}
+      >
+        {/* Overlay to ensure content is readable */}
+        <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+        
+        {/* Navigation - NOT sticky */}
+        <div className="relative z-10">
+          <Navigation sticky={false} />
+        </div>
       
       {/* Hero Section */}
       <div className="relative z-10">
@@ -75,7 +77,8 @@ export default function LandingPage() {
       <div className="relative z-10">
         <FAQSection />
       </div>
-    </div>
+      </div>
+    </AuthModalsProvider>
   );
 }
 

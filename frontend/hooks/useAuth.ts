@@ -35,8 +35,16 @@ export function useAuth() {
     onSuccess: (data) => {
       // Invalidate and refetch user data
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Get redirect URL from query params or default to dashboard
+      if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const redirectUrl = searchParams.get('redirect') || '/dashboard';
+        // Redirect to dashboard or requested URL
+        router.push(redirectUrl);
+        router.refresh(); // Refresh to update auth state
+      } else {
+        router.push('/dashboard');
+      }
     },
     onError: (error: any) => {
       console.error('Login error:', error);
@@ -59,7 +67,7 @@ export function useAuth() {
   const handleLogout = () => {
     logout();
     queryClient.clear();
-    router.push('/login');
+    router.push('/landing');
   };
 
   return {
