@@ -127,7 +127,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requireSubscription={true}>
       <div className="lb-page" style={{ 
         minHeight: '100vh',
         width: '100%'

@@ -1,9 +1,11 @@
 """
 Admin Router
 Protected endpoints for admin operations (screenshot upload, data entry)
+Only accessible by admin users (john.petersen1818@gmail.com) or via API key
 """
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import date
@@ -24,11 +26,58 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+security = HTTPBearer(auto_error=False)
+
+# Admin email - only this user can access admin features
+ADMIN_EMAIL = "john.petersen1818@gmail.com"
+
+
+def verify_admin_access(
+    x_admin_api_key: Optional[str] = Header(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> bool:
+    """
+    Verify admin access via API key OR JWT token for admin user
+    
+    Args:
+        x_admin_api_key: API key from X-Admin-API-Key header
+        credentials: JWT token from Authorization header
+        
+    Returns:
+        True if valid admin, raises HTTPException if unauthorized
+    """
+    # Method 1: Check API key
+    if x_admin_api_key and settings.admin_api_key:
+        if x_admin_api_key == settings.admin_api_key:
+            return True
+    
+    # Method 2: Check JWT token for admin user
+    if credentials:
+        try:
+            from app.routers.auth import decode_access_token
+            payload = decode_access_token(credentials.credentials)
+            email = payload.get("email")
+            is_admin = payload.get("is_admin", False)
+            
+            # Check if user is admin (either by is_admin flag or by email)
+            if is_admin or email == ADMIN_EMAIL:
+                return True
+        except Exception:
+            pass  # Token invalid, fall through to unauthorized
+    
+    # If no admin key is configured and we're in development, allow access
+    if not settings.admin_api_key and settings.environment != "production":
+        return True
+    
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required. Only admin users can access this endpoint."
+    )
 
 
 def verify_admin_api_key(x_admin_api_key: Optional[str] = Header(None)) -> bool:
     """
-    Verify admin API key from header
+    Legacy: Verify admin API key from header (kept for backwards compatibility)
     
     Args:
         x_admin_api_key: API key from X-Admin-API-Key header
