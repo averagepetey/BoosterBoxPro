@@ -591,19 +591,19 @@
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('[BBP] Received message:', request);
     
-    if (request.action === 'togglePanel') {
+    if (request.action === 'showPanel' || request.action === 'togglePanel') {
+      // Show the panel
       if (!panelElement) {
         init();
-      } else if (panelElement.style.display === 'none') {
+      } else {
         panelElement.style.display = 'block';
-        detectAndFetch();
-      } else if (panelElement.classList.contains('bbp-collapsed')) {
         panelElement.classList.remove('bbp-collapsed');
         const collapseBtn = panelElement.querySelector('.bbp-btn-collapse');
         if (collapseBtn) {
           collapseBtn.textContent = '◀';
           collapseBtn.title = 'Collapse';
         }
+        detectAndFetch();
       }
       sendResponse({ success: true });
     }
