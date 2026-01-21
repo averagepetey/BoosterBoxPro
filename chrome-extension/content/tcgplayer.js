@@ -16,57 +16,90 @@
   let compareBoxData = null;
 
   /**
+   * Set name to set code mapping
+   */
+  const SET_NAME_MAP = {
+    'romance dawn': 'OP-01',
+    'paramount war': 'OP-02',
+    'pillars of strength': 'OP-03',
+    'kingdoms of intrigue': 'OP-04',
+    'awakening of the new era': 'OP-05',
+    'wings of the captain': 'OP-06',
+    '500 years in the future': 'OP-07',
+    'two legends': 'OP-08',
+    'the four emperors': 'OP-09',
+    'royal blood': 'OP-10',
+    'uta': 'OP-11',
+    'wings of justice': 'OP-12',
+    'carrying on his will': 'OP-13',
+    'memorial collection': 'EB-01',
+    'extra booster': 'EB-01',
+    'premium booster': 'PRB-01',
+  };
+
+  /**
    * Extract set code from page (OP-01, OP-02, EB-01, PRB-01, etc.)
    */
   function extractSetCode() {
-    // Try URL first
-    const url = window.location.href;
-    
-    // Pattern: op-01, op01, op 01, OP-01, etc.
-    const urlMatch = url.match(/[oO][pP][-\s]?(\d{1,2})|[eE][bB][-\s]?(\d{1,2})|[pP][rR][bB][-\s]?(\d{1,2})/i);
-    
-    if (urlMatch) {
-      const num = urlMatch[1] || urlMatch[2] || urlMatch[3];
-      const prefix = url.toLowerCase().includes('eb') ? 'EB' : 
-                     url.toLowerCase().includes('prb') ? 'PRB' : 'OP';
-      return `${prefix}-${num.padStart(2, '0')}`;
-    }
-    
-    // Try page title
-    const title = document.title;
-    const titleMatch = title.match(/[oO][pP][-\s]?(\d{1,2})|[eE][bB][-\s]?(\d{1,2})|[pP][rR][bB][-\s]?(\d{1,2})/i);
-    
-    if (titleMatch) {
-      const num = titleMatch[1] || titleMatch[2] || titleMatch[3];
-      const prefix = title.toLowerCase().includes('eb') ? 'EB' : 
-                     title.toLowerCase().includes('prb') ? 'PRB' : 'OP';
-      return `${prefix}-${num.padStart(2, '0')}`;
-    }
-    
-    // Try product name on page
-    const productNameEl = document.querySelector('.product-details__name, h1.product__name, [data-testid="product-name"]');
-    if (productNameEl) {
-      const text = productNameEl.textContent;
-      const productMatch = text.match(/[oO][pP][-\s]?(\d{1,2})|[eE][bB][-\s]?(\d{1,2})|[pP][rR][bB][-\s]?(\d{1,2})/i);
-      
-      if (productMatch) {
-        const num = productMatch[1] || productMatch[2] || productMatch[3];
-        const prefix = text.toLowerCase().includes('eb') ? 'EB' : 
-                       text.toLowerCase().includes('prb') ? 'PRB' : 'OP';
-        return `${prefix}-${num.padStart(2, '0')}`;
-      }
-    }
-    
-    // Check if it's a One Piece booster box page at all
+    const url = window.location.href.toLowerCase();
+    const title = document.title.toLowerCase();
     const pageText = document.body.innerText.toLowerCase();
-    if (pageText.includes('one piece') && pageText.includes('booster')) {
-      // Try to find any OP pattern
-      const bodyMatch = pageText.match(/op[-\s]?(\d{1,2})/i);
-      if (bodyMatch) {
-        return `OP-${bodyMatch[1].padStart(2, '0')}`;
+    
+    // Combine all text sources for searching
+    const allText = url + ' ' + title + ' ' + pageText;
+    
+    // 1. Try direct set code pattern first (OP-13, op13, OP 13, etc.)
+    const directMatch = allText.match(/\b(op|eb|prb)[-\s]?(\d{1,2})\b/i);
+    if (directMatch) {
+      const prefix = directMatch[1].toUpperCase();
+      const num = directMatch[2].padStart(2, '0');
+      console.log(`[BBP] Found direct set code: ${prefix}-${num}`);
+      return `${prefix}-${num}`;
+    }
+    
+    // 2. Try set name mapping
+    for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
+      if (allText.includes(setName)) {
+        console.log(`[BBP] Found set name "${setName}" → ${setCode}`);
+        return setCode;
       }
     }
     
+    // 3. Check product title element specifically
+    const productTitleEl = document.querySelector('h1');
+    if (productTitleEl) {
+      const titleText = productTitleEl.textContent.toLowerCase();
+      
+      // Check for set code in title
+      const titleMatch = titleText.match(/\b(op|eb|prb)[-\s]?(\d{1,2})\b/i);
+      if (titleMatch) {
+        const prefix = titleMatch[1].toUpperCase();
+        const num = titleMatch[2].padStart(2, '0');
+        return `${prefix}-${num}`;
+      }
+      
+      // Check for set name in title
+      for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
+        if (titleText.includes(setName)) {
+          console.log(`[BBP] Found set name in title "${setName}" → ${setCode}`);
+          return setCode;
+        }
+      }
+    }
+    
+    // 4. Check breadcrumb
+    const breadcrumb = document.querySelector('[class*="breadcrumb"]');
+    if (breadcrumb) {
+      const breadcrumbText = breadcrumb.textContent.toLowerCase();
+      for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
+        if (breadcrumbText.includes(setName)) {
+          console.log(`[BBP] Found set name in breadcrumb "${setName}" → ${setCode}`);
+          return setCode;
+        }
+      }
+    }
+    
+    console.log('[BBP] No set code detected');
     return null;
   }
 
@@ -77,11 +110,14 @@
     const panel = document.createElement('div');
     panel.id = 'bbp-panel';
     panel.className = 'bbp-panel';
+    // Get extension URL for logo
+    const logoUrl = chrome.runtime.getURL('icons/logo.png');
+    
     panel.innerHTML = `
       <div class="bbp-panel-header">
         <div class="bbp-logo">
-          <span class="bbp-icon">🎯</span>
-          <span class="bbp-title">BoosterBoxPro</span>
+          <img src="${logoUrl}" alt="BoosterPro" class="bbp-logo-img" onerror="this.style.display='none'">
+          <span class="bbp-title">BoosterPro</span>
         </div>
         <div class="bbp-controls">
           <button class="bbp-btn-minimize" title="Minimize">─</button>

@@ -8,21 +8,23 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 320px;
+  width: 340px;
   max-height: calc(100vh - 40px);
-  background: rgba(10, 10, 10, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #ffffff;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 0 20px rgba(239, 68, 68, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.6);
   z-index: 999999;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .bbp-panel.bbp-minimized {
-  height: 44px !important;
+  height: 52px !important;
   overflow: hidden;
 }
 
@@ -30,31 +32,42 @@
   display: none;
 }
 
-/* Panel Header */
+/* Panel Header - Red gradient like dashboard */
 .bbp-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(34, 197, 94, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.2);
   cursor: move;
 }
 
 .bbp-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.bbp-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .bbp-icon {
-  font-size: 18px;
+  font-size: 20px;
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
 }
 
 .bbp-title {
-  font-weight: 600;
-  font-size: 14px;
-  color: #22c55e;
+  font-weight: 700;
+  font-size: 15px;
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
 }
 
 .bbp-controls {
@@ -76,7 +89,7 @@
 }
 
 .bbp-controls button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(239, 68, 68, 0.3);
   color: #fff;
 }
 
@@ -100,8 +113,8 @@
 .bbp-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(34, 197, 94, 0.2);
-  border-top-color: #22c55e;
+  border: 3px solid rgba(239, 68, 68, 0.2);
+  border-top-color: #ef4444;
   border-radius: 50%;
   animation: bbp-spin 1s linear infinite;
 }
@@ -160,12 +173,13 @@
 
 .bbp-tab:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .bbp-tab.active {
   color: #fff;
-  background: rgba(34, 197, 94, 0.2);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.2) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* Stats Sections */
@@ -237,19 +251,21 @@
 .bbp-dashboard-link {
   display: block;
   text-align: center;
-  padding: 12px;
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
   text-decoration: none;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s;
   margin-top: 16px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .bbp-dashboard-link:hover {
-  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
 }
 
 /* Compare Tab */
@@ -277,7 +293,8 @@
 
 .bbp-compare-search select:focus {
   outline: none;
-  border-color: #22c55e;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
 .bbp-compare-search select option {
@@ -369,19 +386,21 @@
 }
 
 .bbp-retry-btn {
-  padding: 8px 24px;
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid #22c55e;
-  color: #22c55e;
-  border-radius: 6px;
+  padding: 10px 28px;
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .bbp-retry-btn:hover {
-  background: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
 }
 
 /* Scrollbar */
