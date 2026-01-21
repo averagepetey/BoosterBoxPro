@@ -102,6 +102,43 @@ async function getTopMovers() {
   }
 }
 
+/**
+ * Inject content script into a tab
+ */
+async function injectContentScript(tabId) {
+  try {
+    // First try to message existing content script
+    try {
+      const response = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+      if (response && response.pong) {
+        // Content script already loaded, just show panel
+        await chrome.tabs.sendMessage(tabId, { action: 'showPanel' });
+        return { success: true, alreadyLoaded: true };
+      }
+    } catch (e) {
+      // Content script not loaded, proceed with injection
+      console.log('[BBP] Content script not loaded, injecting...');
+    }
+    
+    // Inject CSS
+    await chrome.scripting.insertCSS({
+      target: { tabId: tabId },
+      files: ['content/panel.css']
+    });
+    
+    // Inject JS
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content/tcgplayer.js']
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('[BBP] Injection error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Listen for messages from content scripts and popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log(`[BBP] Received message:`, request);
@@ -121,6 +158,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
     case 'getTopMovers':
       getTopMovers().then(sendResponse);
+      return true;
+    
+    case 'injectPanel':
+      injectContentScript(request.tabId).then(sendResponse);
       return true;
       
     default:
