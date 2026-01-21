@@ -24,10 +24,17 @@
   transition: all 0.3s ease;
 }
 
-/* Collapsed state - just shows a tab on the edge */
+/* Collapsed state - shows a visible tab on the edge */
 .bbp-panel.bbp-collapsed {
-  width: 40px;
-  border-radius: 0 8px 8px 0;
+  width: 36px;
+  border-radius: 0 12px 12px 0;
+  cursor: pointer;
+  background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-left: none;
+  box-shadow: 
+    4px 0 20px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(239, 68, 68, 0.2);
 }
 
 .bbp-panel.bbp-collapsed .bbp-panel-content,
@@ -38,8 +45,12 @@
 }
 
 .bbp-panel.bbp-collapsed .bbp-panel-header {
-  padding: 12px 8px;
+  padding: 16px 6px;
   justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 120px;
 }
 
 .bbp-panel.bbp-collapsed .bbp-logo {
@@ -49,6 +60,18 @@
 .bbp-panel.bbp-collapsed .bbp-logo-img {
   width: 24px;
   height: 24px;
+}
+
+.bbp-panel.bbp-collapsed .bbp-btn-collapse {
+  width: 24px;
+  height: 40px;
+  font-size: 16px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.bbp-panel.bbp-collapsed .bbp-btn-collapse:hover {
+  background: rgba(239, 68, 68, 0.4);
 }
 
 /* Legacy minimized state - kept for compatibility */
