@@ -81,7 +81,7 @@ eBay Listing:  /itm/One-Piece-OP-13-Booster-Box/...
 │ ═══════════════════════════════════════ │
 │                                         │
 │ [Box Image]                             │
-│ OP-13: Two Legends Booster Box          │
+│ OP-13: Carrying On His Will Booster Box          │
 │                                         │
 │ ═══════════════════════════════════════ │
 │ [📊 Stats]  [⚖️ Compare]                │
@@ -169,7 +169,7 @@ eBay Listing:  /itm/One-Piece-OP-13-Booster-Box/...
 │   OP-13                   OP-01         │
 │ ┌────────────────┬────────────────────┐ │
 │ │ [OP-13 Image]  │  [OP-01 Image]     │ │
-│ │ Two Legends    │  Romance Dawn      │ │
+│ │ Carrying On... │  Romance Dawn      │ │
 │ └────────────────┴────────────────────┘ │
 │                                         │
 │ 💰 FLOOR PRICE                          │
@@ -396,9 +396,9 @@ async def extension_box_lookup(
         "matched": True,
         "box": {
             "id": "uuid",
-            "product_name": "OP-13: Two Legends Booster Box",
+            "product_name": "OP-13: Carrying On His Will Booster Box",
             "set_code": "OP-13",
-            "set_name": "Two Legends",
+            "set_name": "Carrying On His Will",
             "game_type": "One Piece",
             "image_url": "/images/boxes/op-13.png",
             "reprint_risk": "MEDIUM",
@@ -490,7 +490,7 @@ async def extension_top_movers():
     """
     return {
         "gainers": [
-            {"set_code": "OP-13", "name": "Two Legends", "price": 124.99, "change_pct": 5.2},
+            {"set_code": "OP-13", "name": "Carrying On His Will", "price": 124.99, "change_pct": 5.2},
             # ...
         ],
         "losers": [
