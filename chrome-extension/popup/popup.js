@@ -27,24 +27,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      // Inject CSS first (ignore errors if already injected)
-      try {
-        await chrome.scripting.insertCSS({
-          target: { tabId: tab.id },
-          files: ['content/panel.css']
-        });
-      } catch (e) {
-        console.log('[BBP] CSS may already be injected');
-      }
-      
-      // Inject/re-inject the content script to ensure panel shows
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content/tcgplayer.js']
+      // Send message to content script to show panel
+      // Content script is auto-injected via manifest, so just message it
+      chrome.tabs.sendMessage(tab.id, { action: 'showPanel' }, (response) => {
+        // Ignore errors - content script should be loaded
+        if (chrome.runtime.lastError) {
+          console.log('[BBP] Content script not responding, page may need refresh');
+          alert('Panel not ready. Please refresh the page and try again.');
+          return;
+        }
+        // Close popup
+        window.close();
       });
-      
-      // Close popup immediately
-      window.close();
       
     } catch (err) {
       console.error('[BBP] Error:', err);
