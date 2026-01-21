@@ -4,7 +4,7 @@ Loads settings from environment variables
 """
 
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -19,6 +19,18 @@ class Settings(BaseSettings):
     
     # Admin API Key (simple auth for manual entry endpoints)
     admin_api_key: Optional[str] = None
+    
+    # CORS - Production domains (comma-separated in .env)
+    # Example: CORS_ORIGINS=https://boosterboxpro.com,https://www.boosterboxpro.com
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse comma-separated CORS origins into a list"""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+    
+    # Rate limiting
+    rate_limit_enabled: bool = True
     
     # Redis Cache (Phase 6)
     redis_host: str = "localhost"
