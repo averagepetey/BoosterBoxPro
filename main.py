@@ -230,6 +230,14 @@ try:
 except ImportError:
     pass  # Payment router not available
 
+# Import extension router (for Chrome extension)
+try:
+    from app.routers import extension
+    app.include_router(extension.router)
+    print("✅ Extension router loaded successfully")
+except ImportError as e:
+    print(f"⚠️  Extension router not available: {e}")
+
 
 def get_box_image_url(product_name: str | None) -> str | None:
     """
