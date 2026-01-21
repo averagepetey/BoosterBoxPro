@@ -2,20 +2,19 @@
 
 ## Overview
 
-A Chrome extension that overlays BoosterBoxPro market data directly on TCGplayer and eBay product pages, so users can see real-time floor prices, sales velocity, and trends without leaving the marketplace.
+A Chrome extension that **automatically detects** which booster box you're viewing on TCGplayer or eBay and displays the **full box detail page stats** in a sidebar panel. Users get complete market intelligence without leaving the marketplace - like having the BoosterBoxPro dashboard right next to their shopping.
 
 ---
 
 ## Core Value Proposition
 
-**"See market intelligence while you shop."**
+**"Your full dashboard, right where you shop."**
 
-When browsing a booster box listing on TCGplayer or eBay, users instantly see:
-- Our tracked floor price vs. the listing price
-- Is this a good deal? (price comparison indicator)
-- Sales velocity (how fast is this box selling?)
-- Price trend (up/down over 30 days)
-- Quick link to full BoosterBoxPro dashboard
+When browsing ANY booster box URL on TCGplayer or eBay:
+1. **Auto-Detection**: Extension automatically identifies the box (e.g., OP-13, OP-01)
+2. **Full Stats Panel**: Shows ALL box detail metrics (not just a summary)
+3. **Compare Tab**: Compare current box to any other box side-by-side
+4. **No Manual Lookup**: Just browse normally, data appears automatically
 
 ---
 
@@ -47,77 +46,236 @@ When browsing a booster box listing on TCGplayer or eBay, users instantly see:
 
 ## Feature Specification
 
-### 1. Product Page Overlay
+### 1. Auto-Detection (Core Feature)
 
-**Trigger:** When user views a booster box product page on TCGplayer/eBay
+**How it works:**
+- Extension monitors the current URL
+- Detects TCGplayer product pages: `tcgplayer.com/product/...`
+- Detects eBay searches/listings: `ebay.com/sch/...` or `ebay.com/itm/...`
+- Extracts product identifier (OP-13, OP-01, etc.) from URL or page title
+- Automatically fetches and displays data - **NO manual lookup needed**
 
-**Display:** Small floating card/badge near the price showing:
+**Detection Methods:**
+```
+TCGplayer URL: /product/514680/one-piece-card-game-op13-booster-box
+              → Extract "OP-13" from product name
+              
+eBay Search:   /sch/i.html?_nkw=op13+booster+box
+              → Extract "OP-13" from search query
+              
+eBay Listing:  /itm/One-Piece-OP-13-Booster-Box/...
+              → Extract "OP-13" from title
+```
+
+---
+
+### 2. Full Stats Panel (Sidebar)
+
+**Trigger:** Automatically appears when box is detected on page
+
+**Layout:** Collapsible sidebar panel (right side of screen)
+
+```
+┌─────────────────────────────────────────┐
+│ 🎯 BoosterBoxPro          [─] [×]       │
+│ ═══════════════════════════════════════ │
+│                                         │
+│ [Box Image]                             │
+│ OP-13: Two Legends Booster Box          │
+│                                         │
+│ ═══════════════════════════════════════ │
+│ [📊 Stats]  [⚖️ Compare]                │
+│ ───────────────────────────────────────-│
+│                                         │
+│ 💰 PRICING                              │
+│ ┌─────────────────────────────────────┐ │
+│ │ Floor Price      $124.99            │ │
+│ │ 24h Change       +2.3% ▲            │ │
+│ │ 30d Change       +15.7% ▲           │ │
+│ │ Listing Price    $129.99 (+4.0%)    │ │
+│ │ Verdict          🟡 FAIR            │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ 📈 VOLUME & SALES                       │
+│ ┌─────────────────────────────────────┐ │
+│ │ Daily Volume     $2,450             │ │
+│ │ 30d Volume       $73,500            │ │
+│ │ 7d EMA           $2,180             │ │
+│ │ Sales/Day        2.8                │ │
+│ │ 30d Avg Sales    2.4                │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ 📦 SUPPLY                               │
+│ ┌─────────────────────────────────────┐ │
+│ │ Active Listings  847                │ │
+│ │ Added Today      +23                │ │
+│ │ Liquidity Score  8.4/10             │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ ⏱️ INVESTMENT METRICS                   │
+│ ┌─────────────────────────────────────┐ │
+│ │ Days to +20%     45 days            │ │
+│ │ Reprint Risk     🟡 MEDIUM          │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ 📉 PRICE HISTORY (30d)                  │
+│ ┌─────────────────────────────────────┐ │
+│ │ [Mini Chart Here]                   │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ [View Full Dashboard →]                 │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**All Stats Shown (matches Box Detail page):**
+- Floor Price (current)
+- 24h Price Change %
+- 30d Price Change %
+- Listing Price Comparison (if on a listing)
+- Daily Volume USD
+- 30-Day Volume USD
+- 7-Day EMA Volume
+- Sales Per Day
+- 30-Day Average Sales
+- Active Listings Count
+- Boxes Added Today
+- Liquidity Score
+- Days to +20% Increase
+- Reprint Risk Level
+- Mini Price Chart (30d)
+
+---
+
+### 3. Compare Tab (Side-by-Side)
+
+**Trigger:** User clicks "Compare" tab in the sidebar
+
+**Display:** Two-column comparison view
+
+```
+┌─────────────────────────────────────────┐
+│ 🎯 BoosterBoxPro          [─] [×]       │
+│ ═══════════════════════════════════════ │
+│ [📊 Stats]  [⚖️ Compare]  ← ACTIVE      │
+│ ───────────────────────────────────────-│
+│                                         │
+│ 🔍 Compare to: [Search box... ▼]        │
+│    Recent: OP-01, OP-03, OP-05          │
+│                                         │
+│ ═══════════════════════════════════════ │
+│                                         │
+│   CURRENT         vs      COMPARE       │
+│   OP-13                   OP-01         │
+│ ┌────────────────┬────────────────────┐ │
+│ │ [OP-13 Image]  │  [OP-01 Image]     │ │
+│ │ Two Legends    │  Romance Dawn      │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 💰 FLOOR PRICE                          │
+│ ┌────────────────┬────────────────────┐ │
+│ │ $124.99        │  $89.99            │ │
+│ │                │  -28% cheaper      │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 📈 30D CHANGE                           │
+│ ┌────────────────┬────────────────────┐ │
+│ │ +15.7% ▲       │  +8.2% ▲           │ │
+│ │ WINNER ✓       │                    │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 📊 DAILY VOLUME                         │
+│ ┌────────────────┬────────────────────┐ │
+│ │ $2,450         │  $4,200            │ │
+│ │                │  WINNER ✓          │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 🏃 SALES/DAY                            │
+│ ┌────────────────┬────────────────────┐ │
+│ │ 2.8            │  4.1               │ │
+│ │                │  WINNER ✓          │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 📦 ACTIVE LISTINGS                      │
+│ ┌────────────────┬────────────────────┐ │
+│ │ 847            │  1,203             │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 💧 LIQUIDITY                            │
+│ ┌────────────────┬────────────────────┐ │
+│ │ 8.4/10         │  9.1/10            │ │
+│ │                │  WINNER ✓          │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ ⏱️ DAYS TO +20%                         │
+│ ┌────────────────┬────────────────────┐ │
+│ │ 45 days        │  62 days           │ │
+│ │ WINNER ✓       │                    │ │
+│ └────────────────┴────────────────────┘ │
+│                                         │
+│ 🎯 VERDICT                              │
+│ ┌─────────────────────────────────────┐ │
+│ │ OP-13 wins on: Growth Potential     │ │
+│ │ OP-01 wins on: Volume, Liquidity    │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Compare Features:**
+- Dropdown/search to select comparison box
+- Shows recent comparisons for quick access
+- Side-by-side stat comparison
+- Highlights "winner" for each metric
+- Summary verdict at bottom
+- Quick-swap button to flip boxes
+
+---
+
+### 4. Extension Popup (Quick Access)
+
+**Trigger:** Click extension icon in toolbar
+
+**Display:** Mini dashboard for when not on a marketplace page
 
 ```
 ┌─────────────────────────────────┐
 │ 🎯 BoosterBoxPro                │
 ├─────────────────────────────────┤
-│ Floor Price: $89.99             │
-│ This listing: $94.99 (+5.5%)    │
-│ ────────────────────────────    │
-│ Sales/day: 2.3 📈               │
-│ 30d trend: +12.4% ▲             │
-│ ────────────────────────────    │
-│ [View Full Data →]              │
-└─────────────────────────────────┘
-```
-
-**Color Coding:**
-- 🟢 Green: Listing price ≤ floor price (good deal)
-- 🟡 Yellow: Listing price 1-10% above floor (fair)
-- 🔴 Red: Listing price >10% above floor (overpriced)
-
-### 2. Search Results Enhancement
-
-**Trigger:** When user views search results with multiple listings
-
-**Display:** Small badge on each recognized booster box:
-
-```
-┌──────────────────────────────────────┐
-│ [Box Image] OP-01 Romance Dawn       │
-│ $94.99                               │
-│ 🎯 Floor: $89.99 | 2.3/day          │
-└──────────────────────────────────────┘
-```
-
-### 3. Extension Popup
-
-**Trigger:** Click extension icon in toolbar
-
-**Display:** Quick dashboard showing:
-- User's tracked/favorite boxes
-- Recent price alerts
-- Quick search for any box
-- Link to full dashboard
-
-```
-┌─────────────────────────────────┐
-│ BoosterBoxPro                   │
-├─────────────────────────────────┤
 │ 🔍 Search boxes...              │
 ├─────────────────────────────────┤
-│ YOUR WATCHLIST                  │
+│ QUICK COMPARE                   │
 │ ────────────────────────────    │
-│ OP-01 Romance Dawn  $89.99 ▲2%  │
-│ OP-03 Pillars       $78.50 ▼1%  │
-│ OP-05 Awakening     $92.00 ─    │
+│ [Box 1 ▼] vs [Box 2 ▼]         │
+│ [Compare →]                     │
 ├─────────────────────────────────┤
-│ [Open Dashboard]                │
+│ TOP MOVERS TODAY                │
+│ ────────────────────────────    │
+│ 🔥 OP-13  $124.99  +5.2%       │
+│ 📈 OP-05  $92.00   +3.1%       │
+│ 📉 OP-02  $71.50   -2.0%       │
+├─────────────────────────────────┤
+│ [Open Full Dashboard]           │
 │ [Settings]                      │
 └─────────────────────────────────┘
 ```
 
-### 4. Price Alerts (Future)
+---
 
-- Set alerts for specific boxes
-- Get notified when a listing is below your target price
-- Browser notification when alert triggers
+### 5. Notification Badge
+
+**When detected:** Extension icon shows badge indicating data is available
+
+```
+  ┌─────┐
+  │ 🎯  │  ← Normal (no box detected)
+  └─────┘
+  
+  ┌─────┐
+  │ 🎯  │  ← Green dot = box detected, panel ready
+  │  🟢 │
+  └─────┘
+```
 
 ---
 
@@ -220,34 +378,125 @@ chrome-extension/
 └─────────────────┘                         └─────────────────┘
 ```
 
-### API Endpoint (Backend)
+### API Endpoints (Backend)
 
-Need to add a new endpoint to FastAPI:
+**1. Full Box Lookup (for Stats Panel)**
 
 ```python
-@app.get("/extension/lookup")
-async def extension_lookup(
-    product_name: str = Query(..., description="Product name from marketplace"),
-    marketplace: str = Query("tcgplayer", description="tcgplayer or ebay"),
-    listing_price: float = Query(None, description="Current listing price")
+@app.get("/extension/box/{set_code}")
+async def extension_box_lookup(
+    set_code: str,  # e.g., "OP-13", "OP-01", "EB-01"
+    listing_price: float = Query(None, description="Current marketplace listing price")
 ):
     """
-    Quick lookup for Chrome extension.
-    Returns minimal data for fast overlay rendering.
+    Full box data for Chrome extension sidebar.
+    Returns ALL metrics shown in box detail page.
     """
     return {
         "matched": True,
-        "box_id": "uuid",
-        "product_name": "OP-01 Romance Dawn Booster Box",
-        "floor_price_usd": 89.99,
-        "sales_per_day": 2.3,
-        "trend_30d_pct": 12.4,
-        "trend_direction": "up",  # up, down, flat
-        "listing_comparison": {
-            "difference_pct": 5.5,
-            "verdict": "fair"  # good, fair, overpriced
+        "box": {
+            "id": "uuid",
+            "product_name": "OP-13: Two Legends Booster Box",
+            "set_code": "OP-13",
+            "set_name": "Two Legends",
+            "game_type": "One Piece",
+            "image_url": "/images/boxes/op-13.png",
+            "reprint_risk": "MEDIUM",
+            "dashboard_url": "https://boosterboxpro.com/box/uuid"
         },
-        "dashboard_url": "https://boosterboxpro.com/box/uuid"
+        "metrics": {
+            "floor_price_usd": 124.99,
+            "floor_price_1d_change_pct": 2.3,
+            "floor_price_30d_change_pct": 15.7,
+            "daily_volume_usd": 2450.00,
+            "unified_volume_usd": 73500.00,  # 30-day
+            "unified_volume_7d_ema": 2180.00,
+            "sales_per_day": 2.8,
+            "boxes_sold_30d_avg": 2.4,
+            "active_listings_count": 847,
+            "boxes_added_today": 23,
+            "liquidity_score": 8.4,
+            "days_to_20pct_increase": 45
+        },
+        "price_history": [
+            # Last 30 days for mini chart
+            {"date": "2026-01-21", "floor_price_usd": 124.99},
+            {"date": "2026-01-20", "floor_price_usd": 122.50},
+            # ... more days
+        ],
+        "listing_comparison": {
+            "listing_price": 129.99,
+            "difference_usd": 5.00,
+            "difference_pct": 4.0,
+            "verdict": "fair"  # "good", "fair", "overpriced"
+        }
+    }
+```
+
+**2. Compare Boxes Endpoint**
+
+```python
+@app.get("/extension/compare")
+async def extension_compare(
+    box1: str = Query(..., description="First box set code (e.g., OP-13)"),
+    box2: str = Query(..., description="Second box set code (e.g., OP-01)")
+):
+    """
+    Compare two boxes side-by-side.
+    Returns both boxes' full metrics for comparison view.
+    """
+    return {
+        "box1": { ... },  # Same structure as /extension/box response
+        "box2": { ... },
+        "comparison": {
+            "floor_price_winner": "box2",  # or "box1" or "tie"
+            "growth_winner": "box1",
+            "volume_winner": "box2",
+            "liquidity_winner": "box2",
+            "sales_winner": "box2",
+            "investment_winner": "box1",  # days to +20%
+            "summary": "OP-01 is more liquid and sells faster. OP-13 has better growth potential."
+        }
+    }
+```
+
+**3. Search Boxes (for Compare dropdown)**
+
+```python
+@app.get("/extension/search")
+async def extension_search(
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(5, description="Max results")
+):
+    """
+    Quick search for Compare feature dropdown.
+    """
+    return {
+        "results": [
+            {"set_code": "OP-01", "name": "Romance Dawn", "floor_price": 89.99},
+            {"set_code": "OP-02", "name": "Paramount War", "floor_price": 71.50},
+            # ...
+        ]
+    }
+```
+
+**4. Top Movers (for Popup)**
+
+```python
+@app.get("/extension/top-movers")
+async def extension_top_movers():
+    """
+    Top movers for extension popup quick view.
+    """
+    return {
+        "gainers": [
+            {"set_code": "OP-13", "name": "Two Legends", "price": 124.99, "change_pct": 5.2},
+            # ...
+        ],
+        "losers": [
+            {"set_code": "OP-02", "name": "Paramount War", "price": 71.50, "change_pct": -2.0},
+            # ...
+        ]
     }
 ```
 
@@ -374,31 +623,48 @@ User can minimize the overlay to just a small icon:
 
 ## Development Phases
 
-### Phase 1: MVP (Week 1)
-- [ ] Basic manifest and structure
-- [ ] TCGplayer content script (product pages only)
-- [ ] Simple overlay with floor price
-- [ ] API endpoint for lookups
-- [ ] Basic popup with search
+### Phase 1: Core Detection + Stats Panel (Week 1)
+- [ ] Project structure (Manifest V3)
+- [ ] URL detection for TCGplayer product pages
+- [ ] Set code extraction from URL/page
+- [ ] `/extension/box/{set_code}` API endpoint
+- [ ] Full stats sidebar panel UI
+- [ ] Auto-open when box detected
+- [ ] Collapse/expand functionality
+- [ ] Mini price chart (30d)
 
-### Phase 2: Enhanced (Week 2)
-- [ ] Full overlay with all metrics
-- [ ] Search results enhancement
-- [ ] eBay support
-- [ ] Caching layer
-- [ ] Settings page
+### Phase 2: Compare Feature (Week 2)
+- [ ] Compare tab UI
+- [ ] `/extension/compare` API endpoint
+- [ ] `/extension/search` API endpoint
+- [ ] Box search dropdown
+- [ ] Side-by-side comparison view
+- [ ] "Winner" highlighting
+- [ ] Recent comparisons memory
 
-### Phase 3: Premium (Week 3)
-- [ ] Authentication integration
-- [ ] Watchlist sync
-- [ ] Price alerts
-- [ ] Badge notifications
+### Phase 3: eBay + Popup (Week 3)
+- [ ] eBay URL detection (search + listings)
+- [ ] eBay content script
+- [ ] Extension popup UI
+- [ ] `/extension/top-movers` endpoint
+- [ ] Quick compare from popup
+- [ ] Badge indicator when box detected
 
-### Phase 4: Polish (Week 4)
+### Phase 4: Polish + Launch (Week 4)
+- [ ] Caching layer (reduce API calls)
+- [ ] Error handling & offline states
+- [ ] Settings page (position, auto-open)
 - [ ] Performance optimization
-- [ ] Error handling
-- [ ] Analytics
-- [ ] Chrome Web Store submission
+- [ ] Chrome Web Store assets
+- [ ] Privacy policy
+- [ ] Submit to Chrome Web Store
+
+### Future Enhancements
+- [ ] Firefox support
+- [ ] Price alerts
+- [ ] Auth integration (for premium features)
+- [ ] Watchlist sync
+- [ ] Dark/light theme toggle
 
 ---
 
