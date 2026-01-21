@@ -36,7 +36,10 @@ async def get_box_by_set_code(
     """
     Get full box data by set code (e.g., OP-01, OP-13, EB-01)
     Returns all metrics shown in box detail page for extension sidebar.
+    Uses same data source as /booster-boxes/{box_id} for consistency.
     """
+    from app.services.historical_data import get_box_price_history, get_box_month_over_month_price_change, get_box_30d_avg_sales
+    
     # Normalize set code (OP01 -> OP-01)
     set_code = set_code.upper()
     if not '-' in set_code:
@@ -50,7 +53,6 @@ async def get_box_by_set_code(
     
     async with AsyncSessionLocal() as db:
         # Find box by set code in product name
-        # Use first() instead of one_or_none() to handle variants (Blue, White, etc.)
         stmt = select(BoosterBox).where(
             BoosterBox.product_name.ilike(f"%{set_code}%")
         ).limit(1)
@@ -60,52 +62,44 @@ async def get_box_by_set_code(
         if not db_box:
             return {"matched": False, "error": f"Box {set_code} not found"}
         
-        # Get latest metrics
-        metrics_stmt = select(UnifiedBoxMetrics).where(
-            UnifiedBoxMetrics.booster_box_id == db_box.id
-        ).order_by(desc(UnifiedBoxMetrics.metric_date)).limit(1)
+        # Use historical data service - same as box detail endpoint
+        historical_data = get_box_price_history(str(db_box.id), days=90)
         
-        metrics_result = await db.execute(metrics_stmt)
-        latest_metrics = metrics_result.scalar_one_or_none()
-        
-        # Build metrics dict
+        # Build metrics from historical data (same as /booster-boxes/{box_id})
         metrics = {}
-        if latest_metrics:
+        if historical_data:
+            latest = historical_data[-1]
             metrics = {
-                "floor_price_usd": float(latest_metrics.floor_price_usd) if latest_metrics.floor_price_usd else None,
-                "floor_price_1d_change_pct": float(latest_metrics.floor_price_1d_change_pct) if latest_metrics.floor_price_1d_change_pct else 0.0,
-                "floor_price_30d_change_pct": None,  # Need to calculate from historical
-                "daily_volume_usd": float(latest_metrics.unified_volume_usd / 30) if latest_metrics.unified_volume_usd else None,
-                "unified_volume_usd": float(latest_metrics.unified_volume_usd) if latest_metrics.unified_volume_usd else None,
-                "unified_volume_7d_ema": float(latest_metrics.unified_volume_7d_ema) if latest_metrics.unified_volume_7d_ema else None,
-                "sales_per_day": float(latest_metrics.boxes_sold_per_day) if latest_metrics.boxes_sold_per_day else None,
-                "boxes_sold_30d_avg": float(latest_metrics.boxes_sold_30d_avg) if latest_metrics.boxes_sold_30d_avg else None,
-                "active_listings_count": latest_metrics.active_listings_count,
-                "boxes_added_today": latest_metrics.boxes_added_today,
-                "liquidity_score": float(latest_metrics.liquidity_score) if latest_metrics.liquidity_score else None,
-                "days_to_20pct_increase": float(latest_metrics.days_to_20pct_increase) if latest_metrics.days_to_20pct_increase else None,
+                "floor_price_usd": latest.get("floor_price_usd"),
+                "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
+                "active_listings_count": latest.get("active_listings_count"),
+                "daily_volume_usd": latest.get("daily_volume_usd"),
+                "unified_volume_usd": latest.get("unified_volume_usd"),
+                "unified_volume_7d_ema": latest.get("unified_volume_7d_ema"),
+                "sales_per_day": latest.get("boxes_sold_per_day"),
+                "boxes_added_today": latest.get("boxes_added_today"),
+                "days_to_20pct_increase": latest.get("days_to_20pct_increase"),
+                "liquidity_score": latest.get("liquidity_score"),
             }
+            
+            # Add 30d average sales
+            if latest.get("boxes_sold_30d_avg") is not None:
+                metrics["boxes_sold_30d_avg"] = latest.get("boxes_sold_30d_avg")
+            else:
+                avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+                if avg_sales_30d is not None:
+                    metrics["boxes_sold_30d_avg"] = avg_sales_30d
         
-        # Get 30d price change from historical data
-        try:
-            from app.services.historical_data import get_box_month_over_month_price_change
-            price_change_30d = get_box_month_over_month_price_change(str(db_box.id))
-            if price_change_30d is not None:
-                metrics["floor_price_30d_change_pct"] = price_change_30d
-        except:
-            pass
+        # Add 30d price change
+        price_change_30d = get_box_month_over_month_price_change(str(db_box.id))
+        if price_change_30d is not None:
+            metrics["floor_price_30d_change_pct"] = price_change_30d
         
         # Get price history for mini chart
-        price_history = []
-        try:
-            from app.services.historical_data import get_box_price_history
-            history = get_box_price_history(str(db_box.id), days=30)
-            price_history = [
-                {"date": h.get("date"), "floor_price_usd": h.get("floor_price_usd")}
-                for h in history if h.get("floor_price_usd")
-            ]
-        except:
-            pass
+        price_history = [
+            {"date": h.get("date"), "floor_price_usd": h.get("floor_price_usd")}
+            for h in historical_data[-30:] if h.get("floor_price_usd")
+        ] if historical_data else []
         
         # Listing comparison
         listing_comparison = None
