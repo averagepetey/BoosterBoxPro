@@ -160,9 +160,10 @@ async def get_current_user(
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.REGISTER)
 async def register(
-    request: RegisterRequest, 
-    http_request: Request,  # Required for rate limiting
+    request: Request,  # Must be named 'request' and first for slowapi
+    register_data: RegisterRequest = None,  # Will get from body
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -170,12 +171,16 @@ async def register(
     
     Rate limited to 3 requests per minute to prevent abuse.
     """
+    # Parse body manually since 'request' is taken by slowapi
+    body = await request.json()
+    register_data = RegisterRequest(**body)
+    
     # Log registration attempt (for security monitoring)
-    client_ip = getattr(http_request.state, 'client_ip', 'unknown')
-    logger.info(f"Registration attempt for email: {request.email[:3]}*** from {client_ip}")
+    client_ip = getattr(request.state, 'client_ip', 'unknown')
+    logger.info(f"Registration attempt for email: {register_data.email[:3]}*** from {client_ip}")
     
     # Validate passwords match
-    if request.password != request.confirm_password:
+    if register_data.password != register_data.confirm_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Passwords do not match"
@@ -184,7 +189,7 @@ async def register(
     # Password complexity is now validated by Pydantic validator
     
     # Check if user already exists
-    stmt = select(User).where(User.email == request.email)
+    stmt = select(User).where(User.email == register_data.email)
     result = await db.execute(stmt)
     existing_user = result.scalar_one_or_none()
     
@@ -195,7 +200,7 @@ async def register(
         )
     
     # Create new user
-    hashed_password = hash_password(request.password)
+    hashed_password = hash_password(register_data.password)
     
     # Insert user with both hashed_password and password_hash (Supabase requires password_hash)
     from sqlalchemy import text
@@ -209,7 +214,7 @@ async def register(
         """),
         {
             "id": user_id,
-            "email": request.email,
+            "email": register_data.email,
             "hashed_password": hashed_password,
             "password_hash": hashed_password,
             "is_active": True,
@@ -227,9 +232,9 @@ async def register(
 
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit(RateLimits.LOGIN)
 async def login(
-    request: LoginRequest, 
-    http_request: Request,  # Required for rate limiting/logging
+    request: Request,  # Must be named 'request' and first for slowapi
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -237,11 +242,15 @@ async def login(
     
     Rate limited to 5 requests per minute to prevent brute force attacks.
     """
+    # Parse body manually since 'request' is taken by slowapi
+    body = await request.json()
+    login_data = LoginRequest(**body)
+    
     # Log login attempt (for security monitoring)
-    client_ip = getattr(http_request.state, 'client_ip', 'unknown')
+    client_ip = getattr(request.state, 'client_ip', 'unknown')
     
     # Find user by email
-    stmt = select(User).where(User.email == request.email)
+    stmt = select(User).where(User.email == login_data.email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
@@ -254,23 +263,23 @@ async def login(
         )
     
     if not user.is_active:
-        logger.warning(f"Login failed: inactive account {request.email[:3]}*** from {client_ip}")
+        logger.warning(f"Login failed: inactive account {login_data.email[:3]}*** from {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User account is inactive"
         )
     
     # Verify password
-    if not verify_password(request.password, user.hashed_password):
+    if not verify_password(login_data.password, user.hashed_password):
         # Log failed attempt (but don't reveal which field was wrong)
-        logger.warning(f"Login failed: invalid password for {request.email[:3]}*** from {client_ip}")
+        logger.warning(f"Login failed: invalid password for {login_data.email[:3]}*** from {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
     
     # Log successful login
-    logger.info(f"Login successful: {request.email[:3]}*** from {client_ip}")
+    logger.info(f"Login successful: {login_data.email[:3]}*** from {client_ip}")
     
     # Create access token with admin status
     is_admin = user.is_superuser if user.is_superuser else False
