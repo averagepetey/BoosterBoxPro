@@ -33,7 +33,7 @@
   let compareBoxData = null;
 
   /**
-   * Set name to set code mapping
+   * Set name to set code mapping (matches database product names)
    */
   const SET_NAME_MAP = {
     'romance dawn': 'OP-01',
@@ -44,13 +44,14 @@
     'wings of the captain': 'OP-06',
     '500 years in the future': 'OP-07',
     'two legends': 'OP-08',
-    'the four emperors': 'OP-09',
+    'emperors in the new world': 'OP-09',
     'royal blood': 'OP-10',
-    'uta': 'OP-11',
-    'wings of justice': 'OP-12',
+    'a fist of divine speed': 'OP-11',
+    'fist of divine speed': 'OP-11',
+    'legacy of the master': 'OP-12',
     'carrying on his will': 'OP-13',
     'memorial collection': 'EB-01',
-    'extra booster': 'EB-01',
+    'anime 25th collection': 'EB-02',
     'premium booster': 'PRB-01',
   };
 
@@ -250,9 +251,15 @@
                 <option value="OP-06">OP-06 Wings of the Captain</option>
                 <option value="OP-07">OP-07 500 Years in the Future</option>
                 <option value="OP-08">OP-08 Two Legends</option>
-                <option value="OP-09">OP-09 The Four Emperors</option>
+                <option value="OP-09">OP-09 Emperors in the New World</option>
+                <option value="OP-10">OP-10 Royal Blood</option>
+                <option value="OP-11">OP-11 A Fist of Divine Speed</option>
+                <option value="OP-12">OP-12 Legacy of the Master</option>
+                <option value="OP-13">OP-13 Carrying on His Will</option>
                 <option value="EB-01">EB-01 Memorial Collection</option>
+                <option value="EB-02">EB-02 Anime 25th Collection</option>
                 <option value="PRB-01">PRB-01 Premium Booster</option>
+                <option value="PRB-02">PRB-02 Premium Booster</option>
               </select>
             </div>
             
