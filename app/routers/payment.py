@@ -201,76 +201,98 @@ async def create_checkout_session(
 
 @router.post("/webhook")
 async def stripe_webhook(
-    payload: str = Header(None),
+    request: Request,
     stripe_signature: str = Header(None, alias="stripe-signature"),
 ):
     """
-    Handle Stripe webhooks for subscription events
+    Handle Stripe webhooks for subscription events.
     Configure this URL in Stripe Dashboard: https://your-domain.com/payment/webhook
+    
+    SECURITY: Verifies Stripe signature to prevent fake webhook attacks.
+    Without this, attackers could fake "payment succeeded" events.
     """
     
     if not stripe.api_key:
+        logger.error("Stripe webhook called but Stripe not configured")
         raise HTTPException(status_code=500, detail="Stripe is not configured")
     
     webhook_secret = settings.stripe_webhook_secret or os.getenv("STRIPE_WEBHOOK_SECRET", "")
     
     if not webhook_secret:
+        logger.error("Stripe webhook called but STRIPE_WEBHOOK_SECRET not configured")
         raise HTTPException(
             status_code=500,
-            detail="STRIPE_WEBHOOK_SECRET not configured"
+            detail="Webhook secret not configured"
         )
     
+    if not stripe_signature:
+        logger.warning("Stripe webhook called without signature header")
+        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
+    
+    # CRITICAL: Read raw body for signature verification
+    # Stripe signs the raw bytes, not parsed JSON
     try:
-        # Verify webhook signature
+        payload = await request.body()
+    except Exception as e:
+        logger.error(f"Failed to read webhook payload: {e}")
+        raise HTTPException(status_code=400, detail="Failed to read payload")
+    
+    try:
+        # SECURITY: Verify webhook signature
+        # This prevents attackers from faking webhook events
         event = stripe.Webhook.construct_event(
             payload, stripe_signature, webhook_secret
         )
+        
+        logger.info(f"Stripe webhook received: {event['type']}")
         
         # Handle different event types
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
             # Handle successful checkout
             # TODO: Update user subscription status in database
-            print(f"Checkout completed for session: {session['id']}")
+            logger.info(f"Checkout completed for session: {session['id']}")
             
         elif event["type"] == "customer.subscription.created":
             subscription = event["data"]["object"]
             # Handle subscription creation
             # TODO: Update user subscription status in database
-            print(f"Subscription created: {subscription['id']}")
+            logger.info(f"Subscription created: {subscription['id']}")
             
         elif event["type"] == "customer.subscription.updated":
             subscription = event["data"]["object"]
             # Handle subscription update
             # TODO: Update user subscription status in database
-            print(f"Subscription updated: {subscription['id']}")
+            logger.info(f"Subscription updated: {subscription['id']}")
             
         elif event["type"] == "customer.subscription.deleted":
             subscription = event["data"]["object"]
             # Handle subscription cancellation
             # TODO: Update user subscription status in database (mark as cancelled)
-            print(f"Subscription cancelled: {subscription['id']}")
+            logger.info(f"Subscription cancelled: {subscription['id']}")
             
         elif event["type"] == "invoice.payment_succeeded":
             invoice = event["data"]["object"]
             # Handle successful payment (after trial period)
             # TODO: Update user subscription status, send confirmation email
-            print(f"Payment succeeded for invoice: {invoice['id']}")
+            logger.info(f"Payment succeeded for invoice: {invoice['id']}")
             
         elif event["type"] == "invoice.payment_failed":
             invoice = event["data"]["object"]
             # Handle failed payment
             # TODO: Notify user, update subscription status
-            print(f"Payment failed for invoice: {invoice['id']}")
+            logger.warning(f"Payment failed for invoice: {invoice['id']}")
         
         return {"status": "success"}
         
     except ValueError as e:
         # Invalid payload
-        raise HTTPException(status_code=400, detail=f"Invalid payload: {str(e)}")
+        logger.warning(f"Invalid Stripe webhook payload: {e}")
+        raise HTTPException(status_code=400, detail="Invalid payload")
     except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
-        raise HTTPException(status_code=400, detail=f"Invalid signature: {str(e)}")
+        # Invalid signature - possible attack attempt
+        logger.warning(f"Invalid Stripe webhook signature: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
 
 
 @router.get("/verify-subscription/{session_id}")
