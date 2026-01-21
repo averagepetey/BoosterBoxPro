@@ -47,8 +47,13 @@ class User(Base):
     
     @property
     def is_admin(self) -> bool:
-        """Check if user has admin role (from DB, not JWT)"""
-        return self.role == UserRole.ADMIN.value or self.is_superuser
+        """
+        Check if user has admin role (from DB, not JWT).
+        
+        SECURITY: Only checks 'role' column - single source of truth.
+        The legacy 'is_superuser' column is ignored to prevent accidental escalation.
+        """
+        return self.role == UserRole.ADMIN.value
     
     def invalidate_tokens(self):
         """Increment token_version to invalidate all existing tokens"""
