@@ -1,6 +1,7 @@
 """
 Image Processing Service
 Handles OCR and AI extraction from screenshots
+Supports both Anthropic (Claude) and OpenAI APIs
 """
 
 import base64
@@ -17,64 +18,59 @@ except ImportError:
     Image = None  # Type stub
     print("⚠️  Pillow not installed. Install with: pip install Pillow (optional - only needed for admin screenshot feature)")
 
-# Make OpenAI optional - only needed for AI screenshot extraction
+# Make Anthropic optional - preferred for AI screenshot extraction
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    anthropic = None
+    print("⚠️  Anthropic not installed. Install with: pip install anthropic (for Claude AI screenshot extraction)")
+
+# Make OpenAI optional - fallback for AI screenshot extraction
 try:
     from openai import OpenAI
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
     OpenAI = None  # Type stub
-    print("⚠️  OpenAI not installed. Install with: pip install openai (optional - only needed for AI screenshot extraction)")
 
 
 class ImageProcessingService:
-    """Service for processing images and extracting structured data"""
+    """Service for processing images and extracting structured data using Claude (Anthropic) or OpenAI"""
     
     def __init__(self):
+        self.anthropic_client = None
         self.openai_client = None
-        if OPENAI_AVAILABLE:
+        self.ai_provider = None
+        
+        # Prefer Anthropic (Claude) over OpenAI
+        if ANTHROPIC_AVAILABLE:
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if api_key:
+                self.anthropic_client = anthropic.Anthropic(api_key=api_key)
+                self.ai_provider = "claude"
+                print("✅ Using Claude (Anthropic) for screenshot processing")
+            else:
+                print("⚠️  ANTHROPIC_API_KEY not set.")
+        
+        # Fallback to OpenAI if Anthropic not available
+        if not self.anthropic_client and OPENAI_AVAILABLE:
             api_key = os.getenv("OPENAI_API_KEY")
             if api_key:
                 self.openai_client = OpenAI(api_key=api_key)
+                self.ai_provider = "openai"
+                print("✅ Using OpenAI for screenshot processing")
             else:
-                print("⚠️  OPENAI_API_KEY not set. OCR/AI extraction will not work.")
+                print("⚠️  OPENAI_API_KEY not set.")
+        
+        if not self.anthropic_client and not self.openai_client:
+            print("⚠️  No AI API configured. Screenshot extraction will require manual entry.")
+            print("   Set ANTHROPIC_API_KEY for Claude or OPENAI_API_KEY for OpenAI")
     
-    def process_screenshot(self, image_bytes: bytes, use_ai: bool = True) -> Dict[str, Any]:
-        """
-        Process a screenshot and extract structured data
-        
-        Args:
-            image_bytes: Raw image bytes
-            use_ai: If True, use OpenAI Vision API (costs money). If False, return empty structure for manual entry.
-            
-        Returns:
-            Dictionary with extracted data and metadata
-        """
-        # If AI is disabled or not available, return empty structure for manual entry
-        if not use_ai or not self.openai_client:
-            return {
-                "success": True,
-                "errors": [],
-                "extracted_data": {
-                    "product_name": None,
-                    "floor_price_usd": None,
-                    "active_listings_count": None,
-                    "boxes_sold_today": None,
-                    "daily_volume_usd": None,
-                    "visible_market_cap_usd": None,
-                    "boxes_added_today": None,
-                    "estimated_total_supply": None,
-                },
-                "confidence_scores": {},
-                "raw_text": "AI extraction disabled. Please enter data manually.",
-            }
-        
-        try:
-            # Convert image to base64
-            base64_image = base64.b64encode(image_bytes).decode('utf-8')
-            
-            # Prepare the prompt for structured extraction
-            prompt = """Analyze this screenshot of a TCG marketplace (TCGplayer, eBay, etc.) showing booster box data.
+    def _get_extraction_prompt(self) -> str:
+        """Get the prompt for extracting data from screenshots"""
+        return """Analyze this screenshot of a TCG marketplace (TCGplayer, eBay, etc.) showing booster box data.
 
 Extract the following information if visible:
 1. Product name / Box name (e.g., "OP-01", "One Piece OP-02", etc.)
@@ -101,43 +97,132 @@ Return the data as a JSON object with these fields:
 }
 
 Only include fields that are clearly visible in the image. Use null for missing data.
-Be precise with numbers - extract exact values shown."""
-            
-            # Call OpenAI Vision API
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o",  # or "gpt-4-vision-preview" if available
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{base64_image}"
-                                }
+Be precise with numbers - extract exact values shown.
+Return ONLY the JSON object, no other text."""
+    
+    def _process_with_claude(self, image_bytes: bytes) -> Dict[str, Any]:
+        """Process screenshot using Claude (Anthropic) API"""
+        import json
+        import re
+        
+        base64_image = base64.b64encode(image_bytes).decode('utf-8')
+        
+        # Detect image type
+        if image_bytes[:8] == b'\x89PNG\r\n\x1a\n':
+            media_type = "image/png"
+        elif image_bytes[:2] == b'\xff\xd8':
+            media_type = "image/jpeg"
+        elif image_bytes[:4] == b'RIFF' and image_bytes[8:12] == b'WEBP':
+            media_type = "image/webp"
+        else:
+            media_type = "image/png"  # Default
+        
+        response = self.anthropic_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": base64_image,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": self._get_extraction_prompt()
+                        }
+                    ],
+                }
+            ],
+        )
+        
+        content = response.content[0].text
+        
+        # Extract JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', content)
+        if json_match:
+            return json.loads(json_match.group(0))
+        else:
+            return json.loads(content)
+    
+    def _process_with_openai(self, image_bytes: bytes) -> Dict[str, Any]:
+        """Process screenshot using OpenAI Vision API"""
+        import json
+        import re
+        
+        base64_image = base64.b64encode(image_bytes).decode('utf-8')
+        
+        response = self.openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": self._get_extraction_prompt()},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
                             }
-                        ]
-                    }
-                ],
-                max_tokens=1000,
-                temperature=0.1,  # Low temperature for accuracy
-            )
+                        }
+                    ]
+                }
+            ],
+            max_tokens=1000,
+            temperature=0.1,
+        )
+        
+        content = response.choices[0].message.content
+        
+        # Extract JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', content)
+        if json_match:
+            return json.loads(json_match.group(0))
+        else:
+            return json.loads(content)
+    
+    def process_screenshot(self, image_bytes: bytes, use_ai: bool = True) -> Dict[str, Any]:
+        """
+        Process a screenshot and extract structured data
+        
+        Args:
+            image_bytes: Raw image bytes
+            use_ai: If True, use AI Vision API. If False, return empty structure for manual entry.
             
-            # Parse the response
-            content = response.choices[0].message.content
-            
-            # Try to extract JSON from the response
-            import json
-            import re
-            
-            # Look for JSON in the response
-            json_match = re.search(r'\{[\s\S]*\}', content)
-            if json_match:
-                extracted_json = json.loads(json_match.group(0))
+        Returns:
+            Dictionary with extracted data and metadata
+        """
+        # If AI is disabled or not available, return empty structure for manual entry
+        if not use_ai or (not self.anthropic_client and not self.openai_client):
+            return {
+                "success": True,
+                "errors": [],
+                "extracted_data": {
+                    "product_name": None,
+                    "floor_price_usd": None,
+                    "active_listings_count": None,
+                    "boxes_sold_today": None,
+                    "daily_volume_usd": None,
+                    "visible_market_cap_usd": None,
+                    "boxes_added_today": None,
+                    "estimated_total_supply": None,
+                },
+                "confidence_scores": {},
+                "raw_text": "AI extraction disabled or not configured. Please enter data manually.",
+                "ai_provider": None,
+            }
+        
+        try:
+            # Use Claude (preferred) or OpenAI
+            if self.anthropic_client:
+                extracted_json = self._process_with_claude(image_bytes)
             else:
-                # Fallback: try to parse the entire content as JSON
-                extracted_json = json.loads(content)
+                extracted_json = self._process_with_openai(image_bytes)
             
             # Calculate confidence scores (simplified - could be enhanced)
             confidence_scores = {}
@@ -156,7 +241,7 @@ Be precise with numbers - extract exact values shown."""
                 "extracted_data": extracted_json,
                 "confidence_scores": confidence_scores,
                 "detected_box": extracted_json.get("product_name"),
-                "raw_text": content,  # Store the full response for debugging
+                "ai_provider": self.ai_provider,
                 "errors": [],
             }
             

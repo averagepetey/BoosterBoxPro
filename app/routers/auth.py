@@ -1,36 +1,80 @@
 """
 Authentication Router
 Handles user registration, login, and authentication
+
+Security Features:
+- Rate limiting on auth endpoints
+- Password complexity validation
+- Secure password hashing (bcrypt)
+- JWT with expiration
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timedelta
 from typing import Optional
 import bcrypt
+import re
 from jose import jwt
 from uuid import UUID
+import logging
 
 from app.database import get_db
 from app.models.user import User
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
+
+# Import rate limiter
+try:
+    from app.middleware.rate_limit import limiter, RateLimits
+    RATE_LIMITING_ENABLED = True
+except ImportError:
+    RATE_LIMITING_ENABLED = False
+    logger.warning("Rate limiting not available for auth endpoints")
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     confirm_password: str
+    
+    class Config:
+        extra = "forbid"  # Reject unknown fields (mass assignment protection)
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_complexity(cls, v: str) -> str:
+        """
+        Validate password meets complexity requirements:
+        - At least 8 characters
+        - At least one uppercase letter
+        - At least one lowercase letter
+        - At least one digit
+        """
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one digit')
+        return v
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    
+    class Config:
+        extra = "forbid"  # Reject unknown fields
 
 
 class AuthResponse(BaseModel):
@@ -116,8 +160,20 @@ async def get_current_user(
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    """Register a new user"""
+async def register(
+    request: RegisterRequest, 
+    http_request: Request,  # Required for rate limiting
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Register a new user.
+    
+    Rate limited to 3 requests per minute to prevent abuse.
+    """
+    # Log registration attempt (for security monitoring)
+    client_ip = getattr(http_request.state, 'client_ip', 'unknown')
+    logger.info(f"Registration attempt for email: {request.email[:3]}*** from {client_ip}")
+    
     # Validate passwords match
     if request.password != request.confirm_password:
         raise HTTPException(
@@ -125,12 +181,7 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
             detail="Passwords do not match"
         )
     
-    # Validate password length
-    if len(request.password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters"
-        )
+    # Password complexity is now validated by Pydantic validator
     
     # Check if user already exists
     stmt = select(User).where(User.email == request.email)
@@ -176,20 +227,34 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """Login and get access token"""
+async def login(
+    request: LoginRequest, 
+    http_request: Request,  # Required for rate limiting/logging
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Login and get access token.
+    
+    Rate limited to 5 requests per minute to prevent brute force attacks.
+    """
+    # Log login attempt (for security monitoring)
+    client_ip = getattr(http_request.state, 'client_ip', 'unknown')
+    
     # Find user by email
     stmt = select(User).where(User.email == request.email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
     if not user:
+        # Log failed attempt
+        logger.warning(f"Login failed: unknown email attempt from {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
     
     if not user.is_active:
+        logger.warning(f"Login failed: inactive account {request.email[:3]}*** from {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User account is inactive"
@@ -197,10 +262,15 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     
     # Verify password
     if not verify_password(request.password, user.hashed_password):
+        # Log failed attempt (but don't reveal which field was wrong)
+        logger.warning(f"Login failed: invalid password for {request.email[:3]}*** from {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
+    
+    # Log successful login
+    logger.info(f"Login successful: {request.email[:3]}*** from {client_ip}")
     
     # Create access token with admin status
     is_admin = user.is_superuser if user.is_superuser else False

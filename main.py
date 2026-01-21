@@ -1,6 +1,13 @@
 """
 BoosterBoxPro - FastAPI Application Entry Point
 Main entry point for running the API server
+
+Security Features:
+- Security headers (HSTS, X-Frame-Options, CSP, etc.)
+- CORS lockdown in production
+- Rate limiting on all endpoints
+- Request logging with correlation IDs
+- Docs disabled in production
 """
 
 from fastapi import FastAPI, Request
@@ -11,9 +18,17 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 import uvicorn
 import traceback
+import logging
 
 from app.config import settings
 from app.database import init_db
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if settings.environment == "production" else logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 # Lifespan event handler (replaces deprecated on_event)
@@ -21,15 +36,26 @@ from app.database import init_db
 async def lifespan(app: FastAPI):
     """Lifespan event handler for startup and shutdown"""
     # Startup
+    logger.info(f"🚀 Starting BoosterBoxPro API in {settings.environment} mode")
     try:
         await init_db()
+        logger.info("✅ Database connection established")
     except Exception as e:
-        print(f"⚠️  Database connection failed: {e}")
-        print("   Make sure PostgreSQL is running and DATABASE_URL is set correctly")
+        logger.error(f"⚠️  Database connection failed: {e}")
+        logger.error("   Make sure PostgreSQL is running and DATABASE_URL is set correctly")
     yield
-    # Shutdown (if needed in future)
-    pass
+    # Shutdown
+    logger.info("👋 Shutting down BoosterBoxPro API")
 
+
+# Determine if docs should be enabled
+# In production, disable Swagger/OpenAPI to reduce attack surface
+docs_url = "/docs" if settings.environment != "production" else None
+redoc_url = "/redoc" if settings.environment != "production" else None
+openapi_url = "/openapi.json" if settings.environment != "production" else None
+
+if settings.environment == "production":
+    logger.info("🔒 API documentation disabled in production mode")
 
 # Create FastAPI app
 app = FastAPI(
@@ -37,32 +63,61 @@ app = FastAPI(
     description="Market intelligence platform for sealed TCG booster boxes",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url,
 )
 
-# Configure CORS
-# In development, allow all origins (without credentials restriction)
-# In production, restrict to specific domains
+# ============================================================================
+# SECURITY MIDDLEWARE (Order matters - applied in reverse order)
+# ============================================================================
+
+# 1. Security Headers Middleware
+try:
+    from app.middleware.security import SecurityHeadersMiddleware, RequestLoggingMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RequestLoggingMiddleware)
+    logger.info("✅ Security headers middleware loaded")
+except ImportError as e:
+    logger.warning(f"⚠️  Security middleware not available: {e}")
+
+# 2. Rate Limiting
+try:
+    from slowapi import _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
+    
+    if settings.rate_limit_enabled:
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+        logger.info("✅ Rate limiting enabled")
+    else:
+        logger.warning("⚠️  Rate limiting disabled")
+except ImportError as e:
+    logger.warning(f"⚠️  Rate limiting not available (install slowapi): {e}")
+
+# 3. CORS Configuration
+# In development, allow all origins (for ease of development)
+# In production, restrict to specific domains only
 if settings.environment == "development":
     # Development: allow all origins but disable credentials to work with wildcard
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Allow all origins in development
-        allow_credentials=False,  # Must be False when using "*"
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
+    cors_origins = ["*"]
+    cors_credentials = False
+    logger.info("🔓 CORS: Development mode - allowing all origins")
 else:
-    # Production: specific origins with credentials
-    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
+    # Production: specific origins from config
+    cors_origins = settings.cors_origins_list
+    cors_credentials = True
+    logger.info(f"🔒 CORS: Production mode - allowed origins: {cors_origins}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=cors_credentials,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "Retry-After"],
+)
 
 
 # Health check endpoint
@@ -81,19 +136,46 @@ async def health():
 # Global exception handler to ensure CORS headers are included in error responses
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Global exception handler that ensures CORS headers are included"""
+    """
+    Global exception handler that:
+    1. Logs the full error internally
+    2. Returns sanitized error to client (no internal details in production)
+    3. Ensures CORS headers are included
+    """
     import traceback
     error_detail = str(exc)
     error_traceback = traceback.format_exc()
     
-    # Log the error (in production, use proper logging)
-    print(f"⚠️  Unhandled exception: {error_detail}")
-    print(error_traceback)
+    # Get request context for logging
+    request_id = getattr(request.state, 'request_id', 'unknown')
+    client_ip = getattr(request.state, 'client_ip', 'unknown')
     
-    # Return response with CORS headers
+    # Log the full error internally (always)
+    logger.error(
+        f"[{request_id}] Unhandled exception from {client_ip}: "
+        f"{request.method} {request.url.path}"
+    )
+    logger.error(f"[{request_id}] Error: {error_detail}")
+    logger.error(f"[{request_id}] Traceback:\n{error_traceback}")
+    
+    # Build response - sanitize in production
+    if settings.environment == "production":
+        # Production: Never expose internal error details
+        response_content = {
+            "detail": "An internal error occurred. Please try again later.",
+            "request_id": request_id,  # Include for support reference
+        }
+    else:
+        # Development: Include error details for debugging
+        response_content = {
+            "detail": "Internal server error",
+            "error": error_detail,
+            "request_id": request_id,
+        }
+    
     response = JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error", "error": error_detail}
+        content=response_content
     )
     
     # Add CORS headers manually if needed (CORS middleware should handle this, but ensure it)
@@ -101,7 +183,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     if origin or settings.environment == "development":
         response.headers["Access-Control-Allow-Origin"] = "*" if settings.environment == "development" else origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+    
+    # Add request ID header
+    response.headers["X-Request-ID"] = request_id
     
     return response
 

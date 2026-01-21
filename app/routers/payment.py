@@ -1,48 +1,64 @@
 """
 Payment Router
 Handles Stripe checkout sessions, subscriptions, and webhooks
+
+Security:
+- Mass assignment protection on all request models
+- Authentication required for user-specific endpoints
+- Stripe webhook signature verification
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 import stripe
 import os
+import logging
 from datetime import datetime, timedelta
 
 from app.config import settings
 
-router = APIRouter(prefix="/payment", tags=["payment"])  # Note: This should be /api/v1/payment but keeping as-is for now
-security = HTTPBearer()
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/payment", tags=["payment"])
+security = HTTPBearer(auto_error=False)  # Don't auto-error, we handle it
 
 # Initialize Stripe (use settings from config)
 stripe.api_key = settings.stripe_secret_key or os.getenv("STRIPE_SECRET_KEY", "")
 
 
 class CheckoutSessionRequest(BaseModel):
+    """Request to create a checkout session"""
     email: EmailStr
     tier: str  # 'free', 'premium', or 'pro'
     trial_days: int = 7
+    
+    class Config:
+        extra = "forbid"  # Mass assignment protection - reject unknown fields
+    
+    @field_validator('tier')
+    @classmethod
+    def validate_tier(cls, v: str) -> str:
+        """Only allow valid tiers"""
+        allowed_tiers = ['free', 'premium', 'pro']
+        if v.lower() not in allowed_tiers:
+            raise ValueError(f'tier must be one of: {", ".join(allowed_tiers)}')
+        return v.lower()
+    
+    @field_validator('trial_days')
+    @classmethod
+    def validate_trial_days(cls, v: int) -> int:
+        """Limit trial days to reasonable range"""
+        if v < 0 or v > 30:
+            raise ValueError('trial_days must be between 0 and 30')
+        return v
 
 
 class CheckoutSessionResponse(BaseModel):
+    """Response with checkout session URL"""
     url: str
     session_id: str
-
-
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """
-    Verify JWT token and extract user ID
-    For now, this is a placeholder - should integrate with your auth system
-    """
-    token = credentials.credentials
-    # TODO: Verify token with your auth system and return user ID
-    # For now, we'll use the token as a simple check
-    if not token:
-        raise HTTPException(status_code=401, detail="Invalid authentication")
-    # In a real implementation, decode JWT and extract user_id
-    return "user_id_from_token"  # Placeholder
 
 
 def get_price_id_for_tier(tier: str) -> Optional[str]:
@@ -60,15 +76,51 @@ def get_price_id_for_tier(tier: str) -> Optional[str]:
     return price_ids.get(tier)
 
 
+async def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> Optional[dict]:
+    """
+    Optionally get the current user from JWT token.
+    Returns None if no valid token provided (allows unauthenticated checkout for new users).
+    """
+    if not credentials:
+        return None
+    
+    try:
+        from app.routers.auth import decode_access_token
+        payload = decode_access_token(credentials.credentials)
+        return {
+            "user_id": payload.get("sub"),
+            "email": payload.get("email"),
+            "is_admin": payload.get("is_admin", False),
+        }
+    except Exception:
+        return None
+
+
 @router.post("/create-checkout-session", response_model=CheckoutSessionResponse)
 async def create_checkout_session(
     request: CheckoutSessionRequest,
-    # user_id: str = Depends(get_current_user_id),  # Uncomment when auth is ready
+    http_request: Request,
+    current_user: Optional[dict] = Depends(get_optional_current_user),
 ):
     """
-    Create a Stripe Checkout Session for subscription with trial period
-    Flow: User signs up → This endpoint → Redirect to Stripe → 7-day trial → Charge after trial
+    Create a Stripe Checkout Session for subscription with trial period.
+    
+    Security: If user is authenticated, uses their email from token.
+    If not authenticated (new signup), uses email from request body.
     """
+    # Log checkout attempt
+    client_ip = getattr(http_request.state, 'client_ip', 'unknown')
+    
+    # Use authenticated user's email if available (prevents IDOR)
+    if current_user and current_user.get("email"):
+        checkout_email = current_user["email"]
+        logger.info(f"Checkout session for authenticated user {checkout_email[:3]}*** from {client_ip}")
+    else:
+        # For new signups, allow email from request body
+        checkout_email = request.email
+        logger.info(f"Checkout session for new signup {checkout_email[:3]}*** from {client_ip}")
     
     if not stripe.api_key:
         raise HTTPException(
@@ -89,7 +141,7 @@ async def create_checkout_session(
         # Create Stripe Checkout Session
         # This will collect payment method but not charge until after trial
         checkout_session = stripe.checkout.Session.create(
-            customer_email=request.email,
+            customer_email=checkout_email,  # Use validated email
             payment_method_types=["card"],
             line_items=[
                 {
@@ -117,9 +169,10 @@ async def create_checkout_session(
             
             # Metadata to track user and tier
             metadata={
-                "user_email": request.email,
+                "user_email": checkout_email,
                 "tier": request.tier,
                 "trial_days": str(request.trial_days),
+                "authenticated": str(current_user is not None),
             },
             
             # Allow promotion codes
@@ -221,11 +274,20 @@ async def stripe_webhook(
 
 
 @router.get("/verify-subscription/{session_id}")
-async def verify_subscription(session_id: str):
+async def verify_subscription(
+    session_id: str,
+    http_request: Request,
+):
     """
-    Verify subscription status after checkout
-    Frontend calls this after redirect from Stripe
+    Verify subscription status after checkout.
+    Frontend calls this after redirect from Stripe.
+    
+    Note: Session ID is safe to expose as it's a one-time use token
+    and only reveals subscription status, not sensitive data.
     """
+    # Log verification attempt
+    client_ip = getattr(http_request.state, 'client_ip', 'unknown')
+    logger.info(f"Subscription verification attempt for session {session_id[:8]}... from {client_ip}")
     
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe is not configured")
@@ -234,10 +296,12 @@ async def verify_subscription(session_id: str):
         session = stripe.checkout.Session.retrieve(session_id)
         
         if session.payment_status == "paid" or session.subscription:
+            logger.info(f"Subscription verified for session {session_id[:8]}...")
             return {
                 "verified": True,
                 "subscription_id": session.subscription,
-                "customer_email": session.customer_email,
+                # Only return masked email for privacy
+                "customer_email": f"{session.customer_email[:3]}***" if session.customer_email else None,
             }
         else:
             return {
@@ -246,8 +310,9 @@ async def verify_subscription(session_id: str):
             }
             
     except stripe.error.StripeError as e:
+        logger.warning(f"Stripe error during verification: {str(e)}")
         raise HTTPException(
             status_code=400,
-            detail=f"Stripe error: {str(e)}"
+            detail="Unable to verify subscription"  # Don't expose Stripe error details
         )
 
