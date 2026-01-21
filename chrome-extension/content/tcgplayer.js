@@ -318,6 +318,12 @@
                 <div class="bbp-compare-col" id="bbp-cmp-liq1">—</div>
                 <div class="bbp-compare-col" id="bbp-cmp-liq2">—</div>
               </div>
+              
+              <div class="bbp-compare-row">
+                <div class="bbp-compare-label">Days to +20%</div>
+                <div class="bbp-compare-col" id="bbp-cmp-days1">—</div>
+                <div class="bbp-compare-col" id="bbp-cmp-days2">—</div>
+              </div>
             </div>
           </div>
         </div>
@@ -460,9 +466,11 @@
       }
     });
     
-    // Close button
+    // Close button - now collapses instead of hiding (so tab stays visible)
     panelElement.querySelector('.bbp-btn-close').addEventListener('click', () => {
-      panelElement.style.display = 'none';
+      panelElement.classList.add('bbp-collapsed');
+      collapseBtn.textContent = '◀';
+      collapseBtn.title = 'Expand';
     });
     
     // Tab switching
@@ -544,6 +552,10 @@
     // Liquidity
     document.getElementById('bbp-cmp-liq1').textContent = m1.liquidity_score ? `${m1.liquidity_score.toFixed(1)}/10` : '—';
     document.getElementById('bbp-cmp-liq2').textContent = m2.liquidity_score ? `${m2.liquidity_score.toFixed(1)}/10` : '—';
+    
+    // Days to +20%
+    document.getElementById('bbp-cmp-days1').textContent = m1.days_to_20pct_increase ? `${Math.round(m1.days_to_20pct_increase)} days` : '—';
+    document.getElementById('bbp-cmp-days2').textContent = m2.days_to_20pct_increase ? `${Math.round(m2.days_to_20pct_increase)} days` : '—';
   }
 
   /**
