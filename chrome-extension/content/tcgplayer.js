@@ -59,20 +59,45 @@
    * Extract set code from page (OP-01, OP-02, EB-01, PRB-01, etc.)
    */
   function extractSetCode() {
-    const url = window.location.href.toLowerCase();
+    const url = decodeURIComponent(window.location.href).toLowerCase();
     const title = document.title.toLowerCase();
-    const pageText = document.body.innerText.toLowerCase();
     
-    // Combine all text sources for searching
+    // Get page text - try multiple selectors for TCGplayer's dynamic content
+    let pageText = '';
+    const h1 = document.querySelector('h1');
+    if (h1) pageText += ' ' + h1.textContent.toLowerCase();
+    const productTitle = document.querySelector('[class*="product-details__name"], [class*="ProductDetails__name"]');
+    if (productTitle) pageText += ' ' + productTitle.textContent.toLowerCase();
+    const breadcrumbs = document.querySelectorAll('[class*="breadcrumb"] a, nav a');
+    breadcrumbs.forEach(el => pageText += ' ' + el.textContent.toLowerCase());
+    
+    // Also get body text but limit it
+    if (document.body) {
+      pageText += ' ' + document.body.innerText.substring(0, 5000).toLowerCase();
+    }
+    
+    // Combine all text sources
     const allText = url + ' ' + title + ' ' + pageText;
     
-    // 1. Try direct set code pattern first (OP-13, op13, OP 13, etc.)
-    const directMatch = allText.match(/\b(op|eb|prb)[-\s]?(\d{1,2})\b/i);
-    if (directMatch) {
-      const prefix = directMatch[1].toUpperCase();
-      const num = directMatch[2].padStart(2, '0');
-      console.log(`[BBP] Found direct set code: ${prefix}-${num}`);
-      return `${prefix}-${num}`;
+    console.log('[BBP] Searching text for set code...');
+    
+    // 1. Try direct set code patterns - multiple regex patterns
+    // Matches: OP-13, OP13, OP 13, (OP13), op-13, etc.
+    const patterns = [
+      /[([\s]?(op|eb|prb)[-\s]?(\d{1,2})[\s)\]]/i,  // (OP13) or [OP-13]
+      /\b(op|eb|prb)-(\d{1,2})\b/i,                  // OP-13 with hyphen
+      /\b(op|eb|prb)(\d{1,2})\b/i,                   // OP13 no separator
+      /(op|eb|prb)[-\s]?(\d{1,2})/i,                 // Loose match anywhere
+    ];
+    
+    for (const pattern of patterns) {
+      const match = allText.match(pattern);
+      if (match) {
+        const prefix = match[1].toUpperCase();
+        const num = match[2].padStart(2, '0');
+        console.log(`[BBP] Found set code via pattern: ${prefix}-${num}`);
+        return `${prefix}-${num}`;
+      }
     }
     
     // 2. Try set name mapping
@@ -83,16 +108,18 @@
       }
     }
     
-    // 3. Check product title element specifically
-    const productTitleEl = document.querySelector('h1');
+    // 3. Check product title element specifically with wait
+    const productTitleEl = document.querySelector('h1, [class*="product-details__name"]');
     if (productTitleEl) {
       const titleText = productTitleEl.textContent.toLowerCase();
+      console.log(`[BBP] H1 text: "${titleText}"`);
       
-      // Check for set code in title
-      const titleMatch = titleText.match(/\b(op|eb|prb)[-\s]?(\d{1,2})\b/i);
+      // Check for set code in title with looser pattern
+      const titleMatch = titleText.match(/(op|eb|prb)[-\s]?(\d{1,2})/i);
       if (titleMatch) {
         const prefix = titleMatch[1].toUpperCase();
         const num = titleMatch[2].padStart(2, '0');
+        console.log(`[BBP] Found in H1: ${prefix}-${num}`);
         return `${prefix}-${num}`;
       }
       
@@ -105,19 +132,7 @@
       }
     }
     
-    // 4. Check breadcrumb
-    const breadcrumb = document.querySelector('[class*="breadcrumb"]');
-    if (breadcrumb) {
-      const breadcrumbText = breadcrumb.textContent.toLowerCase();
-      for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
-        if (breadcrumbText.includes(setName)) {
-          console.log(`[BBP] Found set name in breadcrumb "${setName}" → ${setCode}`);
-          return setCode;
-        }
-      }
-    }
-    
-    console.log('[BBP] No set code detected');
+    console.log('[BBP] No set code detected in:', allText.substring(0, 500));
     return null;
   }
 
@@ -534,7 +549,7 @@
   /**
    * Main detection and fetch function
    */
-  async function detectAndFetch() {
+  async function detectAndFetch(retryCount = 0) {
     // Show loading
     if (panelElement) {
       panelElement.querySelector('.bbp-loading').style.display = 'flex';
@@ -545,7 +560,15 @@
     
     // Detect set code
     currentSetCode = extractSetCode();
-    console.log(`[BBP] Detected set code: ${currentSetCode}`);
+    console.log(`[BBP] Detected set code: ${currentSetCode} (attempt ${retryCount + 1})`);
+    
+    // If not found and we haven't retried enough, wait and try again
+    // TCGplayer loads content dynamically
+    if (!currentSetCode && retryCount < 3) {
+      console.log(`[BBP] No set code found, retrying in 500ms...`);
+      setTimeout(() => detectAndFetch(retryCount + 1), 500);
+      return;
+    }
     
     if (!currentSetCode) {
       updatePanel(null);
