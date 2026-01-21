@@ -138,7 +138,7 @@
           <span class="bbp-title">BoosterPro</span>
         </div>
         <div class="bbp-controls">
-          <button class="bbp-btn-collapse" title="Collapse">◀</button>
+          <button class="bbp-btn-collapse" title="Collapse">▶</button>
           <button class="bbp-btn-close" title="Close">×</button>
         </div>
       </div>
@@ -428,11 +428,11 @@
   function setupEventListeners() {
     if (!panelElement) return;
     
-    // Collapse button - slides panel to edge
+    // Collapse button - slides panel to edge (panel is on LEFT)
     const collapseBtn = panelElement.querySelector('.bbp-btn-collapse');
     collapseBtn.addEventListener('click', () => {
       const isCollapsed = panelElement.classList.toggle('bbp-collapsed');
-      collapseBtn.textContent = isCollapsed ? '▶' : '◀';
+      collapseBtn.textContent = isCollapsed ? '◀' : '▶';
       collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
     });
     
@@ -440,7 +440,7 @@
     panelElement.querySelector('.bbp-panel-header').addEventListener('click', (e) => {
       if (panelElement.classList.contains('bbp-collapsed') && e.target !== collapseBtn) {
         panelElement.classList.remove('bbp-collapsed');
-        collapseBtn.textContent = '◀';
+        collapseBtn.textContent = '▶';
         collapseBtn.title = 'Collapse';
       }
     });
@@ -613,7 +613,7 @@
         panelElement.classList.remove('bbp-collapsed');
         const collapseBtn = panelElement.querySelector('.bbp-btn-collapse');
         if (collapseBtn) {
-          collapseBtn.textContent = '◀';
+          collapseBtn.textContent = '▶';
           collapseBtn.title = 'Collapse';
         }
         detectAndFetch();
