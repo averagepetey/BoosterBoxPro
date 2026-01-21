@@ -96,7 +96,15 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️  Rate limiting not available (install slowapi): {e}")
 
-# 3. CORS Configuration
+# 3. Admin IP Allowlist (restricts /admin/* to specific IPs)
+try:
+    from app.middleware.admin_ip_allowlist import AdminIPAllowlistMiddleware
+    app.add_middleware(AdminIPAllowlistMiddleware)
+    logger.info("✅ Admin IP allowlist middleware loaded")
+except ImportError as e:
+    logger.warning(f"⚠️  Admin IP allowlist not available: {e}")
+
+# 4. CORS Configuration
 # In development, allow all origins (for ease of development)
 # In production, restrict to specific domains only
 if settings.environment == "development":

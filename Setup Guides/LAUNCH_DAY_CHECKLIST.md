@@ -87,6 +87,40 @@ STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx
 
 ---
 
+### 5. Set Admin IP Allowlist
+
+**File:** `.env`
+
+```bash
+# Your IP addresses that can access /admin/* endpoints
+# Get your IP: https://whatismyipaddress.com/
+ADMIN_ALLOWED_IPS=YOUR_HOME_IP,YOUR_PHONE_IP
+
+# Enable in production (auto-enabled when ENVIRONMENT=production)
+ADMIN_IP_ALLOWLIST_ENABLED=true
+```
+
+**What this does:**
+- Only allows specified IPs to access admin endpoints
+- Even if someone steals admin credentials, they can't use them from other locations
+- Blocks automated attacks on admin routes
+
+**Examples:**
+```bash
+# Single IP
+ADMIN_ALLOWED_IPS=203.0.113.50
+
+# Multiple IPs
+ADMIN_ALLOWED_IPS=203.0.113.50,198.51.100.25
+
+# IP range (CIDR notation)
+ADMIN_ALLOWED_IPS=203.0.113.0/24,198.51.100.25
+```
+
+**Note:** Localhost (127.0.0.1) is always allowed automatically.
+
+---
+
 ## 🔐 Security Verification
 
 ### 5. Verify RLS is Enabled on Supabase
@@ -252,6 +286,10 @@ DATABASE_URL=postgresql+asyncpg://user:pass@host:port/db
 ENVIRONMENT=production
 JWT_SECRET_KEY=<64+ character random string>
 CORS_ORIGINS=https://yourdomain.com
+
+# === SECURITY (highly recommended) ===
+ADMIN_ALLOWED_IPS=<your-ip>,<your-other-ip>
+ADMIN_IP_ALLOWLIST_ENABLED=true
 
 # === PAYMENTS (if using Stripe) ===
 STRIPE_SECRET_KEY=sk_live_xxx
