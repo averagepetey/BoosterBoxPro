@@ -587,9 +587,15 @@
     }).observe(document, { subtree: true, childList: true });
   }
 
-  // Listen for messages from popup
+  // Listen for messages from popup/background
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('[BBP] Received message:', request);
+    
+    if (request.action === 'ping') {
+      // Used to check if content script is loaded
+      sendResponse({ pong: true });
+      return true;
+    }
     
     if (request.action === 'showPanel' || request.action === 'togglePanel') {
       // Show the panel

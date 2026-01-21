@@ -27,17 +27,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      // Send message to content script to show panel
-      // Content script is auto-injected via manifest, so just message it
-      chrome.tabs.sendMessage(tab.id, { action: 'showPanel' }, (response) => {
-        // Ignore errors - content script should be loaded
+      // Ask background script to inject the panel
+      chrome.runtime.sendMessage({ action: 'injectPanel', tabId: tab.id }, (response) => {
         if (chrome.runtime.lastError) {
-          console.log('[BBP] Content script not responding, page may need refresh');
-          alert('Panel not ready. Please refresh the page and try again.');
+          console.error('[BBP] Error:', chrome.runtime.lastError);
+          alert('Error: ' + chrome.runtime.lastError.message);
           return;
         }
-        // Close popup
-        window.close();
+        
+        if (response && response.success) {
+          // Close popup
+          window.close();
+        } else {
+          alert('Error: ' + (response?.error || 'Unknown error'));
+        }
       });
       
     } catch (err) {
