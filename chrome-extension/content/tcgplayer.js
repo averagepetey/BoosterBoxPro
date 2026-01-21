@@ -6,6 +6,23 @@
 (function() {
   'use strict';
 
+  // Prevent multiple injections - if already loaded, just show the panel
+  if (window.__bbpLoaded) {
+    console.log('[BBP] Already loaded, showing panel');
+    const existingPanel = document.getElementById('bbp-panel');
+    if (existingPanel) {
+      existingPanel.style.display = 'block';
+      existingPanel.classList.remove('bbp-collapsed');
+      const collapseBtn = existingPanel.querySelector('.bbp-btn-collapse');
+      if (collapseBtn) {
+        collapseBtn.textContent = '◀';
+        collapseBtn.title = 'Collapse';
+      }
+    }
+    return;
+  }
+  window.__bbpLoaded = true;
+
   console.log('[BBP] BoosterBoxPro content script loaded on TCGplayer');
 
   // State

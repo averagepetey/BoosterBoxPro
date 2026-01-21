@@ -9,15 +9,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sidebarBtn = document.getElementById('open-sidebar-btn');
   
   sidebarBtn.addEventListener('click', async () => {
-    sidebarBtn.disabled = true;
-    sidebarBtn.textContent = 'Opening...';
-    
     try {
       // Get the current active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      if (!tab) {
-        sidebarBtn.textContent = '❌ No active tab';
+      if (!tab || !tab.id) {
+        alert('No active tab found');
         return;
       }
       
@@ -26,45 +23,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isSupported = url.includes('tcgplayer.com') || url.includes('ebay.com');
       
       if (!isSupported) {
-        sidebarBtn.textContent = '⚠️ Go to TCGplayer first';
-        setTimeout(() => {
-          sidebarBtn.textContent = '📊 Open Stats Panel on This Page';
-          sidebarBtn.disabled = false;
-        }, 2000);
+        alert('Please navigate to TCGplayer or eBay first!');
         return;
       }
       
-      // Send message to content script to show/toggle the panel
-      chrome.tabs.sendMessage(tab.id, { action: 'togglePanel' }, (response) => {
-        if (chrome.runtime.lastError) {
-          // Content script might not be loaded, try injecting it
-          console.log('[BBP] Content script not ready, injecting...');
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content/tcgplayer.js']
-          }).then(() => {
-            chrome.scripting.insertCSS({
-              target: { tabId: tab.id },
-              files: ['content/panel.css']
-            });
-            sidebarBtn.textContent = '✓ Panel Opened!';
-            sidebarBtn.classList.add('success');
-          }).catch(err => {
-            sidebarBtn.textContent = '❌ Error: ' + err.message;
-          });
-        } else {
-          sidebarBtn.textContent = '✓ Panel Opened!';
-          sidebarBtn.classList.add('success');
-        }
-        
-        // Close popup after short delay
-        setTimeout(() => window.close(), 800);
+      // Inject CSS first (ignore errors if already injected)
+      try {
+        await chrome.scripting.insertCSS({
+          target: { tabId: tab.id },
+          files: ['content/panel.css']
+        });
+      } catch (e) {
+        console.log('[BBP] CSS may already be injected');
+      }
+      
+      // Inject/re-inject the content script to ensure panel shows
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content/tcgplayer.js']
       });
+      
+      // Close popup immediately
+      window.close();
       
     } catch (err) {
       console.error('[BBP] Error:', err);
-      sidebarBtn.textContent = '❌ Error';
-      sidebarBtn.disabled = false;
+      alert('Error: ' + err.message);
     }
   });
   
