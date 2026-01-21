@@ -177,6 +177,38 @@
           
           <div class="bbp-tab-content" data-content="stats">
             <div class="bbp-section">
+              <div class="bbp-section-title">📦 Supply</div>
+              <div class="bbp-stats-grid">
+                <div class="bbp-stat">
+                  <span class="bbp-stat-label">Active Listings</span>
+                  <span class="bbp-stat-value" id="bbp-listings">—</span>
+                </div>
+                <div class="bbp-stat">
+                  <span class="bbp-stat-label">Added Today</span>
+                  <span class="bbp-stat-value" id="bbp-added-today">—</span>
+                </div>
+                <div class="bbp-stat">
+                  <span class="bbp-stat-label">Liquidity</span>
+                  <span class="bbp-stat-value" id="bbp-liquidity">—</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bbp-section">
+              <div class="bbp-section-title">⏱️ Investment</div>
+              <div class="bbp-stats-grid">
+                <div class="bbp-stat">
+                  <span class="bbp-stat-label">Days to +20%</span>
+                  <span class="bbp-stat-value" id="bbp-days-20">—</span>
+                </div>
+                <div class="bbp-stat">
+                  <span class="bbp-stat-label">Reprint Risk</span>
+                  <span class="bbp-stat-value" id="bbp-reprint-risk">—</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bbp-section">
               <div class="bbp-section-title">💰 Pricing</div>
               <div class="bbp-stats-grid">
                 <div class="bbp-stat">
@@ -212,38 +244,6 @@
                 <div class="bbp-stat">
                   <span class="bbp-stat-label">30d Avg Sales</span>
                   <span class="bbp-stat-value" id="bbp-30d-avg-sales">—</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bbp-section">
-              <div class="bbp-section-title">📦 Supply</div>
-              <div class="bbp-stats-grid">
-                <div class="bbp-stat">
-                  <span class="bbp-stat-label">Active Listings</span>
-                  <span class="bbp-stat-value" id="bbp-listings">—</span>
-                </div>
-                <div class="bbp-stat">
-                  <span class="bbp-stat-label">Added Today</span>
-                  <span class="bbp-stat-value" id="bbp-added-today">—</span>
-                </div>
-                <div class="bbp-stat">
-                  <span class="bbp-stat-label">Liquidity</span>
-                  <span class="bbp-stat-value" id="bbp-liquidity">—</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bbp-section">
-              <div class="bbp-section-title">⏱️ Investment</div>
-              <div class="bbp-stats-grid">
-                <div class="bbp-stat">
-                  <span class="bbp-stat-label">Days to +20%</span>
-                  <span class="bbp-stat-value" id="bbp-days-20">—</span>
-                </div>
-                <div class="bbp-stat">
-                  <span class="bbp-stat-label">Reprint Risk</span>
-                  <span class="bbp-stat-value" id="bbp-reprint-risk">—</span>
                 </div>
               </div>
             </div>
