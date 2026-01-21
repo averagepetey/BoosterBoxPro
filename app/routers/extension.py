@@ -50,9 +50,10 @@ async def get_box_by_set_code(
     
     async with AsyncSessionLocal() as db:
         # Find box by set code in product name
+        # Use first() instead of one_or_none() to handle variants (Blue, White, etc.)
         stmt = select(BoosterBox).where(
             BoosterBox.product_name.ilike(f"%{set_code}%")
-        )
+        ).limit(1)
         result = await db.execute(stmt)
         db_box = result.scalar_one_or_none()
         
