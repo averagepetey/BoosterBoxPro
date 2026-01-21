@@ -6,7 +6,10 @@ Security Features:
 - Rate limiting on auth endpoints
 - Password complexity validation
 - Secure password hashing (bcrypt)
-- JWT with expiration
+- JWT with proper claims (iss, aud, iat, exp, jti)
+- Token version for revocation (password change, role change, logout-all)
+- Admin role fetched from DB on each request (NOT from JWT)
+- Short token expiry recommended (30 min) with refresh tokens
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status, Request
@@ -18,18 +21,23 @@ from datetime import datetime, timedelta
 from typing import Optional
 import bcrypt
 import re
-from jose import jwt
-from uuid import UUID
+from jose import jwt, JWTError
+from uuid import UUID, uuid4
 import logging
+import secrets
 
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
+
+# JWT Configuration - these should match your domain
+JWT_ISSUER = "boosterboxpro"
+JWT_AUDIENCE = "boosterboxpro-api"
 
 # Import rate limiter
 try:
@@ -101,17 +109,39 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
-def create_access_token(user_id: str, email: str, is_admin: bool = False) -> str:
-    """Create a JWT access token"""
-    expires_delta = timedelta(days=settings.jwt_expire_days)
-    expire = datetime.utcnow() + expires_delta
+def create_access_token(user_id: str, token_version: int = 1) -> str:
+    """
+    Create a JWT access token.
+    
+    SECURITY: JWT does NOT contain is_admin or role.
+    Admin status is fetched from DB on each request to prevent:
+    - Stale permissions after role change
+    - Token theft escalation
+    - Algorithm confusion attacks giving admin access
+    
+    Claims:
+    - sub: User ID (UUID)
+    - iss: Token issuer
+    - aud: Token audience
+    - iat: Issued at timestamp
+    - exp: Expiration timestamp
+    - jti: Unique token ID (for revocation tracking)
+    - tv: Token version (for bulk revocation)
+    """
+    now = datetime.utcnow()
+    # Use shorter expiry for better security (30 min recommended)
+    # For MVP, using configured value but should be short
+    expires_delta = timedelta(minutes=30)  # Hardened: 30 min instead of days
+    expire = now + expires_delta
     
     payload = {
         "sub": str(user_id),
-        "email": email,
-        "is_admin": is_admin,
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
+        "iat": now,
         "exp": expire,
-        "iat": datetime.utcnow(),
+        "jti": secrets.token_urlsafe(16),  # Unique token ID
+        "tv": token_version,  # Token version for revocation
     }
     
     token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
@@ -119,13 +149,34 @@ def create_access_token(user_id: str, email: str, is_admin: bool = False) -> str
 
 
 def decode_access_token(token: str) -> dict:
-    """Decode and verify a JWT token"""
+    """
+    Decode and verify a JWT token with full claim validation.
+    
+    Validates:
+    - Signature
+    - Expiration (exp)
+    - Issuer (iss)
+    - Audience (aud)
+    """
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(
+            token, 
+            settings.jwt_secret_key, 
+            algorithms=[settings.jwt_algorithm],
+            issuer=JWT_ISSUER,
+            audience=JWT_AUDIENCE,
+            options={
+                "verify_iss": True,
+                "verify_aud": True,
+                "verify_exp": True,
+                "verify_iat": True,
+            }
+        )
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
+    except JWTError as e:
+        logger.warning(f"JWT validation failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
@@ -133,10 +184,19 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """Get the current authenticated user from token"""
+    """
+    Get the current authenticated user from token.
+    
+    SECURITY:
+    - Validates token_version against DB (revocation support)
+    - Admin/role is fetched from DB, NOT from JWT
+    - User must be active
+    """
     token = credentials.credentials
     payload = decode_access_token(token)
+    
     user_id = payload.get("sub")
+    token_version = payload.get("tv", 0)
     
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
@@ -156,7 +216,36 @@ async def get_current_user(
     if not user.is_active:
         raise HTTPException(status_code=401, detail="User is inactive")
     
+    # SECURITY: Validate token version for revocation support
+    # If user's token_version is higher than token's tv claim,
+    # this token was issued before a security event (password change, etc.)
+    db_token_version = user.token_version or 1
+    if token_version < db_token_version:
+        logger.warning(f"Revoked token used for user {user.id} (tv={token_version} < db={db_token_version})")
+        raise HTTPException(
+            status_code=401, 
+            detail="Token has been revoked. Please login again."
+        )
+    
     return user
+
+
+async def require_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Require admin role for endpoint access.
+    
+    SECURITY: Admin status is checked from DB, not JWT.
+    This prevents escalation via JWT manipulation.
+    """
+    if not current_user.is_admin:
+        logger.warning(f"Non-admin user {current_user.id} attempted admin access")
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access required"
+        )
+    return current_user
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -281,16 +370,23 @@ async def login(
     # Log successful login
     logger.info(f"Login successful: {login_data.email[:3]}*** from {client_ip}")
     
-    # Create access token with admin status
-    is_admin = user.is_superuser if user.is_superuser else False
-    access_token = create_access_token(str(user.id), user.email, is_admin=is_admin)
+    # Create access token (NO is_admin in token - fetched from DB on each request)
+    token_version = user.token_version or 1
+    access_token = create_access_token(str(user.id), token_version)
+    
+    # Return is_admin for frontend UI (but not trusted for authorization)
+    # Authorization is always checked server-side from DB
+    is_admin = user.is_admin  # Uses property that checks DB role
     
     return AuthResponse(access_token=access_token, token_type="bearer", is_admin=is_admin)
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    """Get current user information"""
-    is_admin = current_user.is_superuser if current_user.is_superuser else False
-    return UserResponse(id=str(current_user.id), email=current_user.email, is_admin=is_admin)
+    """Get current user information (admin status from DB)"""
+    return UserResponse(
+        id=str(current_user.id), 
+        email=current_user.email, 
+        is_admin=current_user.is_admin  # Property checks DB role
+    )
 

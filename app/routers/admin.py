@@ -1,7 +1,11 @@
 """
 Admin Router
 Protected endpoints for admin operations (screenshot upload, data entry)
-Only accessible by admin users (john.petersen1818@gmail.com) or via API key
+
+SECURITY:
+- Admin access is verified by checking user.role in DATABASE (not JWT)
+- API key fallback for automated scripts
+- All admin actions are logged
 """
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header, status
@@ -10,6 +14,7 @@ from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import date
 from uuid import UUID
+import logging
 
 from app.config import settings
 from app.database import get_db
@@ -22,56 +27,93 @@ from app.services.image_processing import image_processing_service
 from app.services.duplicate_detection import duplicate_detection_service
 from app.models.unified_box_metrics import UnifiedBoxMetrics
 from app.models.booster_box import BoosterBox
+from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 security = HTTPBearer(auto_error=False)
 
-# Admin email - only this user can access admin features
-ADMIN_EMAIL = "john.petersen1818@gmail.com"
 
-
-def verify_admin_access(
+async def verify_admin_access(
     x_admin_api_key: Optional[str] = Header(None),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-) -> bool:
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User:
     """
-    Verify admin access via API key OR JWT token for admin user
+    Verify admin access via API key OR JWT token.
+    
+    SECURITY: Admin role is ALWAYS checked from database, never trusted from JWT.
+    This prevents privilege escalation via JWT manipulation.
     
     Args:
-        x_admin_api_key: API key from X-Admin-API-Key header
+        x_admin_api_key: API key from X-Admin-API-Key header (for scripts)
         credentials: JWT token from Authorization header
+        db: Database session
         
     Returns:
-        True if valid admin, raises HTTPException if unauthorized
+        User object if admin, raises HTTPException if unauthorized
     """
-    # Method 1: Check API key
+    # Method 1: Check API key (for automated scripts)
     if x_admin_api_key and settings.admin_api_key:
         if x_admin_api_key == settings.admin_api_key:
-            return True
+            logger.info("Admin access granted via API key")
+            # Return a synthetic admin user for API key access
+            return None  # Indicates API key auth, not user auth
     
-    # Method 2: Check JWT token for admin user
+    # Method 2: Check JWT token and verify admin role FROM DATABASE
     if credentials:
         try:
-            from app.routers.auth import decode_access_token
-            payload = decode_access_token(credentials.credentials)
-            email = payload.get("email")
-            is_admin = payload.get("is_admin", False)
+            from app.routers.auth import decode_access_token, get_current_user
             
-            # Check if user is admin (either by is_admin flag or by email)
-            if is_admin or email == ADMIN_EMAIL:
-                return True
-        except Exception:
-            pass  # Token invalid, fall through to unauthorized
+            # Decode token
+            payload = decode_access_token(credentials.credentials)
+            user_id = payload.get("sub")
+            token_version = payload.get("tv", 0)
+            
+            if not user_id:
+                raise HTTPException(status_code=401, detail="Invalid token")
+            
+            # Fetch user from database
+            from uuid import UUID as UUIDType
+            stmt = select(User).where(User.id == UUIDType(user_id))
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                raise HTTPException(status_code=401, detail="User not found")
+            
+            if not user.is_active:
+                raise HTTPException(status_code=401, detail="User is inactive")
+            
+            # Validate token version (revocation check)
+            db_token_version = user.token_version or 1
+            if token_version < db_token_version:
+                logger.warning(f"Revoked token used for admin access by user {user.id}")
+                raise HTTPException(status_code=401, detail="Token has been revoked")
+            
+            # SECURITY: Check admin role FROM DATABASE, not from JWT
+            if user.is_admin:
+                logger.info(f"Admin access granted to user {user.id} ({user.email[:3]}***)")
+                return user
+            else:
+                logger.warning(f"Non-admin user {user.id} attempted admin access")
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Admin auth error: {str(e)}")
     
     # If no admin key is configured and we're in development, allow access
     if not settings.admin_api_key and settings.environment != "production":
-        return True
+        logger.warning("Admin access granted in dev mode (no API key configured)")
+        return None
     
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Admin access required. Only admin users can access this endpoint."
+        detail="Admin access required"
     )
 
 
