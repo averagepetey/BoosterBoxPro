@@ -466,32 +466,19 @@ const MOCK_DATA: LeaderboardResponse = {
 };
 
 export function useLeaderboard(params: LeaderboardParams = {}) {
-  // Check if mock data fallback is enabled via environment variable
-  const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
-  
   return useQuery<LeaderboardResponse>({
     queryKey: ['leaderboard', params],
     queryFn: async () => {
-      try {
-        const result = await getLeaderboard(params);
-        // If API returns empty data, use mock data as fallback
-        if (!result || !result.data || result.data.length === 0) {
-          console.warn('API returned empty data, using mock data as fallback');
-          return MOCK_DATA;
-        }
-        return result;
-      } catch (error) {
-        // Use mock data as fallback if API fails
-        console.warn('API call failed, using mock data as fallback:', error);
-        return MOCK_DATA;
-      }
+      // Always call the real API - no mock fallback
+      const result = await getLeaderboard(params);
+      return result;
     },
     staleTime: 60 * 1000, // 1 minute
     refetchOnWindowFocus: false,
-    retry: false, // Don't retry on failure
-    retryOnMount: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    retry: 1, // Retry once on failure
+    retryOnMount: true,
+    refetchOnReconnect: true,
+    refetchOnMount: true,
   });
 }
 

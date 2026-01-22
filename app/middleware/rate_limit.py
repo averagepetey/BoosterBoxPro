@@ -104,3 +104,4 @@ def limit_expensive(func):
     """Rate limit for expensive/heavy endpoints"""
     return limiter.limit(RateLimits.TIME_SERIES)(func)
 
+

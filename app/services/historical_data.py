@@ -344,20 +344,26 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             adjusted_factor = max(0.85, min(0.98, adjusted_factor))  # Clamp between 85% and 98%
             average_sale_price = floor_price * adjusted_factor
             
-            # Calculate daily volume - use actual sales data if available, otherwise estimate
+            # Calculate daily volume - prefer stored data, then raw sales, then estimate
             daily_volume_usd = None
-            if entry.get('raw_sales'):
-                # Use actual sales data for accurate daily volume
+            
+            # Priority 1: Use stored daily_volume_usd if available (from screenshot capture)
+            if entry.get('daily_volume_usd') and entry.get('daily_volume_usd') > 0:
+                daily_volume_usd = entry.get('daily_volume_usd')
+            # Priority 2: Use actual raw sales data if available
+            elif entry.get('raw_sales'):
                 raw_sales = entry.get('raw_sales', [])
                 daily_volume_usd = sum((s.get('price', 0) + s.get('shipping', 0)) * s.get('quantity', 1) for s in raw_sales)
+            # Priority 3: Estimate daily volume using average sale price
             else:
-                # Estimate daily volume using average sale price
                 daily_volume_usd = average_sale_price * boxes_sold_per_day
             
-            # For 30-day volume, multiply daily by 30
+            # For 30-day volume: prefer stored value, otherwise calculate from daily
             # NOTE: When daily snapshots are available, we'll sum actual daily volumes
-            # instead of extrapolating from a single day's rate
-            unified_volume_usd = daily_volume_usd * 30 if daily_volume_usd else None
+            if entry.get('unified_volume_usd') and entry.get('unified_volume_usd') > 0:
+                unified_volume_usd = entry.get('unified_volume_usd')
+            else:
+                unified_volume_usd = daily_volume_usd * 30 if daily_volume_usd else None
         elif floor_price and units_sold_count and units_sold_count > 0:
             # Fallback: if we have units_sold_count but no daily rate, estimate daily
             # This handles cases where boxes_sold_per_day might be missing
@@ -898,4 +904,80 @@ def get_all_boxes_for_date(date: str) -> List[Dict[str, Any]]:
             })
     
     return boxes_for_date
+
+
+def get_rolling_volume_sum(box_id: str, days: int = 30) -> Optional[float]:
+    """
+    Calculate actual rolling volume sum by summing STORED daily_volume_usd 
+    values for the specified number of days.
+    
+    IMPORTANT: Only uses actual recorded data, no interpolation.
+    
+    Args:
+        box_id: UUID of the booster box
+        days: Number of days to sum (7 for 7d, 30 for 30d)
+    
+    Returns:
+        Total volume in USD over the period, or None if no data
+    """
+    # Get RAW stored data (not calculated)
+    entries = get_box_historical_data(box_id)
+    
+    if not entries:
+        return None
+    
+    # Sort by date
+    entries.sort(key=lambda x: x.get('date', ''))
+    
+    # Get cutoff date
+    cutoff_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    
+    # Filter to entries within the time period
+    recent_entries = [e for e in entries if e.get('date', '') >= cutoff_date]
+    
+    if not recent_entries:
+        return None  # No data in this time period
+    
+    # Sum ONLY actual captured daily volumes
+    # No fallback calculations - only use real recorded data
+    total_volume = 0.0
+    
+    for entry in recent_entries:
+        # ONLY use stored daily_volume_usd - this comes from actual screenshot captures
+        daily_vol = entry.get('daily_volume_usd', 0) or 0
+        total_volume += daily_vol
+    
+    # Return actual recorded volume only
+    return round(total_volume, 2) if total_volume > 0 else None
+
+
+def get_box_volume_metrics(box_id: str) -> dict:
+    """
+    Get all volume metrics for a box in one call.
+    
+    Returns:
+        Dictionary with:
+        - daily_volume_usd: Latest 24h volume
+        - volume_7d: Rolling 7-day sum
+        - volume_30d: Rolling 30-day sum
+        - unified_volume_7d_ema: 7-day EMA (for smoothing)
+    """
+    price_history = get_box_price_history(box_id, days=90, one_per_month=False)
+    
+    if not price_history:
+        return {
+            'daily_volume_usd': None,
+            'volume_7d': None,
+            'volume_30d': None,
+            'unified_volume_7d_ema': None,
+        }
+    
+    latest = price_history[-1]
+    
+    return {
+        'daily_volume_usd': latest.get('daily_volume_usd'),
+        'volume_7d': get_rolling_volume_sum(box_id, 7),
+        'volume_30d': get_rolling_volume_sum(box_id, 30),
+        'unified_volume_7d_ema': latest.get('unified_volume_7d_ema'),
+    }
 

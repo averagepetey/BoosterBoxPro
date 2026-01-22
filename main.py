@@ -381,7 +381,12 @@ async def get_booster_boxes(
                 continue
             
             # Add 30d change and get accurate metrics from historical data service
-            from app.services.historical_data import get_box_month_over_month_price_change, get_box_price_history, get_box_30d_avg_sales
+            from app.services.historical_data import (
+                get_box_month_over_month_price_change, 
+                get_box_price_history, 
+                get_box_30d_avg_sales,
+                get_rolling_volume_sum
+            )
             
             price_change_mom = get_box_month_over_month_price_change(str(db_box.id))
             if price_change_mom is not None:
@@ -392,32 +397,36 @@ async def get_booster_boxes(
             if avg_sales_30d is not None:
                 box_data["metrics"]["boxes_sold_30d_avg"] = avg_sales_30d
             
+            # Get rolling volume sums for accurate rankings
+            # These are ACTUAL sums of daily volumes, not extrapolations
+            volume_7d = get_rolling_volume_sum(str(db_box.id), 7)
+            volume_30d = get_rolling_volume_sum(str(db_box.id), 30)
+            
             # Get the most recent historical entry with calculated metrics
-            # This is more accurate than the database value for boxes with sparse data
             historical_data = get_box_price_history(str(db_box.id), days=90)
             if historical_data:
                 latest_historical = historical_data[-1]
                 
-                # Use historical EMA if it's more significant
+                # Use historical 7d EMA
                 hist_ema = latest_historical.get("unified_volume_7d_ema")
                 if hist_ema and hist_ema > 0:
-                    current_ema = box_data["metrics"].get("unified_volume_7d_ema", 0) or 0
-                    if hist_ema > current_ema:
-                        box_data["metrics"]["unified_volume_7d_ema"] = hist_ema
+                    box_data["metrics"]["unified_volume_7d_ema"] = hist_ema
                 
-                # Use historical daily volume if available
+                # Use historical daily volume (24h)
                 hist_daily_vol = latest_historical.get("daily_volume_usd")
                 if hist_daily_vol and hist_daily_vol > 0:
                     box_data["metrics"]["daily_volume_usd"] = hist_daily_vol
                 
-                # Also update unified_volume_usd (30-day estimate) if available
-                # Always use historical data when available for accurate sorting
-                hist_vol = latest_historical.get("unified_volume_usd")
-                if hist_vol is not None and hist_vol > 0:
-                    box_data["metrics"]["unified_volume_usd"] = hist_vol
+                # Use ROLLING SUM for 30-day volume (actual sum, not extrapolation)
+                if volume_30d and volume_30d > 0:
+                    box_data["metrics"]["unified_volume_usd"] = volume_30d
                 elif hist_daily_vol and hist_daily_vol > 0:
-                    # Calculate 30-day volume from daily volume if unified_volume_usd not available
+                    # Fallback to extrapolation if no rolling sum available
                     box_data["metrics"]["unified_volume_usd"] = hist_daily_vol * 30
+                
+                # Add 7-day rolling volume for 7d sorting
+                if volume_7d and volume_7d > 0:
+                    box_data["metrics"]["volume_7d"] = volume_7d
                 
                 # Use historical boxes_sold_per_day if available
                 hist_sold = latest_historical.get("boxes_sold_per_day")
@@ -524,22 +533,67 @@ async def get_box_detail(box_id: str):
             )
         
         # Get accurate metrics from historical data service
+        from app.services.historical_data import get_box_30d_avg_sales
         historical_data = get_box_price_history(str(db_box.id), days=90)
         
         box_metrics = {}
         if historical_data:
             latest = historical_data[-1]
+            
+            # Get values for calculations
+            active_listings = latest.get("active_listings_count") or 0
+            boxes_sold_per_day = latest.get("boxes_sold_per_day") or 0
+            
+            # Get 30d average sales FIRST (needed for days_to_20pct calculation)
+            avg_sales_30d = latest.get("boxes_sold_30d_avg")
+            if avg_sales_30d is None:
+                avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+            
+            # Get avg boxes added per day (may be None if not captured yet)
+            avg_boxes_added_per_day = latest.get("avg_boxes_added_per_day") or 0
+            
+            # Calculate days_to_20pct_increase using full formula:
+            # T₊ = inventory below +20% tier (active_listings_count)
+            # net_burn_rate = boxes_sold_30d_avg - avg_boxes_added_per_day
+            # days_to_20pct = T₊ / net_burn_rate
+            days_to_20pct = None
+            if avg_sales_30d and avg_sales_30d > 0 and active_listings:
+                net_burn_rate = avg_sales_30d - avg_boxes_added_per_day
+                
+                if net_burn_rate > 0.05:  # Meaningful burn rate
+                    days_to_20pct = round(active_listings / net_burn_rate, 2)
+                    # Cap at 180 days max
+                    if days_to_20pct > 180:
+                        days_to_20pct = 180.0
+                elif net_burn_rate <= 0:
+                    # More boxes being added than sold - price won't rise
+                    days_to_20pct = None  # Display as N/A
+                else:
+                    # Too slow to be meaningful (< 0.05 net burn)
+                    days_to_20pct = 180.0  # Show as max
+            
+            # Calculate liquidity_score: higher = more liquid
+            # Based on sell rate vs listings - quick sellers get higher scores
+            liquidity_score = latest.get("liquidity_score")
+            if liquidity_score is None and avg_sales_30d and avg_sales_30d > 0:
+                if active_listings and active_listings > 0:
+                    raw_score = (avg_sales_30d / active_listings) * 100
+                    liquidity_score = round(min(raw_score, 10), 1)  # Cap at 10
+                else:
+                    liquidity_score = 5.0  # Default mid-range if no listing data
+            
             box_metrics = {
                 "floor_price_usd": latest.get("floor_price_usd"),
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
-                "active_listings_count": latest.get("active_listings_count"),
+                "active_listings_count": active_listings,
                 "daily_volume_usd": latest.get("daily_volume_usd"),
                 "unified_volume_usd": latest.get("unified_volume_usd"),
                 "unified_volume_7d_ema": latest.get("unified_volume_7d_ema"),
-                "boxes_sold_per_day": latest.get("boxes_sold_per_day"),
+                "boxes_sold_per_day": boxes_sold_per_day,
                 "boxes_added_today": latest.get("boxes_added_today"),
-                "days_to_20pct_increase": latest.get("days_to_20pct_increase"),
-                "liquidity_score": latest.get("liquidity_score"),
+                "days_to_20pct_increase": days_to_20pct,
+                "liquidity_score": liquidity_score,
+                "boxes_sold_30d_avg": avg_sales_30d,
             }
         
         # Add 30d price change
@@ -547,12 +601,8 @@ async def get_box_detail(box_id: str):
         if price_change_30d is not None:
             box_metrics["floor_price_30d_change_pct"] = price_change_30d
         
-        # Add 30d average sales (same logic as leaderboard - use from latest historical entry if available)
-        if historical_data and latest.get("boxes_sold_30d_avg") is not None:
-            box_metrics["boxes_sold_30d_avg"] = latest.get("boxes_sold_30d_avg")
-        else:
-            # Fallback to calculated value
-            from app.services.historical_data import get_box_30d_avg_sales
+        # boxes_sold_30d_avg already set above, but keep fallback just in case
+        if "boxes_sold_30d_avg" not in box_metrics or box_metrics["boxes_sold_30d_avg"] is None:
             avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
             if avg_sales_30d is not None:
                 box_metrics["boxes_sold_30d_avg"] = avg_sales_30d
