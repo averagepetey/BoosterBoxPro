@@ -486,7 +486,11 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             
             if buckets:
                 market_price = float(buckets[0].get("marketPrice") or 0)
-                floor = float(buckets[0].get("lowSalePrice") or 0) or market_price
+                low_sale = float(buckets[0].get("lowSalePrice") or 0)
+                # Use market_price as floor proxy (more accurate than lowSalePrice)
+                # lowSalePrice is the lowest sale in the bucket (often old/outlier)
+                # marketPrice is the average sale price (closer to current floor)
+                floor = market_price if market_price > 0 else low_sale
             else:
                 market_price = 0
                 floor = 0
@@ -517,6 +521,8 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             price_change_pct = round(((market_price - prev_price) / prev_price) * 100, 1) if prev_price and prev_price > 0 else None
             
             daily_vol = round(avg_daily * market_price, 2)
+            volume_7d = round(daily_vol * 7, 2)
+            volume_30d = round(daily_vol * 30, 2)
             
             # Create enriched entry
             new_entry = {
@@ -527,7 +533,9 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 "floor_price_usd": floor,
                 "market_price_usd": market_price,
                 "daily_volume_usd": daily_vol,
-                "unified_volume_usd": daily_vol * 30,
+                # Calculated rolling volumes (extrapolated from daily average)
+                "volume_7d": volume_7d,
+                "unified_volume_usd": volume_30d,
                 # Derived metrics (our calculations)
                 "estimated_actual_sales_today": estimated_today_sales,
                 "baseline_7d_avg": round(baseline_7d, 2) if baseline_7d else None,

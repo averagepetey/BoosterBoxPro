@@ -407,6 +407,11 @@ async def get_booster_boxes(
             if historical_data:
                 latest_historical = historical_data[-1]
                 
+                # PRIORITY: Use historical floor_price_usd (from Apify marketPrice - more accurate)
+                hist_floor = latest_historical.get("floor_price_usd")
+                if hist_floor and hist_floor > 0:
+                    box_data["metrics"]["floor_price_usd"] = hist_floor
+                
                 # Use historical 7d EMA
                 hist_ema = latest_historical.get("unified_volume_7d_ema")
                 if hist_ema and hist_ema > 0:
@@ -417,16 +422,21 @@ async def get_booster_boxes(
                 if hist_daily_vol and hist_daily_vol > 0:
                     box_data["metrics"]["daily_volume_usd"] = hist_daily_vol
                 
-                # Use ROLLING SUM for 30-day volume (actual sum, not extrapolation)
-                if volume_30d and volume_30d > 0:
-                    box_data["metrics"]["unified_volume_usd"] = volume_30d
+                # PRIORITY: Use Apify's calculated 30d volume (daily_vol * 30)
+                hist_30d_vol = latest_historical.get("unified_volume_usd")
+                if hist_30d_vol and hist_30d_vol > 0:
+                    box_data["metrics"]["unified_volume_usd"] = hist_30d_vol
                 elif hist_daily_vol and hist_daily_vol > 0:
-                    # Fallback to extrapolation if no rolling sum available
+                    # Fallback to extrapolation if not in historical
                     box_data["metrics"]["unified_volume_usd"] = hist_daily_vol * 30
                 
-                # Add 7-day rolling volume for 7d sorting
-                if volume_7d and volume_7d > 0:
-                    box_data["metrics"]["volume_7d"] = volume_7d
+                # PRIORITY: Use Apify's calculated 7d volume (daily_vol * 7)
+                hist_7d_vol = latest_historical.get("volume_7d")
+                if hist_7d_vol and hist_7d_vol > 0:
+                    box_data["metrics"]["volume_7d"] = hist_7d_vol
+                elif hist_daily_vol and hist_daily_vol > 0:
+                    # Fallback to extrapolation if not in historical
+                    box_data["metrics"]["volume_7d"] = hist_daily_vol * 7
                 
                 # Use historical boxes_sold_per_day if available
                 hist_sold = latest_historical.get("boxes_sold_per_day")
@@ -582,12 +592,18 @@ async def get_box_detail(box_id: str):
                 else:
                     liquidity_score = 5.0  # Default mid-range if no listing data
             
+            # Calculate volumes from daily if not already set
+            daily_vol = latest.get("daily_volume_usd") or 0
+            volume_7d = latest.get("volume_7d") or (daily_vol * 7 if daily_vol else 0)
+            volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
+            
             box_metrics = {
                 "floor_price_usd": latest.get("floor_price_usd"),
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
                 "active_listings_count": active_listings,
-                "daily_volume_usd": latest.get("daily_volume_usd"),
-                "unified_volume_usd": latest.get("unified_volume_usd"),
+                "daily_volume_usd": daily_vol,
+                "volume_7d": volume_7d,
+                "unified_volume_usd": volume_30d,
                 "unified_volume_7d_ema": latest.get("unified_volume_7d_ema"),
                 "boxes_sold_per_day": boxes_sold_per_day,
                 "boxes_added_today": latest.get("boxes_added_today"),
