@@ -560,10 +560,12 @@
 
   /**
    * Main detection and fetch function
+   * @param {number} retryCount - Number of detection retries
+   * @param {boolean} forceShow - If true, show panel even if no box detected (user clicked button)
    */
-  async function detectAndFetch(retryCount = 0) {
-    // Show loading
-    if (panelElement) {
+  async function detectAndFetch(retryCount = 0, forceShow = false) {
+    // Show loading state only if panel is visible or forceShow
+    if (panelElement && (panelElement.style.display !== 'none' || forceShow)) {
       panelElement.querySelector('.bbp-loading').style.display = 'flex';
       panelElement.querySelector('.bbp-box-info').style.display = 'none';
       panelElement.querySelector('.bbp-no-box').style.display = 'none';
@@ -578,13 +580,27 @@
     // TCGplayer loads content dynamically
     if (!currentSetCode && retryCount < 3) {
       console.log(`[BBP] No set code found, retrying in 500ms...`);
-      setTimeout(() => detectAndFetch(retryCount + 1), 500);
+      setTimeout(() => detectAndFetch(retryCount + 1, forceShow), 500);
       return;
     }
     
     if (!currentSetCode) {
-      updatePanel(null);
+      // No box detected - only show panel if user explicitly requested (forceShow)
+      if (forceShow && panelElement) {
+        panelElement.style.display = 'block';
+        updatePanel(null);
+      } else if (panelElement) {
+        // Hide panel completely on non-applicable pages
+        panelElement.style.display = 'none';
+      }
+      chrome.runtime.sendMessage({ action: 'noBoxDetected' });
       return;
+    }
+    
+    // Box detected - show panel and fetch data
+    if (panelElement) {
+      panelElement.style.display = 'block';
+      panelElement.classList.remove('bbp-collapsed');
     }
     
     // Fetch data from background script
@@ -604,18 +620,19 @@
   /**
    * Initialize extension
    */
-  function init() {
+  function init(forceShow = false) {
     console.log('[BBP] Initializing BoosterBoxPro panel');
     
-    // Create and inject panel
+    // Create and inject panel (hidden by default)
     panelElement = createPanel();
+    panelElement.style.display = 'none'; // Hide initially
     document.body.appendChild(panelElement);
     
     // Setup event listeners
     setupEventListeners();
     
-    // Detect and fetch data
-    detectAndFetch();
+    // Detect and fetch data - only show if applicable
+    detectAndFetch(0, forceShow);
     
     // Re-detect on navigation (SPA support)
     let lastUrl = location.href;
@@ -624,7 +641,7 @@
       if (url !== lastUrl) {
         lastUrl = url;
         console.log('[BBP] URL changed, re-detecting...');
-        setTimeout(detectAndFetch, 500); // Small delay for page to load
+        setTimeout(() => detectAndFetch(0, false), 500); // Small delay for page to load
       }
     }).observe(document, { subtree: true, childList: true });
   }
@@ -640,9 +657,9 @@
     }
     
     if (request.action === 'showPanel' || request.action === 'togglePanel') {
-      // Show the panel
+      // User manually triggered - show panel even if no box detected (forceShow=true)
       if (!panelElement) {
-        init();
+        init(true); // forceShow = true
       } else {
         panelElement.style.display = 'block';
         panelElement.classList.remove('bbp-collapsed');
@@ -651,7 +668,7 @@
           collapseBtn.textContent = '▶';
           collapseBtn.title = 'Collapse';
         }
-        detectAndFetch();
+        detectAndFetch(0, true); // forceShow = true
       }
       sendResponse({ success: true });
     }
@@ -659,11 +676,11 @@
     return true;
   });
 
-  // Start when DOM is ready
+  // Start when DOM is ready (auto-detect, don't force show)
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => init(false));
   } else {
-    init();
+    init(false); // Don't force show - only show if box detected
   }
 
 })();

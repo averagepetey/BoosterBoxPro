@@ -77,15 +77,16 @@ export default function DashboardPage() {
     if (timeRange === '24h') {
       return 'daily_volume_usd';
     } else if (timeRange === '7d') {
-      return 'unified_volume_7d_ema';
+      return 'volume_7d';  // Use actual 7-day rolling sum
     } else {
-      return 'unified_volume_usd';
+      return 'unified_volume_usd';  // 30-day rolling sum
     }
   };
 
   const getSortLabel = (value: string): string => {
     const labels: Record<string, string> = {
       'daily_volume_usd': 'Volume',
+      'volume_7d': 'Volume',
       'unified_volume_7d_ema': 'Volume',
       'unified_volume_usd': 'Volume',
       'floor_price_usd': 'Floor Price',
@@ -111,6 +112,7 @@ export default function DashboardPage() {
     // If currently sorting by volume, update to the correct volume field for the new time range
     const isCurrentlySortingByVolume = 
       sortBy === 'daily_volume_usd' || 
+      sortBy === 'volume_7d' ||
       sortBy === 'unified_volume_7d_ema' || 
       sortBy === 'unified_volume_usd';
     
@@ -118,7 +120,7 @@ export default function DashboardPage() {
       if (range === '24h') {
         setSortBy('daily_volume_usd');
       } else if (range === '7d') {
-        setSortBy('unified_volume_7d_ema');
+        setSortBy('volume_7d');  // Use actual 7-day rolling sum
       } else {
         setSortBy('unified_volume_usd');
       }

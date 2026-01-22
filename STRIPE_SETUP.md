@@ -166,3 +166,4 @@ After setting up Stripe:
 - **Webhook verification fails**: Make sure `STRIPE_WEBHOOK_SECRET` matches your webhook endpoint secret
 - **Checkout redirects to wrong URL**: Update `FRONTEND_URL` in `.env` to match your frontend URL
 
+
