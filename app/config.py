@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     stripe_publishable_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None
     
+    # Apify API (TCGplayer scraping)
+    apify_api_token: Optional[str] = None
+    
     # Future: Marketplace API keys
     # tcgplayer_api_key: Optional[str] = None
     # ebay_api_key: Optional[str] = None
