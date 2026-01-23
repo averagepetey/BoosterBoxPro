@@ -442,3 +442,50 @@ async def list_boxes_for_admin(
         ]
     }
 
+
+@router.post("/refresh-sales-data")
+async def refresh_tcgplayer_sales_data(
+    admin_user: User = Depends(verify_admin_access)
+):
+    """
+    Refresh sales data from TCGplayer via Apify for all 18 booster boxes.
+    
+    This endpoint triggers a pull of the latest sales metrics (avg daily sold,
+    market price, floor price) from TCGplayer for all tracked boxes.
+    
+    Requires admin access.
+    
+    Returns:
+        dict: Summary of the refresh operation including success/error counts
+    """
+    from app.services.tcgplayer_apify import refresh_all_boxes_sales_data
+    
+    admin_email = admin_user.email if admin_user else "API_KEY"
+    logger.info(f"Admin {admin_email} triggered TCGplayer sales data refresh")
+    
+    try:
+        result = refresh_all_boxes_sales_data()
+        
+        logger.info(f"TCGplayer refresh completed: {result['success_count']} success, {result['error_count']} errors")
+        
+        return {
+            "status": "completed",
+            "message": f"Refreshed sales data for {result['success_count']} boxes",
+            "data": {
+                "success_count": result["success_count"],
+                "error_count": result["error_count"],
+                "date": result["date"],
+                "top_5_by_volume": result.get("top_5_by_volume", result.get("top_5", [])),
+                "top_gainers": result.get("top_gainers", []),
+                "top_losers": result.get("top_losers", []),
+                "alerts": result.get("alerts", []),
+                "alert_count": result.get("alert_count", 0),
+            }
+        }
+    except Exception as e:
+        logger.error(f"TCGplayer refresh failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to refresh sales data: {str(e)}"
+        )
+

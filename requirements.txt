@@ -33,19 +33,6 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 
-# Payment Processing
-stripe>=7.0.0
-
-# Authentication & Security
-bcrypt>=4.0.0
-python-jose[cryptography]>=3.3.0
-slowapi>=0.1.9  # Rate limiting
-
-# AI Screenshot Processing (choose one or both)
-anthropic>=0.39.0  # Claude API - preferred for screenshot extraction
-# openai>=1.0.0  # OpenAI API - alternative for screenshot extraction
-Pillow>=10.0.0  # Image validation and processing
-
 # Development Tools
 black>=23.0.0  # Code formatter
 ruff>=0.1.0  # Fast linter
