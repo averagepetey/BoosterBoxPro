@@ -10,18 +10,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 362.52,
+        "floor_price_usd": 570.58,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 7003.886399999999,
+        "daily_volume_usd": 6846.93,
         "unified_volume_7d_ema": 49027.20479999999,
-        "units_sold_count": 19,
-        "active_listings_count": 22,
+        "units_sold_count": 12,
+        "active_listings_count": 49,
         "listed_percentage": 10.0,
         "estimated_total_supply": 220,
         "liquidity_score": 1.0,
         "days_to_20pct_increase": 1.14,
         "expected_days_to_sell": 1.14,
-        "boxes_sold_per_day": 19.32,
+        "boxes_sold_per_day": 12,
         "boxes_sold_30d_avg": 19.32,
         "price_sparkline_1d": [
           {
@@ -55,7 +55,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440001",
@@ -67,18 +67,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 3998.49,
+        "floor_price_usd": 6510.97,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 5517.9162,
+        "daily_volume_usd": 0,
         "unified_volume_7d_ema": 38625.4134,
-        "units_sold_count": 1,
-        "active_listings_count": 0,
+        "units_sold_count": 0,
+        "active_listings_count": 11,
         "listed_percentage": 0.0,
         "estimated_total_supply": 10000,
         "liquidity_score": 0.14,
         "days_to_20pct_increase": 0.0,
         "expected_days_to_sell": 0.0,
-        "boxes_sold_per_day": 1.38,
+        "boxes_sold_per_day": 0,
         "boxes_sold_30d_avg": 1.38,
         "price_sparkline_1d": [
           {
@@ -112,7 +112,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440006",
@@ -124,18 +124,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 776.05,
+        "floor_price_usd": 1097.45,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 3600.8719999999994,
+        "daily_volume_usd": 12071.91,
         "unified_volume_7d_ema": 25206.103999999996,
-        "units_sold_count": 4,
-        "active_listings_count": 28,
+        "units_sold_count": 11,
+        "active_listings_count": 18,
         "listed_percentage": 10.0,
         "estimated_total_supply": 280,
         "liquidity_score": 0.49,
         "days_to_20pct_increase": 6.03,
         "expected_days_to_sell": 6.03,
-        "boxes_sold_per_day": 4.64,
+        "boxes_sold_per_day": 11,
         "boxes_sold_30d_avg": 4.64,
         "price_sparkline_1d": [
           {
@@ -169,7 +169,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -181,18 +181,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 1431.94,
+        "floor_price_usd": 2113.38,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 2663.4084000000003,
+        "daily_volume_usd": 2113.38,
         "unified_volume_7d_ema": 18643.8588,
         "units_sold_count": 1,
-        "active_listings_count": 3,
+        "active_listings_count": 11,
         "listed_percentage": 10.0,
         "estimated_total_supply": 30,
         "liquidity_score": 0.19,
         "days_to_20pct_increase": 1.61,
         "expected_days_to_sell": 1.61,
-        "boxes_sold_per_day": 1.86,
+        "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 1.86,
         "price_sparkline_1d": [
           {
@@ -226,7 +226,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440012",
@@ -238,18 +238,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 421.27,
+        "floor_price_usd": 622.62,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 1655.5911,
+        "daily_volume_usd": 0,
         "unified_volume_7d_ema": 11589.137700000001,
-        "units_sold_count": 3,
-        "active_listings_count": 58,
+        "units_sold_count": 0,
+        "active_listings_count": 73,
         "listed_percentage": 10.0,
         "estimated_total_supply": 580,
         "liquidity_score": 0.45,
         "days_to_20pct_increase": 14.76,
         "expected_days_to_sell": 14.76,
-        "boxes_sold_per_day": 3.93,
+        "boxes_sold_per_day": 0,
         "boxes_sold_30d_avg": 3.93,
         "price_sparkline_1d": [
           {
@@ -283,7 +283,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440015",
@@ -295,18 +295,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 244.32,
+        "floor_price_usd": 402.5,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 1109.2128,
+        "daily_volume_usd": 805.0,
         "unified_volume_7d_ema": 7764.4896,
-        "units_sold_count": 4,
-        "active_listings_count": 16,
+        "units_sold_count": 2,
+        "active_listings_count": 105,
         "listed_percentage": 10.0,
         "estimated_total_supply": 160,
         "liquidity_score": 0.47,
         "days_to_20pct_increase": 3.52,
         "expected_days_to_sell": 3.52,
-        "boxes_sold_per_day": 4.54,
+        "boxes_sold_per_day": 2,
         "boxes_sold_30d_avg": 4.54,
         "price_sparkline_1d": [
           {
@@ -340,7 +340,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440003",
@@ -352,18 +352,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 378.17,
+        "floor_price_usd": 560.0,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 918.9531000000001,
+        "daily_volume_usd": 560.0,
         "unified_volume_7d_ema": 6432.671700000001,
-        "units_sold_count": 2,
-        "active_listings_count": 27,
+        "units_sold_count": 1,
+        "active_listings_count": 22,
         "listed_percentage": 10.0,
         "estimated_total_supply": 270,
         "liquidity_score": 0.27,
         "days_to_20pct_increase": 11.11,
         "expected_days_to_sell": 11.11,
-        "boxes_sold_per_day": 2.43,
+        "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 2.43,
         "price_sparkline_1d": [
           {
@@ -397,7 +397,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440008",
@@ -409,18 +409,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 765.78,
+        "floor_price_usd": 847.31,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 903.6203999999999,
+        "daily_volume_usd": 0,
         "unified_volume_7d_ema": 6325.342799999999,
-        "units_sold_count": 1,
-        "active_listings_count": 2,
+        "units_sold_count": 0,
+        "active_listings_count": 12,
         "listed_percentage": 10.0,
         "estimated_total_supply": 20,
         "liquidity_score": 0.12,
         "days_to_20pct_increase": 1.69,
         "expected_days_to_sell": 1.69,
-        "boxes_sold_per_day": 1.18,
+        "boxes_sold_per_day": 0,
         "boxes_sold_30d_avg": 1.18,
         "price_sparkline_1d": [
           {
@@ -454,7 +454,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440011",
@@ -466,18 +466,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 738.72,
+        "floor_price_usd": 840.0,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 819.9792000000001,
+        "daily_volume_usd": 840.0,
         "unified_volume_7d_ema": 5739.854400000001,
         "units_sold_count": 1,
-        "active_listings_count": 8,
+        "active_listings_count": 40,
         "listed_percentage": 10.0,
         "estimated_total_supply": 80,
         "liquidity_score": 0.12,
         "days_to_20pct_increase": 7.21,
         "expected_days_to_sell": 7.21,
-        "boxes_sold_per_day": 1.11,
+        "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 1.11,
         "price_sparkline_1d": [
           {
@@ -511,7 +511,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440007",
@@ -523,18 +523,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 256.90,
+        "floor_price_usd": 339.88,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 806.6659999999999,
+        "daily_volume_usd": 339.88,
         "unified_volume_7d_ema": 5646.661999999999,
-        "units_sold_count": 3,
-        "active_listings_count": 134,
+        "units_sold_count": 1,
+        "active_listings_count": 48,
         "listed_percentage": 10.0,
         "estimated_total_supply": 1340,
         "liquidity_score": 0.45,
         "days_to_20pct_increase": 42.68,
         "expected_days_to_sell": 42.68,
-        "boxes_sold_per_day": 3.14,
+        "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 3.14,
         "price_sparkline_1d": [
           {
@@ -568,7 +568,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440017",
@@ -580,18 +580,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 245.80,
+        "floor_price_usd": 332.33,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 0.0,
+        "daily_volume_usd": 997.0,
         "unified_volume_7d_ema": 0.0,
-        "units_sold_count": 0,
-        "active_listings_count": 14,
+        "units_sold_count": 3,
+        "active_listings_count": 64,
         "listed_percentage": 10.0,
         "estimated_total_supply": 300,
         "liquidity_score": 0.3,
         "days_to_20pct_increase": 0.0,
         "expected_days_to_sell": 0.0,
-        "boxes_sold_per_day": 2.71,
+        "boxes_sold_per_day": 3,
         "boxes_sold_30d_avg": 2.71,
         "price_sparkline_1d": [
           {
@@ -625,7 +625,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440016",
@@ -637,18 +637,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 145.27,
+        "floor_price_usd": 214.95,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 663.8839,
+        "daily_volume_usd": 1289.7,
         "unified_volume_7d_ema": 4647.1873000000005,
-        "units_sold_count": 4,
-        "active_listings_count": 46,
+        "units_sold_count": 6,
+        "active_listings_count": 87,
         "listed_percentage": 10.0,
         "estimated_total_supply": 460,
         "liquidity_score": 0.5,
         "days_to_20pct_increase": 10.07,
         "expected_days_to_sell": 10.07,
-        "boxes_sold_per_day": 4.57,
+        "boxes_sold_per_day": 6,
         "boxes_sold_30d_avg": 4.57,
         "price_sparkline_1d": [
           {
@@ -682,7 +682,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440014",
@@ -694,18 +694,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 445.00,
+        "floor_price_usd": 649.49,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 649.6999999999999,
+        "daily_volume_usd": 649.49,
         "unified_volume_7d_ema": 4547.9,
         "units_sold_count": 1,
-        "active_listings_count": 6,
+        "active_listings_count": 36,
         "listed_percentage": 10.0,
         "estimated_total_supply": 60,
         "liquidity_score": 0.15,
         "days_to_20pct_increase": 4.11,
         "expected_days_to_sell": 4.11,
-        "boxes_sold_per_day": 1.46,
+        "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 1.46,
         "price_sparkline_1d": [
           {
@@ -739,7 +739,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440009",
@@ -751,18 +751,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 192.50,
+        "floor_price_usd": 306.33,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 625.625,
+        "daily_volume_usd": 919.0,
         "unified_volume_7d_ema": 4379.375,
         "units_sold_count": 3,
-        "active_listings_count": 38,
+        "active_listings_count": 71,
         "listed_percentage": 10.0,
         "estimated_total_supply": 380,
         "liquidity_score": 0.36,
         "days_to_20pct_increase": 11.69,
         "expected_days_to_sell": 11.69,
-        "boxes_sold_per_day": 3.25,
+        "boxes_sold_per_day": 3,
         "boxes_sold_30d_avg": 3.25,
         "price_sparkline_1d": [
           {
@@ -796,7 +796,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440013",
@@ -808,18 +808,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 154.65,
+        "floor_price_usd": 232.18,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 502.6125,
+        "daily_volume_usd": 928.73,
         "unified_volume_7d_ema": 3518.2875,
-        "units_sold_count": 3,
-        "active_listings_count": 43,
+        "units_sold_count": 4,
+        "active_listings_count": 520,
         "listed_percentage": 10.0,
         "estimated_total_supply": 430,
         "liquidity_score": 0.37,
         "days_to_20pct_increase": 13.23,
         "expected_days_to_sell": 13.23,
-        "boxes_sold_per_day": 3.25,
+        "boxes_sold_per_day": 4,
         "boxes_sold_30d_avg": 3.25,
         "price_sparkline_1d": [
           {
@@ -853,7 +853,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440004",
@@ -865,18 +865,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 392.02,
+        "floor_price_usd": 763.33,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 364.5786,
+        "daily_volume_usd": 1526.65,
         "unified_volume_7d_ema": 2552.0502,
-        "units_sold_count": 0,
-        "active_listings_count": 4,
+        "units_sold_count": 2,
+        "active_listings_count": 30,
         "listed_percentage": 10.0,
         "estimated_total_supply": 40,
         "liquidity_score": 0.1,
         "days_to_20pct_increase": 4.3,
         "expected_days_to_sell": 4.3,
-        "boxes_sold_per_day": 0.93,
+        "boxes_sold_per_day": 2,
         "boxes_sold_30d_avg": 0.93,
         "price_sparkline_1d": [
           {
@@ -910,7 +910,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440005",
@@ -922,18 +922,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 365.23,
+        "floor_price_usd": 555.0,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 350.62080000000003,
+        "daily_volume_usd": 555.0,
         "unified_volume_7d_ema": 2454.3456,
-        "units_sold_count": 0,
-        "active_listings_count": 13,
+        "units_sold_count": 1,
+        "active_listings_count": 22,
         "listed_percentage": 10.0,
         "estimated_total_supply": 130,
         "liquidity_score": 0.11,
         "days_to_20pct_increase": 13.54,
         "expected_days_to_sell": 13.54,
-        "boxes_sold_per_day": 0.96,
+        "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 0.96,
         "price_sparkline_1d": [
           {
@@ -967,7 +967,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440010",
@@ -979,18 +979,18 @@
       "game_type": "One Piece",
       "image_url": null,
       "metrics": {
-        "floor_price_usd": 153.22,
+        "floor_price_usd": 343.33,
         "floor_price_1d_change_pct": 0.0,
-        "daily_volume_usd": 300.3112,
+        "daily_volume_usd": 1029.99,
         "unified_volume_7d_ema": 2102.1784,
-        "units_sold_count": 1,
-        "active_listings_count": 72,
+        "units_sold_count": 3,
+        "active_listings_count": 42,
         "listed_percentage": 10.0,
         "estimated_total_supply": 720,
         "liquidity_score": 0.27,
         "days_to_20pct_increase": 36.73,
         "expected_days_to_sell": 36.73,
-        "boxes_sold_per_day": 1.96,
+        "boxes_sold_per_day": 3,
         "boxes_sold_30d_avg": 1.96,
         "price_sparkline_1d": [
           {
@@ -1024,7 +1024,7 @@
         ]
       },
       "reprint_risk": "LOW",
-      "metric_date": "2025-12-25"
+      "metric_date": "2026-01-21"
     }
   ],
   "meta": {

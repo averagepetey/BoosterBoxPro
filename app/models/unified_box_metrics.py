@@ -53,14 +53,6 @@ class UnifiedBoxMetrics(Base):
         nullable=True,
         index=True  # PRIMARY RANKING METRIC
     )
-    unified_volume_30d_sma: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(12, 2),
-        nullable=True
-    )
-    volume_mom_change_pct: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(6, 2),
-        nullable=True
-    )
     
     # Liquidity Score (Blended metric)
     liquidity_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
@@ -84,10 +76,6 @@ class UnifiedBoxMetrics(Base):
         nullable=True,
         server_default="0"
     )
-    avg_boxes_added_per_day: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(8, 2),
-        nullable=True
-    )
     
     # Time-to-Price-Pressure (TCG supply / unified demand)
     days_to_20pct_increase: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
@@ -97,10 +85,6 @@ class UnifiedBoxMetrics(Base):
     
     # Expected days to sell (NEW metric)
     expected_days_to_sell: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
-    
-    # Ranking fields
-    current_rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    previous_rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

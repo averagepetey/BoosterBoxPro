@@ -19,7 +19,7 @@ export function LeaderboardTable({
   boxes,
   isLoading = false,
   onSort,
-  currentSort = 'unified_volume_usd',
+  currentSort = 'unified_volume_7d_ema',
 }: LeaderboardTableProps) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -76,10 +76,6 @@ export function LeaderboardTable({
     return 'text-foreground-muted';
   };
 
-  const cleanProductName = (name: string): string => {
-    return name.replace(/^One Piece\s*-\s*/i, '').trim();
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -100,70 +96,59 @@ export function LeaderboardTable({
   }
 
   return (
-    <div className="space-y-0">
-      {boxes.map((box, index) => {
+    <div className="space-y-3">
+      {boxes.map((box) => {
         const isRankOne = box.rank === 1;
-        const priceChange = box.metrics.floor_price_30d_change_pct !== null && box.metrics.floor_price_30d_change_pct !== undefined
-          ? (typeof box.metrics.floor_price_30d_change_pct === 'number' 
-              ? box.metrics.floor_price_30d_change_pct 
-              : Number(box.metrics.floor_price_30d_change_pct))
+        const priceChange = box.metrics.floor_price_1d_change_pct !== null && box.metrics.floor_price_1d_change_pct !== undefined
+          ? (typeof box.metrics.floor_price_1d_change_pct === 'number' 
+              ? box.metrics.floor_price_1d_change_pct 
+              : Number(box.metrics.floor_price_1d_change_pct))
           : null;
         const isPositive = priceChange !== null && priceChange > 0;
         const isNegative = priceChange !== null && priceChange < 0;
 
         return (
-          <div key={box.id} className="leaderboard-row-wrapper">
-            <div
-              className={`marketplace-row ${isRankOne ? 'rank-1' : ''} p-2 sm:p-4 cursor-pointer transition-all duration-200`}
-              style={{ borderBottom: index < boxes.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none' }}
-              onClick={() => (window.location.href = `/boxes/${box.id}`)}
-            >
-              <div className="grid grid-cols-12 gap-1 sm:gap-4 items-center px-1 sm:px-4">
+          <div
+            key={box.id}
+            className={`marketplace-row ${isRankOne ? 'rank-1' : ''} p-4 cursor-pointer`}
+            onClick={() => (window.location.href = `/boxes/${box.id}`)}
+          >
+            <div className="grid grid-cols-12 gap-4 items-center">
               {/* Rank */}
-              <div className="col-span-1 text-left" style={{ height: '30px', fontFamily: 'Helvetica' }}>
-                <span className="text-xs sm:text-sm text-foreground-muted font-mono" style={{ color: 'rgba(255, 255, 255, 1)' }}>
+              <div className="col-span-1 text-center">
+                <span className="text-sm text-foreground-muted font-mono">
                   #{box.rank}
                 </span>
               </div>
 
               {/* Collection */}
-              <div className="col-span-3 flex items-center gap-1.5 sm:gap-4 min-h-[48px] sm:min-h-[80px] -ml-4 sm:-ml-0">
-                <div className="flex-shrink-0 w-12 h-12 sm:w-20 sm:h-20 flex items-center justify-center">
+              <div className="col-span-3 flex items-center gap-3">
+                <div className="marketplace-avatar flex-shrink-0">
                   {box.image_url ? (
                     <img
                       src={box.image_url}
                       alt={box.product_name}
-                      className="w-full h-full object-contain rounded-lg"
-                      style={{ maxWidth: '100%', maxHeight: '100%' }}
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-surface flex items-center justify-center rounded-lg">
+                    <div className="w-full h-full bg-surface flex items-center justify-center">
                       <span className="text-xs text-foreground-muted">📦</span>
                     </div>
                   )}
                 </div>
-                <div 
-                  className="flex-1 min-w-0 flex flex-col justify-center"
-                  title={cleanProductName(box.product_name)}
-                >
-                  <div className="text-xs sm:text-base font-semibold text-white leading-tight" style={{ 
-                    color: 'rgba(255, 255, 255, 0.95)',
-                    lineHeight: '1.3'
-                  }}>
-                    {cleanProductName(box.product_name)}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-foreground truncate">
+                    {box.product_name}
                   </div>
                   {box.set_name && (
-                    <div 
-                      className="text-[10px] sm:text-xs text-white/60 mt-0.5 sm:mt-1"
-                      title={box.set_name}
-                    >
+                    <div className="text-xs text-foreground-muted truncate">
                       {box.set_name}
                     </div>
                   )}
                 </div>
                 {box.rank_change_direction && (
                   <span
-                    className={`text-[10px] sm:text-xs font-mono flex-shrink-0 ${
+                    className={`text-xs font-mono ${
                       box.rank_change_direction === 'up' ? 'marketplace-positive' : 'marketplace-negative'
                     }`}
                     title={`Rank ${box.rank_change_direction} ${box.rank_change_amount || 0}`}
@@ -175,54 +160,46 @@ export function LeaderboardTable({
 
               {/* Floor */}
               <div className="col-span-1 text-right">
-                <div className="text-xs sm:text-sm text-foreground financial-number">
+                <div className="text-sm text-foreground financial-number">
                   {formatCurrency(box.metrics.floor_price_usd)}
                 </div>
               </div>
 
-              {/* Floor 30d % */}
-              <div className="col-span-1 text-right relative">
-                <div 
-                  className={`text-xs sm:text-sm financial-number ${getPriceChangeColor(box.metrics.floor_price_30d_change_pct)}`}
-                  style={{
-                    color: priceChange !== null 
-                      ? (priceChange > 0 ? '#10b981' : priceChange < 0 ? '#ef4444' : undefined)
-                      : undefined
-                  }}
-                >
+              {/* Floor 1d % */}
+              <div className={`col-span-1 text-right ${getPriceChangeColor(box.metrics.floor_price_1d_change_pct)}`}>
+                <div className="text-sm financial-number">
                   {priceChange !== null
-                    ? `${isPositive ? '▲' : isNegative ? '▼' : ''} ${formatPercentage(box.metrics.floor_price_30d_change_pct)}`
+                    ? `${isPositive ? '▲' : isNegative ? '▼' : ''} ${formatPercentage(box.metrics.floor_price_1d_change_pct)}`
                     : '--'}
                 </div>
               </div>
 
-              {/* 30d Volume */}
+              {/* Volume */}
               <div className="col-span-2 text-right">
-                <div className="text-xs sm:text-sm font-semibold text-foreground financial-number">
-                  {box.metrics.unified_volume_usd !== null && box.metrics.unified_volume_usd !== undefined
-                    ? formatCurrency(box.metrics.unified_volume_usd)
-                    : '--'}
+                <div className="text-sm font-semibold text-foreground financial-number">
+                  {formatCurrency(box.metrics.unified_volume_7d_ema)}
                 </div>
               </div>
 
-              {/* Sales - 30d Average */}
+              {/* Sales */}
               <div className="col-span-1 text-right">
-                <div className="text-xs sm:text-sm text-foreground financial-number">
-                  {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
-                    ? formatNumber(box.metrics.boxes_sold_30d_avg)
-                    : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                    ? formatNumber(box.metrics.boxes_sold_per_day)
-                    : formatNumber(box.metrics.units_sold_count)}
+                <div className="text-sm text-foreground financial-number">
+                  {formatNumber(box.metrics.units_sold_count)}
                 </div>
               </div>
 
-              {/* Top 10 Card Value */}
+              {/* Listed */}
               <div className="col-span-2 text-right">
-                <div className="text-xs sm:text-sm font-semibold text-foreground financial-number">
-                  {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
-                    ? formatCurrency(box.metrics.top_10_value_usd)
+                <div className="text-sm text-foreground financial-number">
+                  {box.metrics.listed_percentage !== null && box.metrics.listed_percentage !== undefined
+                    ? `${Number(box.metrics.listed_percentage).toFixed(1)}%`
                     : '--'}
                 </div>
+                {box.metrics.active_listings_count !== null && box.metrics.estimated_total_supply !== null && (
+                  <div className="text-xs text-foreground-muted mt-0.5">
+                    {formatNumber(box.metrics.active_listings_count)} / {formatNumber(box.metrics.estimated_total_supply)}
+                  </div>
+                )}
               </div>
 
               {/* Last 1d Sparkline */}
@@ -241,7 +218,6 @@ export function LeaderboardTable({
                   </svg>
                 </div>
               </div>
-            </div>
             </div>
           </div>
         );

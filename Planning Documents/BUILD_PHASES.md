@@ -1409,19 +1409,12 @@
     - Configure limits: e.g., 5 requests/minute for login, 100 requests/minute for API
 
 22. **Security Hardening**
-    - ⚠️ **CRITICAL: Complete full security audit (see SECURITY_AUDIT_PLAN.md)**
-    - Fix Supabase database security issues (RLS policies, access restrictions)
     - Ensure passwords are never returned in API responses
     - Use HTTPS in production (TLS/SSL)
     - Store JWT secret securely (environment variable, never in code)
     - Store Stripe keys securely (environment variables)
-    - Add CORS restrictions (only allow frontend domain) - ⚠️ Currently allows all origins in development
+    - Add CORS restrictions (only allow frontend domain)
     - Add request rate limiting
-    - Enable Row Level Security (RLS) on all Supabase tables
-    - Secure database access (SSL/TLS, connection pooling, credential rotation)
-    - Audit all environment variables and secrets
-    - Perform dependency vulnerability scan
-    - Complete security testing before launch
 
 **Deliverables:**
 - Users table and model (`models/user.py`)
