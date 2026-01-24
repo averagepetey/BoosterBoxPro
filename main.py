@@ -10,7 +10,7 @@ Security Features:
 - Docs disabled in production
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -200,14 +200,26 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Import auth router
+get_current_user = None
 try:
     from app.routers import auth
-    app.include_router(auth.router)
+    from app.routers.auth import get_current_user
+    app.include_router(auth.router, prefix="/api/v1")
     print("✅ Auth router loaded successfully")
 except ImportError as e:
     print(f"⚠️  Auth router not available: {e}")
+    import traceback
+    traceback.print_exc()
 except Exception as e:
     print(f"⚠️  Error loading auth router: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Optional user dependency - returns None if auth is not available
+# These endpoints work without authentication, but can use user info if available
+async def get_optional_user():
+    """Optional user dependency - returns None (endpoints work without auth)"""
+    return None
 
 # Import admin router for data entry
 try:
@@ -226,18 +238,16 @@ except ImportError:
 # Import payment router
 try:
     from app.routers import payment
-    if hasattr(payment, 'router'):
-        app.include_router(payment.router)
-except (ImportError, AttributeError):
+    app.include_router(payment.router)
+except ImportError:
     pass  # Payment router not available
 
 # Import extension router (for Chrome extension)
 try:
     from app.routers import extension
-    if hasattr(extension, 'router'):
-        app.include_router(extension.router)
-        print("✅ Extension router loaded successfully")
-except (ImportError, AttributeError) as e:
+    app.include_router(extension.router)
+    print("✅ Extension router loaded successfully")
+except ImportError as e:
     print(f"⚠️  Extension router not available: {e}")
 
 
@@ -289,20 +299,11 @@ async def get_booster_boxes(
     sort: str = "unified_volume_usd",
     limit: int = 10,
     offset: int = 0,
+    current_user = Depends(get_optional_user),
 ):
     """
     Leaderboard endpoint - combines static box info with live database metrics
-    Requires authentication (will be enforced via paywall middleware)
     """
-    # Authentication will be enforced via paywall middleware in dependencies
-    # For now, we'll add it as optional to not break existing functionality
-    try:
-        from app.routers.auth import get_current_user
-        from fastapi import Depends
-        # This will be required once paywall is implemented
-        # current_user = Depends(get_current_user)
-    except ImportError:
-        pass
     import json
     from pathlib import Path
     from datetime import date
@@ -393,47 +394,70 @@ async def get_booster_boxes(
                 continue
             
             # Add 30d change and get accurate metrics from historical data service
-            from app.services.historical_data import (
-                get_box_month_over_month_price_change, 
-                get_box_price_history, 
-                get_box_30d_avg_sales,
-                get_rolling_volume_sum
-            )
+            try:
+                from app.services.historical_data import (
+                    get_box_month_over_month_price_change, 
+                    get_box_price_history, 
+                    get_box_30d_avg_sales,
+                    get_rolling_volume_sum
+                )
+            except ImportError as e:
+                # If import fails, set functions to None
+                get_box_month_over_month_price_change = None
+                get_box_price_history = None
+                get_box_30d_avg_sales = None
+                get_rolling_volume_sum = None
+                print(f"⚠️  Warning: Could not import historical_data functions: {e}")
             
-            price_change_mom = get_box_month_over_month_price_change(str(db_box.id))
+            price_change_mom = None
+            if get_box_month_over_month_price_change:
+                try:
+                    price_change_mom = get_box_month_over_month_price_change(str(db_box.id))
+                except Exception as e:
+                    print(f"⚠️  Error getting price change: {e}")
+                    price_change_mom = None
             if price_change_mom is not None:
                 box_data["metrics"]["floor_price_30d_change_pct"] = price_change_mom
             
             # Calculate 30d average sales from historical data
-            avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+            avg_sales_30d = None
+            if get_box_30d_avg_sales:
+                try:
+                    avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+                except Exception as e:
+                    print(f"⚠️  Error getting avg sales: {e}")
+                    avg_sales_30d = None
             if avg_sales_30d is not None:
                 box_data["metrics"]["boxes_sold_30d_avg"] = avg_sales_30d
             
             # Get rolling volume sums for accurate rankings
             # These are ACTUAL sums of daily volumes, not extrapolations
-            volume_7d = get_rolling_volume_sum(str(db_box.id), 7)
-            volume_30d = get_rolling_volume_sum(str(db_box.id), 30)
+            volume_7d = None
+            volume_30d = None
+            if get_rolling_volume_sum:
+                try:
+                    volume_7d = get_rolling_volume_sum(str(db_box.id), 7)
+                    volume_30d = get_rolling_volume_sum(str(db_box.id), 30)
+                except Exception as e:
+                    print(f"⚠️  Error getting volume sums: {e}")
+                    volume_7d = None
+                    volume_30d = None
             
             # Get the most recent historical entry with calculated metrics
-            historical_data = get_box_price_history(str(db_box.id), days=90)
+            historical_data = None
+            if get_box_price_history:
+                try:
+                    historical_data = get_box_price_history(str(db_box.id), days=90)
+                except Exception as e:
+                    print(f"⚠️  Error getting price history: {e}")
+                    historical_data = None
             if historical_data:
                 latest_historical = historical_data[-1]
                 
-                # PRIORITY 1: Use discovered floor price from listings scraper (includes shipping, most accurate)
-                # Look for most recent entry with discovered_from_listings flag
-                discovered_floor = None
-                for entry in reversed(historical_data):  # Most recent first
-                    if entry.get("discovered_from_listings") and entry.get("floor_price_usd"):
-                        discovered_floor = entry.get("floor_price_usd")
-                        break
-                
-                # PRIORITY 2: Fall back to any historical floor_price_usd (from Apify or other sources)
-                if discovered_floor and discovered_floor > 0:
-                    box_data["metrics"]["floor_price_usd"] = discovered_floor
-                else:
-                    hist_floor = latest_historical.get("floor_price_usd")
-                    if hist_floor and hist_floor > 0:
-                        box_data["metrics"]["floor_price_usd"] = hist_floor
+                # PRIORITY: Use historical floor_price_usd (from Apify marketPrice - more accurate)
+                hist_floor = latest_historical.get("floor_price_usd")
+                if hist_floor and hist_floor > 0:
+                    box_data["metrics"]["floor_price_usd"] = hist_floor
                 
                 # Use historical 7d EMA
                 hist_ema = latest_historical.get("unified_volume_7d_ema")
@@ -517,7 +541,10 @@ async def get_booster_boxes(
 
 # Temporary mock endpoint for box detail (until real endpoint is built)
 @app.get("/booster-boxes/{box_id}")
-async def get_box_detail(box_id: str):
+async def get_box_detail(
+    box_id: str,
+    current_user = Depends(get_optional_user),
+):
     """
     Box detail endpoint - fetches from database with historical data for accurate metrics
     Supports both UUID and numeric rank-based lookups
@@ -525,7 +552,11 @@ async def get_box_detail(box_id: str):
     from sqlalchemy import select
     from app.database import AsyncSessionLocal
     from app.models.booster_box import BoosterBox
-    from app.services.historical_data import get_box_price_history, get_box_month_over_month_price_change
+    try:
+        from app.services.historical_data import get_box_price_history, get_box_month_over_month_price_change
+    except ImportError:
+        get_box_price_history = None
+        get_box_month_over_month_price_change = None
     
     async with AsyncSessionLocal() as db:
         # Try to find box by UUID
@@ -550,7 +581,12 @@ async def get_box_detail(box_id: str):
             for b in all_boxes:
                 if "(Test)" in b.product_name or "Test Box" in b.product_name:
                     continue
-                hist = get_box_price_history(str(b.id), days=90)
+                hist = None
+                if get_box_price_history:
+                    try:
+                        hist = get_box_price_history(str(b.id), days=90)
+                    except Exception as e:
+                        hist = None
                 vol = hist[-1].get("unified_volume_7d_ema", 0) if hist else 0
                 valid_boxes.append((b, vol or 0))
             
@@ -566,26 +602,22 @@ async def get_box_detail(box_id: str):
             )
         
         # Get accurate metrics from historical data service
-        from app.services.historical_data import get_box_30d_avg_sales
-        historical_data = get_box_price_history(str(db_box.id), days=90)
+        try:
+            from app.services.historical_data import get_box_30d_avg_sales
+        except ImportError:
+            get_box_30d_avg_sales = None
+        
+        historical_data = None
+        if get_box_price_history:
+            try:
+                historical_data = get_box_price_history(str(db_box.id), days=90)
+            except Exception as e:
+                print(f"⚠️  Error getting price history: {e}")
+                historical_data = None
         
         box_metrics = {}
         if historical_data:
             latest = historical_data[-1]
-            
-            # PRIORITY 1: Use discovered floor price from listings scraper (includes shipping, most accurate)
-            # Look for most recent entry with discovered_from_listings flag
-            discovered_floor = None
-            for entry in reversed(historical_data):  # Most recent first
-                if entry.get("discovered_from_listings") and entry.get("floor_price_usd"):
-                    discovered_floor = entry.get("floor_price_usd")
-                    break
-            
-            # PRIORITY 2: Fall back to any historical floor_price_usd (from Apify or other sources)
-            if discovered_floor and discovered_floor > 0:
-                floor_price = discovered_floor
-            else:
-                floor_price = latest.get("floor_price_usd")
             
             # Get values for calculations
             active_listings = latest.get("active_listings_count") or 0
@@ -593,8 +625,12 @@ async def get_box_detail(box_id: str):
             
             # Get 30d average sales FIRST (needed for days_to_20pct calculation)
             avg_sales_30d = latest.get("boxes_sold_30d_avg")
-            if avg_sales_30d is None:
-                avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+            if avg_sales_30d is None and get_box_30d_avg_sales:
+                try:
+                    avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+                except Exception as e:
+                    print(f"⚠️  Error getting avg sales: {e}")
+                    avg_sales_30d = None
             
             # Get avg boxes added per day (may be None if not captured yet)
             avg_boxes_added_per_day = latest.get("avg_boxes_added_per_day") or 0
@@ -635,7 +671,7 @@ async def get_box_detail(box_id: str):
             volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
             
             box_metrics = {
-                "floor_price_usd": floor_price,
+                "floor_price_usd": latest.get("floor_price_usd"),
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
                 "active_listings_count": active_listings,
                 "daily_volume_usd": daily_vol,
@@ -650,15 +686,25 @@ async def get_box_detail(box_id: str):
             }
         
         # Add 30d price change
-        price_change_30d = get_box_month_over_month_price_change(str(db_box.id))
+        price_change_30d = None
+        if get_box_month_over_month_price_change:
+            try:
+                price_change_30d = get_box_month_over_month_price_change(str(db_box.id))
+            except Exception as e:
+                print(f"⚠️  Error getting price change: {e}")
+                price_change_30d = None
         if price_change_30d is not None:
             box_metrics["floor_price_30d_change_pct"] = price_change_30d
         
         # boxes_sold_30d_avg already set above, but keep fallback just in case
         if "boxes_sold_30d_avg" not in box_metrics or box_metrics["boxes_sold_30d_avg"] is None:
-            avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
-            if avg_sales_30d is not None:
-                box_metrics["boxes_sold_30d_avg"] = avg_sales_30d
+            if get_box_30d_avg_sales:
+                try:
+                    avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
+                    if avg_sales_30d is not None:
+                        box_metrics["boxes_sold_30d_avg"] = avg_sales_30d
+                except Exception as e:
+                    print(f"⚠️  Error getting avg sales: {e}")
         
         return {
             "data": {
@@ -687,7 +733,8 @@ async def get_box_time_series(
     box_id: str,
     metric: str = "floor_price",
     days: int = 30,
-    one_per_month: bool = False
+    one_per_month: bool = False,
+    current_user = Depends(get_optional_user),
 ):
     """
     Get historical time-series data for a box from historical_entries.json
@@ -720,7 +767,19 @@ async def get_box_time_series(
                     box_id = box.get("id")
         
         # Get historical price data (includes all fields needed for AdvancedMetricsTable)
-        price_history = get_box_price_history(box_id, days=days if days > 0 else None, one_per_month=one_per_month)
+        price_history = None
+        if get_box_price_history:
+            try:
+                price_history = get_box_price_history(box_id, days=days if days > 0 else None, one_per_month=one_per_month)
+            except Exception as e:
+                print(f"⚠️  Error getting price history: {e}")
+                price_history = None
+        
+        if not price_history:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": "No price history data available for this box"}
+            )
         
         # Format based on requested metric
         if metric == "floor_price":
@@ -777,4 +836,3 @@ if __name__ == "__main__":
         reload=True,  # Auto-reload on code changes
         log_level="info",
     )
-

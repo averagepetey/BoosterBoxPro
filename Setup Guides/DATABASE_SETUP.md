@@ -6,7 +6,7 @@ Set up PostgreSQL database and configure the connection for BoosterBoxPro.
 
 ---
 
-## Option 1: Local PostgreSQL (Recommended for Development)
+## Option 1: Local PostgreSQL (Recommended for giv Development)
 
 ### Step 1: Install PostgreSQL
 
