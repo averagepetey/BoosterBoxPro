@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '007'
-down_revision = '003'  # Latest non-empty migration
+down_revision = '006'  # Migrates after 006_migrate_superuser_to_role
 branch_labels = None
 depends_on = None
 

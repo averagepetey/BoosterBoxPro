@@ -5,139 +5,76 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+// Use NEXT_PUBLIC_ prefix for client-side access, or fallback to localhost
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:8000';
+
+// Export route config to increase timeout
+export const maxDuration = 30; // 30 seconds max for this route
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
   try {
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
     const url = `${BACKEND_URL}/booster-boxes${queryString ? `?${queryString}` : ''}`;
     
     console.log('[API Proxy] Fetching from backend:', url);
+    console.log('[API Proxy] BACKEND_URL:', BACKEND_URL);
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Don't cache - always fetch fresh data
-      cache: 'no-store',
-    });
+    // Add timeout to prevent hanging (30 seconds for slow backend with historical data)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error('[API Proxy] Request timeout after 30 seconds');
+      controller.abort();
+    }, 30000); // 30 second timeout
+    
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Don't cache - always fetch fresh data
+        cache: 'no-store',
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      console.error('[API Proxy] Backend error:', response.status, response.statusText);
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `Backend error: ${response.status}`, detail: errorText },
-        { status: response.status }
-      );
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.error('[API Proxy] Backend error:', response.status, response.statusText);
+        const errorText = await response.text();
+        return NextResponse.json(
+          { error: `Backend error: ${response.status}`, detail: errorText },
+          { status: response.status }
+        );
+      }
+
+      const data = await response.json();
+      const duration = Date.now() - startTime;
+      console.log(`[API Proxy] Got data in ${duration}ms, first box:`, data.data?.[0]?.product_name);
+      
+      return NextResponse.json(data);
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('[API Proxy] Request timeout');
+        return NextResponse.json(
+          { error: 'Request timeout', detail: 'Backend took too long to respond' },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
     }
-
-    const data = await response.json();
-    console.log('[API Proxy] Got data, first box:', data.data?.[0]?.product_name);
-    
-    return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API Proxy] Fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch from backend', detail: String(error) },
+      { 
+        error: 'Failed to fetch from backend', 
+        detail: error?.message || String(error),
+        backend_url: BACKEND_URL
+      },
       { status: 500 }
     );
   }
 }
-
- * API Route Proxy for booster-boxes
- * Proxies requests to the FastAPI backend to avoid CORS issues
- */
-
-import { NextRequest, NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
-
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    const url = `${BACKEND_URL}/booster-boxes${queryString ? `?${queryString}` : ''}`;
-    
-    console.log('[API Proxy] Fetching from backend:', url);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Don't cache - always fetch fresh data
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      console.error('[API Proxy] Backend error:', response.status, response.statusText);
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `Backend error: ${response.status}`, detail: errorText },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log('[API Proxy] Got data, first box:', data.data?.[0]?.product_name);
-    
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('[API Proxy] Fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch from backend', detail: String(error) },
-      { status: 500 }
-    );
-  }
-}
-
- * API Route Proxy for booster-boxes
- * Proxies requests to the FastAPI backend to avoid CORS issues
- */
-
-import { NextRequest, NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
-
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    const url = `${BACKEND_URL}/booster-boxes${queryString ? `?${queryString}` : ''}`;
-    
-    console.log('[API Proxy] Fetching from backend:', url);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Don't cache - always fetch fresh data
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      console.error('[API Proxy] Backend error:', response.status, response.statusText);
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `Backend error: ${response.status}`, detail: errorText },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log('[API Proxy] Got data, first box:', data.data?.[0]?.product_name);
-    
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('[API Proxy] Fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch from backend', detail: String(error) },
-      { status: 500 }
-    );
-  }
-}
-
-
