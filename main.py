@@ -238,9 +238,17 @@ except ImportError:
 # Import payment router
 try:
     from app.routers import payment
-    app.include_router(payment.router)
+    app.include_router(payment.router, prefix="/api/v1")
 except ImportError:
     pass  # Payment router not available
+
+# Import user router (subscription management)
+try:
+    from app.routers import user
+    app.include_router(user.router, prefix="/api/v1")
+    print("✅ User router loaded successfully")
+except ImportError as e:
+    print(f"⚠️  User router not available: {e}")
 
 # Import extension router (for Chrome extension)
 try:

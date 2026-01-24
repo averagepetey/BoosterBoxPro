@@ -11,6 +11,8 @@ Security Features:
 from sqlalchemy import Column, String, DateTime, Boolean, Integer, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from datetime import datetime, timedelta
+from typing import Optional
 import uuid
 import enum
 
@@ -45,6 +47,14 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Subscription and trial fields
+    trial_started_at = Column(DateTime(timezone=True), nullable=True)
+    trial_ended_at = Column(DateTime(timezone=True), nullable=True)
+    subscription_status = Column(String(20), default='trial', nullable=False)
+    stripe_customer_id = Column(String(255), nullable=True, unique=True, index=True)
+    stripe_subscription_id = Column(String(255), nullable=True)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    
     @property
     def is_admin(self) -> bool:
         """
@@ -59,5 +69,38 @@ class User(Base):
         """Increment token_version to invalidate all existing tokens"""
         self.token_version = (self.token_version or 0) + 1
     
+    def has_active_access(self) -> bool:
+        """
+        Check if user has active access (trial or subscription).
+        Returns True if:
+        - User is in trial period (trial_ended_at is in the future)
+        - User has active subscription (subscription_status == 'active')
+        """
+        # Check if trial is still active
+        if self.trial_ended_at and self.trial_ended_at > datetime.utcnow():
+            return True
+        
+        # Check if subscription is active
+        if self.subscription_status == 'active':
+            return True
+        
+        return False
+    
+    def days_remaining_in_trial(self) -> Optional[int]:
+        """Calculate days remaining in trial period"""
+        if not self.trial_ended_at:
+            return None
+        
+        now = datetime.utcnow()
+        if self.trial_ended_at <= now:
+            return 0
+        
+        delta = self.trial_ended_at - now
+        return delta.days
+    
+    def is_subscription_active(self) -> bool:
+        """Check if user has an active subscription (not trial)"""
+        return self.subscription_status == 'active'
+    
     def __repr__(self):
-        return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+        return f"<User(id={self.id}, email={self.email}, role={self.role}, status={self.subscription_status})>"

@@ -12,12 +12,24 @@ from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from datetime import datetime, timedelta
 import stripe
 import os
 import logging
-from datetime import datetime, timedelta
+from uuid import UUID
 
 from app.config import settings
+from app.database import get_db
+from app.models.user import User
+from app.services.stripe_service import (
+    create_customer,
+    get_customer,
+    get_subscription,
+    update_subscription_status,
+    StripeServiceError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +53,14 @@ class CheckoutSessionRequest(BaseModel):
     @classmethod
     def validate_tier(cls, v: str) -> str:
         """Only allow valid tiers"""
-        allowed_tiers = ['free', 'premium', 'pro']
-        if v.lower() not in allowed_tiers:
+        allowed_tiers = ['free', 'premium', 'pro', 'pro+']
+        tier_lower = v.lower()
+        # Normalize "pro+" variations
+        if tier_lower in ['pro+', 'proplus', 'pro_plus']:
+            return 'pro+'
+        if tier_lower not in allowed_tiers:
             raise ValueError(f'tier must be one of: {", ".join(allowed_tiers)}')
-        return v.lower()
+        return tier_lower
     
     @field_validator('trial_days')
     @classmethod
@@ -71,6 +87,7 @@ def get_price_id_for_tier(tier: str) -> Optional[str]:
         "free": os.getenv("STRIPE_PRICE_ID_FREE"),
         "premium": os.getenv("STRIPE_PRICE_ID_PREMIUM"),
         "pro": os.getenv("STRIPE_PRICE_ID_PRO"),
+        "pro+": os.getenv("STRIPE_PRICE_ID_PRO_PLUS"),
     }
     
     return price_ids.get(tier)
@@ -202,6 +219,7 @@ async def create_checkout_session(
 @router.post("/webhook")
 async def stripe_webhook(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     stripe_signature: str = Header(None, alias="stripe-signature"),
 ):
     """
@@ -249,39 +267,110 @@ async def stripe_webhook(
         # Handle different event types
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
-            # Handle successful checkout
-            # TODO: Update user subscription status in database
-            logger.info(f"Checkout completed for session: {session['id']}")
+            customer_email = session.get("customer_email")
+            subscription_id = session.get("subscription")
             
+            if customer_email:
+                # Find user by email
+                stmt = select(User).where(User.email == customer_email)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
+                if user:
+                    # Update user with Stripe customer ID if available
+                    if session.get("customer"):
+                        user.stripe_customer_id = session["customer"]
+                    
+                    # Update subscription ID if available
+                    if subscription_id:
+                        user.stripe_subscription_id = subscription_id
+                        # Get subscription details to determine status
+                        subscription = get_subscription(subscription_id)
+                        if subscription:
+                            user.subscription_status = update_subscription_status(subscription)
+                    
+                    await db.commit()
+                    logger.info(f"Updated user {user.email} after checkout session {session['id']}")
+                else:
+                    logger.warning(f"User not found for email {customer_email} in checkout session")
+        
         elif event["type"] == "customer.subscription.created":
             subscription = event["data"]["object"]
-            # Handle subscription creation
-            # TODO: Update user subscription status in database
-            logger.info(f"Subscription created: {subscription['id']}")
+            customer_id = subscription.get("customer")
             
+            # Find user by Stripe customer ID
+            if customer_id:
+                stmt = select(User).where(User.stripe_customer_id == customer_id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
+                if user:
+                    user.stripe_subscription_id = subscription["id"]
+                    user.subscription_status = update_subscription_status(subscription)
+                    await db.commit()
+                    logger.info(f"Updated user {user.email} with new subscription {subscription['id']}")
+        
         elif event["type"] == "customer.subscription.updated":
             subscription = event["data"]["object"]
-            # Handle subscription update
-            # TODO: Update user subscription status in database
-            logger.info(f"Subscription updated: {subscription['id']}")
+            subscription_id = subscription["id"]
             
+            # Find user by subscription ID
+            stmt = select(User).where(User.stripe_subscription_id == subscription_id)
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if user:
+                user.subscription_status = update_subscription_status(subscription)
+                await db.commit()
+                logger.info(f"Updated subscription status for user {user.email}")
+        
         elif event["type"] == "customer.subscription.deleted":
             subscription = event["data"]["object"]
-            # Handle subscription cancellation
-            # TODO: Update user subscription status in database (mark as cancelled)
-            logger.info(f"Subscription cancelled: {subscription['id']}")
+            subscription_id = subscription["id"]
             
+            # Find user by subscription ID
+            stmt = select(User).where(User.stripe_subscription_id == subscription_id)
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if user:
+                user.subscription_status = "cancelled"
+                # Optionally clear subscription ID
+                # user.stripe_subscription_id = None
+                await db.commit()
+                logger.info(f"Marked subscription as cancelled for user {user.email}")
+        
         elif event["type"] == "invoice.payment_succeeded":
             invoice = event["data"]["object"]
-            # Handle successful payment (after trial period)
-            # TODO: Update user subscription status, send confirmation email
-            logger.info(f"Payment succeeded for invoice: {invoice['id']}")
+            subscription_id = invoice.get("subscription")
             
+            if subscription_id:
+                # Find user by subscription ID
+                stmt = select(User).where(User.stripe_subscription_id == subscription_id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
+                if user:
+                    # Ensure subscription is marked as active after successful payment
+                    user.subscription_status = "active"
+                    await db.commit()
+                    logger.info(f"Payment succeeded, activated subscription for user {user.email}")
+        
         elif event["type"] == "invoice.payment_failed":
-            invoice = event["data"]["object"]
-            # Handle failed payment
-            # TODO: Notify user, update subscription status
-            logger.warning(f"Payment failed for invoice: {invoice['id']}")
+                invoice = event["data"]["object"]
+                subscription_id = invoice.get("subscription")
+                
+                if subscription_id:
+                    # Find user by subscription ID
+                    stmt = select(User).where(User.stripe_subscription_id == subscription_id)
+                    result = await db.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    
+                    if user:
+                        # Mark subscription as expired if payment fails
+                        user.subscription_status = "expired"
+                        await db.commit()
+                        logger.warning(f"Payment failed, expired subscription for user {user.email}")
         
         return {"status": "success"}
         
