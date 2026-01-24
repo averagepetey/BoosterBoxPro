@@ -1,53 +1,57 @@
-# BoosterBoxPro - Core Dependencies
-# Python 3.11+ required
-
-# Web Framework
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-
-# Database & ORM
-sqlalchemy[asyncio]>=2.0.0
-alembic>=1.12.0
-asyncpg>=0.29.0  # PostgreSQL async driver
-psycopg2-binary>=2.9.0  # PostgreSQL sync driver (required for Alembic)
-
-# Validation & Serialization
-pydantic>=2.0.0
-pydantic-settings>=2.0.0  # For settings management
-
-# Environment & Configuration
-python-dotenv>=1.0.0
-
-# Date/Time Handling
-pendulum>=3.0.0  # Better datetime handling
-
-# Data Processing (for future phases)
-pandas>=2.0.0
-numpy>=1.24.0
-
-# HTTP Client (for testing and future API integrations)
-httpx>=0.25.0
-
-# Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-
-# Payment Processing
-stripe>=7.0.0
-
-# Authentication & Security
-bcrypt>=4.0.0
-python-jose[cryptography]>=3.3.0
-slowapi>=0.1.9  # Rate limiting
 
 # AI Screenshot Processing (choose one or both)
-anthropic>=0.39.0  # Claude API - preferred for screenshot extraction
+# Authentication & Security
+# BoosterBoxPro - Core Dependencies
+# Data Processing (for future phases)
+# Database & ORM
+# Date/Time Handling
+# Development Tools
+# Environment & Configuration
+# HTTP Client (for testing and future API integrations)
+# Payment Processing
+# Python 3.11+ required
+# Testing
+# Validation & Serialization
+# Web Framework
 # openai>=1.0.0  # OpenAI API - alternative for screenshot extraction
 Pillow>=10.0.0  # Image validation and processing
-
-# Development Tools
-black>=23.0.0  # Code formatter
-ruff>=0.1.0  # Fast linter
-
+alembic>=1.12.0
+anthropic>=0.39.0  # Claude API - preferred for screenshot extraction
 apify-client>=2.4.0
+asyncpg>=0.29.0  # PostgreSQL async driver
+bcrypt>=4.0.0
+black>=23.0.0  # Code formatter
+fake-useragent
+fastapi>=0.104.0
+httpx>=0.25.0
+numpy
+numpy>=1.24.0
+pandas>=2.0.0
+pendulum>=3.0.0  # Better datetime handling
+playwright
+playwright-stealth
+psycopg2-binary>=2.9.0  # PostgreSQL sync driver (required for Alembic)
+pydantic-settings>=2.0.0  # For settings management
+pydantic>=2.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest>=7.4.0
+python-dotenv>=1.0.0
+python-jose[cryptography]>=3.3.0
+ruff>=0.1.0  # Fast linter
+slowapi>=0.1.9  # Rate limiting
+sqlalchemy[asyncio]>=2.0.0
+stripe>=7.0.0
+uvicorn[standard]>=0.24.0
+
+ruff>=0.1.0  # Fast linter
+slowapi>=0.1.9  # Rate limiting
+sqlalchemy[asyncio]>=2.0.0
+stripe>=7.0.0
+uvicorn[standard]>=0.24.0
+
+ruff>=0.1.0  # Fast linter
+slowapi>=0.1.9  # Rate limiting
+sqlalchemy[asyncio]>=2.0.0
+stripe>=7.0.0
+uvicorn[standard]>=0.24.0

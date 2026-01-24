@@ -249,3 +249,51 @@ export function LeaderboardTable({
     </div>
   );
 }
+
+              <div className="col-span-1 flex justify-center">
+                <div className={`marketplace-sparkline ${isPositive ? 'marketplace-sparkline-positive' : isNegative ? 'marketplace-sparkline-negative' : ''}`}>
+                  <svg width="100" height="32" viewBox="0 0 100 32" className="w-full h-full">
+                    {/* Placeholder sparkline - will be replaced with actual chart data */}
+                    <polyline
+                      points="0,24 20,20 40,16 60,12 80,8 100,4"
+                      fill="none"
+                      stroke={isPositive ? '#10b981' : isNegative ? '#ef4444' : '#64748b'}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+              <div className="col-span-1 flex justify-center">
+                <div className={`marketplace-sparkline ${isPositive ? 'marketplace-sparkline-positive' : isNegative ? 'marketplace-sparkline-negative' : ''}`}>
+                  <svg width="100" height="32" viewBox="0 0 100 32" className="w-full h-full">
+                    {/* Placeholder sparkline - will be replaced with actual chart data */}
+                    <polyline
+                      points="0,24 20,20 40,16 60,12 80,8 100,4"
+                      fill="none"
+                      stroke={isPositive ? '#10b981' : isNegative ? '#ef4444' : '#64748b'}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

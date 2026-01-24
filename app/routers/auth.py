@@ -1,392 +1,249 @@
 """
 Authentication Router
 Handles user registration, login, and authentication
-
-Security Features:
-- Rate limiting on auth endpoints
-- Password complexity validation
-- Secure password hashing (bcrypt)
-- JWT with proper claims (iss, aud, iat, exp, jti)
-- Token version for revocation (password change, role change, logout-all)
-- Admin role fetched from DB on each request (NOT from JWT)
-- Short token expiry recommended (30 min) with refresh tokens
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, field_validator
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from datetime import datetime, timedelta
 from typing import Optional
-import bcrypt
-import re
-from jose import jwt, JWTError
-from uuid import UUID, uuid4
-import logging
-import secrets
+from uuid import UUID
 
 from app.database import get_db
-from app.models.user import User, UserRole
-from app.config import settings
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
+from app.utils.password import verify_password
+from app.utils.jwt import create_access_token, decode_access_token
 
-logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-security = HTTPBearer()
-
-# JWT Configuration - these should match your domain
-JWT_ISSUER = "boosterboxpro"
-JWT_AUDIENCE = "boosterboxpro-api"
-
-# Import rate limiter
-try:
-    from app.middleware.rate_limit import limiter, RateLimits
-    RATE_LIMITING_ENABLED = True
-except ImportError:
-    RATE_LIMITING_ENABLED = False
-    logger.warning("Rate limiting not available for auth endpoints")
+# OAuth2 scheme for token extraction
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-class RegisterRequest(BaseModel):
+# Request/Response Models
+class UserRegisterRequest(BaseModel):
+    """User registration request"""
     email: EmailStr
     password: str
-    confirm_password: str
+    username: Optional[str] = None
     
     class Config:
-        extra = "forbid"  # Reject unknown fields (mass assignment protection)
-    
-    @field_validator('password')
-    @classmethod
-    def validate_password_complexity(cls, v: str) -> str:
-        """
-        Validate password meets complexity requirements:
-        - At least 8 characters
-        - At least one uppercase letter
-        - At least one lowercase letter
-        - At least one digit
-        """
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters')
-        if not re.search(r'[A-Z]', v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not re.search(r'[a-z]', v):
-            raise ValueError('Password must contain at least one lowercase letter')
-        if not re.search(r'\d', v):
-            raise ValueError('Password must contain at least one digit')
-        return v
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "securepassword123",
+                "username": "johndoe"
+            }
+        }
 
 
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-    
-    class Config:
-        extra = "forbid"  # Reject unknown fields
+class UserRegisterResponse(BaseModel):
+    """User registration response"""
+    id: str
+    email: str
+    username: Optional[str]
+    subscription_status: str
+    trial_ended_at: Optional[str]
+    message: str
 
 
-class AuthResponse(BaseModel):
+class TokenResponse(BaseModel):
+    """Token response"""
     access_token: str
     token_type: str = "bearer"
-    is_admin: bool = False
 
 
 class UserResponse(BaseModel):
+    """User info response"""
     id: str
     email: str
-    is_admin: bool = False
+    username: Optional[str]
+    subscription_status: str
+    trial_ended_at: Optional[str]
+    days_remaining_in_trial: int
+    has_active_access: bool
 
 
-def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a hash"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-
-
-def create_access_token(user_id: str, token_version: int = 1) -> str:
-    """
-    Create a JWT access token.
-    
-    SECURITY: JWT does NOT contain is_admin or role.
-    Admin status is fetched from DB on each request to prevent:
-    - Stale permissions after role change
-    - Token theft escalation
-    - Algorithm confusion attacks giving admin access
-    
-    Claims:
-    - sub: User ID (UUID)
-    - iss: Token issuer
-    - aud: Token audience
-    - iat: Issued at timestamp
-    - exp: Expiration timestamp
-    - jti: Unique token ID (for revocation tracking)
-    - tv: Token version (for bulk revocation)
-    """
-    now = datetime.utcnow()
-    # Use shorter expiry for better security (30 min recommended)
-    # For MVP, using configured value but should be short
-    expires_delta = timedelta(minutes=30)  # Hardened: 30 min instead of days
-    expire = now + expires_delta
-    
-    payload = {
-        "sub": str(user_id),
-        "iss": JWT_ISSUER,
-        "aud": JWT_AUDIENCE,
-        "iat": now,
-        "exp": expire,
-        "jti": secrets.token_urlsafe(16),  # Unique token ID
-        "tv": token_version,  # Token version for revocation
-    }
-    
-    token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
-    return token
-
-
-def decode_access_token(token: str) -> dict:
-    """
-    Decode and verify a JWT token with full claim validation.
-    
-    Validates:
-    - Signature
-    - Expiration (exp)
-    - Issuer (iss)
-    - Audience (aud)
-    """
-    try:
-        payload = jwt.decode(
-            token, 
-            settings.jwt_secret_key, 
-            algorithms=[settings.jwt_algorithm],
-            issuer=JWT_ISSUER,
-            audience=JWT_AUDIENCE,
-            options={
-                "verify_iss": True,
-                "verify_aud": True,
-                "verify_exp": True,
-                "verify_iat": True,
-            }
-        )
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except JWTError as e:
-        logger.warning(f"JWT validation failed: {str(e)}")
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db)
-) -> User:
-    """
-    Get the current authenticated user from token.
-    
-    SECURITY:
-    - Validates token_version against DB (revocation support)
-    - Admin/role is fetched from DB, NOT from JWT
-    - User must be active
-    """
-    token = credentials.credentials
-    payload = decode_access_token(token)
-    
-    user_id = payload.get("sub")
-    token_version = payload.get("tv", 0)
-    
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-    
-    try:
-        user_uuid = UUID(user_id)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid user ID in token")
-    
-    stmt = select(User).where(User.id == user_uuid)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    if not user.is_active:
-        raise HTTPException(status_code=401, detail="User is inactive")
-    
-    # SECURITY: Validate token version for revocation support
-    # If user's token_version is higher than token's tv claim,
-    # this token was issued before a security event (password change, etc.)
-    db_token_version = user.token_version or 1
-    if token_version < db_token_version:
-        logger.warning(f"Revoked token used for user {user.id} (tv={token_version} < db={db_token_version})")
-        raise HTTPException(
-            status_code=401, 
-            detail="Token has been revoked. Please login again."
-        )
-    
-    return user
-
-
-async def require_admin(
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """
-    Require admin role for endpoint access.
-    
-    SECURITY: Admin status is checked from DB, not JWT.
-    This prevents escalation via JWT manipulation.
-    """
-    if not current_user.is_admin:
-        logger.warning(f"Non-admin user {current_user.id} attempted admin access")
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access required"
-        )
-    return current_user
-
-
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-@limiter.limit(RateLimits.REGISTER)
+@router.post("/register", response_model=UserRegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    request: Request,  # Must be named 'request' and first for slowapi
-    register_data: RegisterRequest = None,  # Will get from body
+    request: UserRegisterRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Register a new user.
+    Register a new user
     
-    Rate limited to 3 requests per minute to prevent abuse.
+    Creates a new user account with:
+    - 7-day trial automatically started
+    - Hashed password storage
+    - Unique email validation
     """
-    # Parse body manually since 'request' is taken by slowapi
-    body = await request.json()
-    register_data = RegisterRequest(**body)
-    
-    # Log registration attempt (for security monitoring)
-    client_ip = getattr(request.state, 'client_ip', 'unknown')
-    logger.info(f"Registration attempt for email: {register_data.email[:3]}*** from {client_ip}")
-    
-    # Validate passwords match
-    if register_data.password != register_data.confirm_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Passwords do not match"
+    try:
+        # Validate password strength (basic check)
+        if len(request.password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters long"
+            )
+        
+        # Create user
+        user = await UserRepository.create_user(
+            db=db,
+            email=request.email,
+            password=request.password,
+            username=request.username
+        )
+        
+        return UserRegisterResponse(
+            id=str(user.id),
+            email=user.email,
+            username=user.username,
+            subscription_status=user.subscription_status,
+            trial_ended_at=user.trial_ended_at.isoformat() if user.trial_ended_at else None,
+            message="User registered successfully. 7-day trial started."
         )
     
-    # Password complexity is now validated by Pydantic validator
-    
-    # Check if user already exists
-    stmt = select(User).where(User.email == register_data.email)
-    result = await db.execute(stmt)
-    existing_user = result.scalar_one_or_none()
-    
-    if existing_user:
+    except ValueError as e:
+        # Email already exists
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
         )
-    
-    # Create new user
-    hashed_password = hash_password(register_data.password)
-    
-    # Insert user with both hashed_password and password_hash (Supabase requires password_hash)
-    from sqlalchemy import text
-    from uuid import uuid4
-    user_id = uuid4()
-    
-    await db.execute(
-        text("""
-            INSERT INTO users (id, email, hashed_password, password_hash, is_active, is_superuser, created_at)
-            VALUES (:id, :email, :hashed_password, :password_hash, :is_active, :is_superuser, NOW())
-        """),
-        {
-            "id": user_id,
-            "email": register_data.email,
-            "hashed_password": hashed_password,
-            "password_hash": hashed_password,
-            "is_active": True,
-            "is_superuser": False
-        }
-    )
-    await db.commit()
-    
-    # Get the created user
-    stmt = select(User).where(User.id == user_id)
-    result = await db.execute(stmt)
-    new_user = result.scalar_one()
-    
-    return {"message": "User registered successfully", "email": new_user.email}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
-@router.post("/login", response_model=AuthResponse)
-@limiter.limit(RateLimits.LOGIN)
+@router.post("/login", response_model=TokenResponse)
 async def login(
-    request: Request,  # Must be named 'request' and first for slowapi
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Login and get access token.
+    Login user and return JWT access token
     
-    Rate limited to 5 requests per minute to prevent brute force attacks.
+    Uses OAuth2PasswordRequestForm which expects:
+    - username: email address (OAuth2 spec uses 'username' field)
+    - password: plain text password
     """
-    # Parse body manually since 'request' is taken by slowapi
-    body = await request.json()
-    login_data = LoginRequest(**body)
-    
-    # Log login attempt (for security monitoring)
-    client_ip = getattr(request.state, 'client_ip', 'unknown')
-    
-    # Find user by email
-    stmt = select(User).where(User.email == login_data.email)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    # Get user by email (OAuth2 uses 'username' field for email)
+    user = await UserRepository.get_user_by_email(db, form_data.username)
     
     if not user:
-        # Log failed attempt
-        logger.warning(f"Login failed: unknown email attempt from {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
-    
-    if not user.is_active:
-        logger.warning(f"Login failed: inactive account {login_data.email[:3]}*** from {client_ip}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account is inactive"
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     
     # Verify password
-    if not verify_password(login_data.password, user.hashed_password):
-        # Log failed attempt (but don't reveal which field was wrong)
-        logger.warning(f"Login failed: invalid password for {login_data.email[:3]}*** from {client_ip}")
+    if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Log successful login
-    logger.info(f"Login successful: {login_data.email[:3]}*** from {client_ip}")
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
-    # Create access token (NO is_admin in token - fetched from DB on each request)
-    token_version = user.token_version or 1
-    access_token = create_access_token(str(user.id), token_version)
+    # Update last login
+    user.last_login_at = datetime.now(timezone.utc)
+    await UserRepository.update_user(db, user)
     
-    # Return is_admin for frontend UI (but not trusted for authorization)
-    # Authorization is always checked server-side from DB
-    is_admin = user.is_admin  # Uses property that checks DB role
+    # Create access token
+    access_token = create_access_token(
+        data={
+            "sub": str(user.id),  # Subject (user ID)
+            "email": user.email,
+            "tv": user.token_version  # Token version for revocation
+        }
+    )
     
-    return AuthResponse(access_token=access_token, token_type="bearer", is_admin=is_admin)
+    return TokenResponse(access_token=access_token)
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """
+    Get current authenticated user from JWT token
+    
+    This is a dependency that can be used in route handlers to require authentication.
+    
+    Usage:
+        @router.get("/protected")
+        async def protected_route(user: User = Depends(get_current_user)):
+            return {"user_id": user.id}
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        # Decode token
+        payload = decode_access_token(token)
+        user_id: str = payload.get("sub")
+        token_version: int = payload.get("tv", 0)
+        
+        if user_id is None:
+            raise credentials_exception
+        
+        # Get user from database
+        user = await UserRepository.get_user_by_id(db, UUID(user_id))
+        if user is None:
+            raise credentials_exception
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is inactive"
+            )
+        
+        # Validate token version (for revocation)
+        db_token_version = user.token_version or 1
+        if token_version < db_token_version:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked"
+            )
+        
+        return user
+    
+    except HTTPException:
+        raise
+    except Exception:
+        raise credentials_exception
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    """Get current user information (admin status from DB)"""
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get current user information
+    
+    Returns user details including subscription status and trial info.
+    """
     return UserResponse(
-        id=str(current_user.id), 
-        email=current_user.email, 
-        is_admin=current_user.is_admin  # Property checks DB role
+        id=str(current_user.id),
+        email=current_user.email,
+        username=current_user.username,
+        subscription_status=current_user.subscription_status,
+        trial_ended_at=current_user.trial_ended_at.isoformat() if current_user.trial_ended_at else None,
+        days_remaining_in_trial=current_user.days_remaining_in_trial(),
+        has_active_access=current_user.has_active_access()
     )
-

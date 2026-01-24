@@ -1,64 +1,181 @@
 """
-User Model
-User authentication and profile information
-
-Security Features:
-- token_version: Incremented on password change, role change, or manual revocation
-  All tokens with older version are automatically invalidated
-- role: Stored in DB, fetched on each request (not trusted from JWT)
+User SQLAlchemy Model
+Core entity for authentication and user management
 """
 
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Enum
-from sqlalchemy.dialects.postgresql import UUID
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+from sqlalchemy import String, Boolean, Integer, TIMESTAMP, CheckConstraint, Enum, TypeDecorator
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
-import uuid
 import enum
 
 from app.models import Base
 
 
-class UserRole(str, enum.Enum):
-    """User roles for authorization"""
-    USER = "user"
-    ADMIN = "admin"
+class SubscriptionStatus(str, enum.Enum):
+    """Subscription status enum"""
+    TRIAL = "trial"
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+
+class SubscriptionStatusType(TypeDecorator):
+    """Custom type to ensure enum values (not names) are stored"""
+    impl = String
+    cache_ok = True
+    
+    def __init__(self):
+        super().__init__(20)
+    
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        if isinstance(value, SubscriptionStatus):
+            return value.value  # Return the value, not the name
+        if isinstance(value, str):
+            return value  # Already a string value
+        return str(value)
+    
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        return value  # Return as string
 
 
 class User(Base):
-    """User model for authentication and profile"""
+    """User model for authentication and subscription management"""
     
     __tablename__ = "users"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
-    is_superuser = Column(Boolean, default=False)  # Legacy, use 'role' instead
+    # Primary key
+    id: Mapped[UUID] = mapped_column(
+        PostgresUUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.gen_random_uuid()
+    )
     
-    # Security: Role stored in DB, fetched on each request (not from JWT)
-    role = Column(String, default=UserRole.USER.value, nullable=False)
+    # Authentication
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    username: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        unique=True,
+        nullable=True,
+        index=True
+    )
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     
-    # Security: Token version for revocation
-    # Increment this to invalidate all existing tokens for this user
-    # Use cases: password change, role change, security concern, logout-all
-    token_version = Column(Integer, default=1, nullable=False)
+    # Subscription & Trial
+    trial_started_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )
+    trial_ended_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )
+    subscription_status: Mapped[str] = mapped_column(
+        String(20),  # Database column is VARCHAR, enum enforced at application level
+        nullable=False,
+        server_default="trial",
+        index=True
+    )
     
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    # Stripe Integration
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True
+    )
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True
+    )
     
-    @property
-    def is_admin(self) -> bool:
-        """
-        Check if user has admin role (from DB, not JWT).
+    # Security & Permissions
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="true"
+    )
+    token_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="1"
+    )
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True
+    )
+    
+    # Constraints
+    __table_args__ = (
+        CheckConstraint(
+            "subscription_status IN ('trial', 'active', 'expired', 'cancelled')",
+            name="check_subscription_status"
+        ),
+    )
+    
+    def has_active_access(self) -> bool:
+        """Check if user has active access (trial or subscription)"""
+        from datetime import datetime, timezone
         
-        SECURITY: Only checks 'role' column - single source of truth.
-        The legacy 'is_superuser' column is ignored to prevent accidental escalation.
-        """
-        return self.role == UserRole.ADMIN.value
+        # Check if subscription is active
+        if self.subscription_status == "active":
+            return True
+        
+        # Check if trial is active
+        if self.subscription_status == "trial" and self.trial_ended_at:
+            now = datetime.now(timezone.utc)
+            if self.trial_ended_at > now:
+                return True
+        
+        return False
     
-    def invalidate_tokens(self):
-        """Increment token_version to invalidate all existing tokens"""
-        self.token_version = (self.token_version or 0) + 1
+    def days_remaining_in_trial(self) -> int:
+        """Calculate days remaining in trial"""
+        from datetime import datetime, timezone
+        
+        if not self.trial_ended_at:
+            return 0
+        
+        now = datetime.now(timezone.utc)
+        if self.trial_ended_at <= now:
+            return 0
+        
+        delta = self.trial_ended_at - now
+        return max(0, delta.days)
     
-    def __repr__(self):
-        return f"<User(id={self.id}, email={self.email}, role={self.role})>"
-
+    def is_subscription_active(self) -> bool:
+        """Check if subscription is active"""
+        return self.subscription_status == "active"
+    
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, email={self.email}, status={self.subscription_status})>"

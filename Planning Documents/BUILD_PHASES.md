@@ -1638,3 +1638,17 @@ Each phase must meet these criteria before moving to next:
 - Phase 5B: Enhanced unified metrics with API data blending
 - These phases add automation but don't change frontend or core functionality
 
+
+**Future Enhancement (Post-MVP):**
+- Phase 2B: TCGplayer API integration (automation)
+- Phase 4: eBay integration (enhanced metrics)
+- Phase 5B: Enhanced unified metrics with API data blending
+- These phases add automation but don't change frontend or core functionality
+
+
+**Future Enhancement (Post-MVP):**
+- Phase 2B: TCGplayer API integration (automation)
+- Phase 4: eBay integration (enhanced metrics)
+- Phase 5B: Enhanced unified metrics with API data blending
+- These phases add automation but don't change frontend or core functionality
+
