@@ -20,3 +20,4 @@ RESPONSE=$(curl -s -X POST "http://localhost:8000/admin/refresh-sales-data" \
 echo "Response: $RESPONSE" >> "$LOG_FILE"
 echo "$(date): Refresh complete" >> "$LOG_FILE"
 
+

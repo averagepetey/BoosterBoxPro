@@ -6,8 +6,6 @@ from alembic import context
 
 # Import your Base from models
 from app.models import Base
-# Import all models so Alembic can detect them
-from app.models.user import User  # noqa: F401
 from app.config import settings
 
 # this is the Alembic Config object, which provides
