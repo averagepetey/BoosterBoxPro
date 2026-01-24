@@ -7,6 +7,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 from app.config import settings
+import uuid
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -49,53 +54,39 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "microphone=(), "
             "camera=(), "
             "payment=(), "
-            "usb=(), "
-            "magnetometer=(), "
-            "gyroscope=(), "
-            "accelerometer=()"
+            "usb=()"
         )
         
-        # Basic CSP for API responses (more restrictive for API-only backend)
-        # Frontend should have its own CSP configured in Next.js
+        # Basic CSP (can be customized per route if needed)
         if settings.environment == "production":
             response.headers["Content-Security-Policy"] = (
-                "default-src 'none'; "
-                "frame-ancestors 'none'; "
-                "base-uri 'none'; "
-                "form-action 'none'"
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: https:; "
+                "font-src 'self' data:; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'"
             )
-        
-        # Prevent caching of sensitive data
-        if "/auth/" in str(request.url.path) or "/payment/" in str(request.url.path):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
-            response.headers["Pragma"] = "no-cache"
-            response.headers["Expires"] = "0"
         
         return response
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
-    Logs requests with correlation IDs for security auditing.
+    Logs all incoming requests with correlation IDs.
+    
+    Adds:
+    - X-Request-ID header to responses
+    - Request logging with timing information
     """
     
     async def dispatch(self, request: Request, call_next) -> Response:
-        import uuid
-        import time
-        import logging
-        
         # Generate correlation ID
         request_id = str(uuid.uuid4())[:8]
         
-        # Get client IP (respecting proxies)
-        client_ip = get_real_client_ip(request)
-        
-        # Log request start
+        # Start timing
         start_time = time.time()
-        
-        # Add request ID to request state for use in endpoints
-        request.state.request_id = request_id
-        request.state.client_ip = client_ip
         
         # Process request
         response = await call_next(request)
@@ -103,23 +94,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # Calculate duration
         duration_ms = (time.time() - start_time) * 1000
         
-        # Log request completion
-        log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        # Get client IP
+        client_ip = get_real_client_ip(request)
         
-        # Security-relevant logging
-        if response.status_code in [401, 403, 429]:
-            log_level = logging.WARNING
-            logging.log(
-                log_level,
-                f"[{request_id}] SECURITY: {request.method} {request.url.path} "
-                f"from {client_ip} - Status: {response.status_code} ({duration_ms:.1f}ms)"
-            )
-        elif settings.environment == "development" or response.status_code >= 400:
-            logging.log(
-                log_level,
-                f"[{request_id}] {request.method} {request.url.path} "
-                f"from {client_ip} - Status: {response.status_code} ({duration_ms:.1f}ms)"
-            )
+        # Log request
+        logger.info(
+            f"[{request_id}] {request.method} {request.url.path} "
+            f"from {client_ip} - Status: {response.status_code} ({duration_ms:.1f}ms)"
+        )
         
         # Add correlation ID to response
         response.headers["X-Request-ID"] = request_id
@@ -157,5 +139,3 @@ def get_real_client_ip(request: Request) -> str:
         return request.client.host
     
     return "unknown"
-
-

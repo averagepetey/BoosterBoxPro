@@ -66,7 +66,8 @@ async def verify_admin_access(
     # Method 2: Check JWT token and verify admin role FROM DATABASE
     if credentials:
         try:
-            from app.routers.auth import decode_access_token, get_current_user
+            from app.routers.auth import get_current_user
+            from app.utils.jwt import decode_access_token
             
             # Decode token
             payload = decode_access_token(credentials.credentials)

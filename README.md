@@ -1,5 +1,4 @@
 # BoosterBoxPro - Sealed TCG Market Intelligence
-
 Mobile-first application (with website support) tracking sealed TCG booster box markets using public marketplace listing data.
 
 **Platform Strategy:** 

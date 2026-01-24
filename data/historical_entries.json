@@ -3042,6 +3042,16 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T13:39:13.029124"
+    },
+    {
+      "date": "2026-01-23",
+      "source": "listings_scraper",
+      "data_type": "listings",
+      "listings_count_in_range": 0,
+      "listings_count": 0,
+      "price_range_min": 4186.454,
+      "price_range_max": 5910.288,
+      "timestamp": "2026-01-23T14:25:23.276330"
     }
   ],
   "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": [
@@ -3401,7 +3411,16 @@
       "price_change_pct": null,
       "spike_detected": null,
       "spike_magnitude_pct": null,
-      "timestamp": "2026-01-22T13:41:16.664063"
+      "timestamp": "2026-01-22T13:41:16.664063",
+      "listings_count": 8
+    },
+    {
+      "date": "2026-01-23",
+      "source": "listings_scraper",
+      "data_type": "listings",
+      "listings_count": 12,
+      "timestamp": "2026-01-23T14:26:37.203294",
+      "listings_count_in_range": 12
     }
   ]
 }

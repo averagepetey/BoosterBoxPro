@@ -226,16 +226,18 @@ except ImportError:
 # Import payment router
 try:
     from app.routers import payment
-    app.include_router(payment.router)
-except ImportError:
+    if hasattr(payment, 'router'):
+        app.include_router(payment.router)
+except (ImportError, AttributeError):
     pass  # Payment router not available
 
 # Import extension router (for Chrome extension)
 try:
     from app.routers import extension
-    app.include_router(extension.router)
-    print("✅ Extension router loaded successfully")
-except ImportError as e:
+    if hasattr(extension, 'router'):
+        app.include_router(extension.router)
+        print("✅ Extension router loaded successfully")
+except (ImportError, AttributeError) as e:
     print(f"⚠️  Extension router not available: {e}")
 
 
@@ -290,7 +292,17 @@ async def get_booster_boxes(
 ):
     """
     Leaderboard endpoint - combines static box info with live database metrics
+    Requires authentication (will be enforced via paywall middleware)
     """
+    # Authentication will be enforced via paywall middleware in dependencies
+    # For now, we'll add it as optional to not break existing functionality
+    try:
+        from app.routers.auth import get_current_user
+        from fastapi import Depends
+        # This will be required once paywall is implemented
+        # current_user = Depends(get_current_user)
+    except ImportError:
+        pass
     import json
     from pathlib import Path
     from datetime import date
@@ -407,10 +419,21 @@ async def get_booster_boxes(
             if historical_data:
                 latest_historical = historical_data[-1]
                 
-                # PRIORITY: Use historical floor_price_usd (from Apify marketPrice - more accurate)
-                hist_floor = latest_historical.get("floor_price_usd")
-                if hist_floor and hist_floor > 0:
-                    box_data["metrics"]["floor_price_usd"] = hist_floor
+                # PRIORITY 1: Use discovered floor price from listings scraper (includes shipping, most accurate)
+                # Look for most recent entry with discovered_from_listings flag
+                discovered_floor = None
+                for entry in reversed(historical_data):  # Most recent first
+                    if entry.get("discovered_from_listings") and entry.get("floor_price_usd"):
+                        discovered_floor = entry.get("floor_price_usd")
+                        break
+                
+                # PRIORITY 2: Fall back to any historical floor_price_usd (from Apify or other sources)
+                if discovered_floor and discovered_floor > 0:
+                    box_data["metrics"]["floor_price_usd"] = discovered_floor
+                else:
+                    hist_floor = latest_historical.get("floor_price_usd")
+                    if hist_floor and hist_floor > 0:
+                        box_data["metrics"]["floor_price_usd"] = hist_floor
                 
                 # Use historical 7d EMA
                 hist_ema = latest_historical.get("unified_volume_7d_ema")
@@ -550,6 +573,20 @@ async def get_box_detail(box_id: str):
         if historical_data:
             latest = historical_data[-1]
             
+            # PRIORITY 1: Use discovered floor price from listings scraper (includes shipping, most accurate)
+            # Look for most recent entry with discovered_from_listings flag
+            discovered_floor = None
+            for entry in reversed(historical_data):  # Most recent first
+                if entry.get("discovered_from_listings") and entry.get("floor_price_usd"):
+                    discovered_floor = entry.get("floor_price_usd")
+                    break
+            
+            # PRIORITY 2: Fall back to any historical floor_price_usd (from Apify or other sources)
+            if discovered_floor and discovered_floor > 0:
+                floor_price = discovered_floor
+            else:
+                floor_price = latest.get("floor_price_usd")
+            
             # Get values for calculations
             active_listings = latest.get("active_listings_count") or 0
             boxes_sold_per_day = latest.get("boxes_sold_per_day") or 0
@@ -598,7 +635,7 @@ async def get_box_detail(box_id: str):
             volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
             
             box_metrics = {
-                "floor_price_usd": latest.get("floor_price_usd"),
+                "floor_price_usd": floor_price,
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
                 "active_listings_count": active_listings,
                 "daily_volume_usd": daily_vol,
