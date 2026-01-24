@@ -87,6 +87,10 @@ class Settings(BaseSettings):
     stripe_secret_key: Optional[str] = None
     stripe_publishable_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None
+    stripe_price_id_pro_plus: Optional[str] = None
+    stripe_price_id_premium: Optional[str] = None
+    stripe_price_id_pro: Optional[str] = None
+    stripe_product_id_pro_plus: Optional[str] = None
     
     # Apify API (TCGplayer scraping)
     apify_api_token: Optional[str] = None
@@ -99,6 +103,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields in .env (like STRIPE_PRICE_ID_PRO_PLUS)
 
 
 # Global settings instance

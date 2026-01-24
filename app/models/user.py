@@ -45,7 +45,7 @@ class User(Base):
     token_version = Column(Integer, default=1, nullable=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Subscription and trial fields
     trial_started_at = Column(DateTime(timezone=True), nullable=True)

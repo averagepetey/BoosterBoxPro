@@ -82,12 +82,13 @@ def get_price_id_for_tier(tier: str) -> Optional[str]:
     Get Stripe Price ID for the given tier
     These should be configured in your Stripe dashboard
     """
-    # Get from environment variables (recommended for security)
+    # Get from settings (which loads from .env) or fallback to os.getenv
+    # Use settings object first, then fallback to direct env var lookup
     price_ids = {
-        "free": os.getenv("STRIPE_PRICE_ID_FREE"),
-        "premium": os.getenv("STRIPE_PRICE_ID_PREMIUM"),
-        "pro": os.getenv("STRIPE_PRICE_ID_PRO"),
-        "pro+": os.getenv("STRIPE_PRICE_ID_PRO_PLUS"),
+        "free": getattr(settings, 'stripe_price_id_free', None) or os.getenv("STRIPE_PRICE_ID_FREE"),
+        "premium": getattr(settings, 'stripe_price_id_premium', None) or os.getenv("STRIPE_PRICE_ID_PREMIUM"),
+        "pro": getattr(settings, 'stripe_price_id_pro', None) or os.getenv("STRIPE_PRICE_ID_PRO"),
+        "pro+": getattr(settings, 'stripe_price_id_pro_plus', None) or os.getenv("STRIPE_PRICE_ID_PRO_PLUS"),
     }
     
     return price_ids.get(tier)
@@ -149,9 +150,11 @@ async def create_checkout_session(
     price_id = get_price_id_for_tier(request.tier)
     
     if not price_id:
+        # Normalize tier name for error message
+        tier_env_name = request.tier.upper().replace('+', '_PLUS')
         raise HTTPException(
             status_code=400,
-            detail=f"No Stripe price ID configured for tier: {request.tier}. Please configure STRIPE_PRICE_ID_{request.tier.upper()} in your environment."
+            detail=f"No Stripe price ID configured for tier: {request.tier}. Please configure STRIPE_PRICE_ID_{tier_env_name} in your environment."
         )
     
     try:

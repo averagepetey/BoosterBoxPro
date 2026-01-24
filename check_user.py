@@ -23,6 +23,18 @@ async def check_user(email: str):
                 print(f"   Is Active: {user.is_active}")
                 print(f"   Token Version: {user.token_version}")
                 print(f"   Created At: {user.created_at}")
+                print(f"\n📦 Subscription Info:")
+                print(f"   Status: {user.subscription_status}")
+                print(f"   Stripe Customer ID: {user.stripe_customer_id or 'Not set'}")
+                print(f"   Stripe Subscription ID: {user.stripe_subscription_id or 'Not set'}")
+                if user.trial_started_at:
+                    print(f"   Trial Started: {user.trial_started_at}")
+                if user.trial_ended_at:
+                    print(f"   Trial Ends: {user.trial_ended_at}")
+                    from datetime import datetime
+                    if user.trial_ended_at > datetime.utcnow():
+                        days_left = (user.trial_ended_at - datetime.utcnow()).days
+                        print(f"   Days Remaining: {days_left}")
             else:
                 print(f"❌ User not found: {email}")
                 print("\nListing all users in database:")
