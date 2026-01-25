@@ -147,3 +147,4 @@ def is_subscription_active(user: User) -> bool:
     """
     return user.is_subscription_active()
 
+

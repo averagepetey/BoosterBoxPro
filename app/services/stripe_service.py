@@ -211,3 +211,4 @@ def update_subscription_status(subscription: stripe.Subscription) -> str:
     else:
         return 'expired'
 
+

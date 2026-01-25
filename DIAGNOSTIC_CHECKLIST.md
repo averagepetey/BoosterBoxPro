@@ -83,3 +83,4 @@ Should return JSON data (may take up to 30 seconds)
 - **Next.js Route maxDuration**: 30 seconds
 - **Backend URL**: http://localhost:8000 (or from NEXT_PUBLIC_API_URL env var)
 
+
