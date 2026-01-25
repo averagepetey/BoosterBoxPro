@@ -199,11 +199,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     return response
 
 
-# Import auth router
+# Import auth router and dependencies
 get_current_user = None
+require_active_subscription = None
 try:
     from app.routers import auth
     from app.routers.auth import get_current_user
+    from app.dependencies.paywall import require_active_subscription
     app.include_router(auth.router, prefix="/api/v1")
     print("✅ Auth router loaded successfully")
 except ImportError as e:
@@ -301,14 +303,18 @@ def get_box_image_url(product_name: str | None) -> str | None:
     return f"/images/boxes/{filename}"
 
 
-# Temporary mock endpoint for leaderboard (until real endpoints are built)
+# Leaderboard endpoint - requires authentication and active subscription
 @app.get("/booster-boxes")
 async def get_booster_boxes(
     sort: str = "unified_volume_usd",
     limit: int = 10,
     offset: int = 0,
-    current_user = Depends(get_optional_user),
+    current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
 ):
+    """
+    Get leaderboard of booster boxes.
+    Requires authentication and active subscription (trial or paid).
+    """
     """
     Leaderboard endpoint - combines static box info with live database metrics
     """
@@ -547,12 +553,16 @@ async def get_booster_boxes(
     }
 
 
-# Temporary mock endpoint for box detail (until real endpoint is built)
+# Box detail endpoint - requires authentication and active subscription
 @app.get("/booster-boxes/{box_id}")
 async def get_box_detail(
     box_id: str,
-    current_user = Depends(get_optional_user),
+    current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
 ):
+    """
+    Get detailed information for a specific booster box.
+    Requires authentication and active subscription (trial or paid).
+    """
     """
     Box detail endpoint - fetches from database with historical data for accurate metrics
     Supports both UUID and numeric rank-based lookups
@@ -735,15 +745,19 @@ async def get_box_detail(
         }
 
 
-# Historical time-series data endpoint
+# Historical time-series data endpoint - requires authentication and active subscription
 @app.get("/booster-boxes/{box_id}/time-series")
 async def get_box_time_series(
     box_id: str,
     metric: str = "floor_price",
     days: int = 30,
     one_per_month: bool = False,
-    current_user = Depends(get_optional_user),
+    current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
 ):
+    """
+    Get historical time-series data for a booster box.
+    Requires authentication and active subscription (trial or paid).
+    """
     """
     Get historical time-series data for a box from historical_entries.json
     """

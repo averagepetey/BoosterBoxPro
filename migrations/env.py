@@ -6,6 +6,8 @@ from alembic import context
 
 # Import your Base from models
 from app.models import Base
+# Import all models so Alembic can detect them
+from app.models.user import User  # noqa: F401
 from app.config import settings
 
 # this is the Alembic Config object, which provides
@@ -85,6 +87,18 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

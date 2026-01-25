@@ -3,12 +3,25 @@ Chrome Extension API Endpoints
 Provides market data for the BoosterBoxPro Chrome extension
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional, List
 from sqlalchemy import select, desc
 from app.database import AsyncSessionLocal
 from app.models.booster_box import BoosterBox
 from app.models.unified_box_metrics import UnifiedBoxMetrics
+
+# Import auth dependencies
+try:
+    from app.dependencies.paywall import require_active_subscription
+    from app.routers.auth import get_current_user
+    AUTH_AVAILABLE = True
+except ImportError:
+    AUTH_AVAILABLE = False
+    # Create a dummy dependency that raises an error
+    async def require_active_subscription():
+        raise HTTPException(status_code=503, detail="Authentication system not available")
+    async def get_current_user():
+        raise HTTPException(status_code=503, detail="Authentication system not available")
 
 router = APIRouter(prefix="/extension", tags=["Extension"])
 
@@ -31,7 +44,8 @@ def get_box_image_url(product_name: str | None) -> str | None:
 @router.get("/box/{set_code}")
 async def get_box_by_set_code(
     set_code: str,
-    listing_price: Optional[float] = Query(None, description="Current marketplace listing price")
+    listing_price: Optional[float] = Query(None, description="Current marketplace listing price"),
+    current_user = Depends(require_active_subscription)
 ):
     """
     Get full box data by set code (e.g., OP-01, OP-13, EB-01)
@@ -143,7 +157,8 @@ async def get_box_by_set_code(
 @router.get("/compare")
 async def compare_boxes(
     box1: str = Query(..., description="First box set code"),
-    box2: str = Query(..., description="Second box set code")
+    box2: str = Query(..., description="Second box set code"),
+    current_user = Depends(require_active_subscription)
 ):
     """
     Compare two boxes side-by-side.
@@ -231,7 +246,9 @@ async def search_boxes(
 
 
 @router.get("/top-movers")
-async def get_top_movers():
+async def get_top_movers(
+    current_user = Depends(require_active_subscription)
+):
     """
     Get top gainers and losers for extension popup.
     """
