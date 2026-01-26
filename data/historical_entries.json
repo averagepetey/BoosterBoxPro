@@ -3041,6 +3041,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:44:17.714548"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 0.0,
+      "floor_price_usd": 5121.42,
+      "market_price_usd": 5121.42,
+      "daily_volume_usd": 0.0,
+      "volume_7d": 0.0,
+      "unified_volume_usd": 0.0,
+      "estimated_actual_sales_today": 0,
+      "baseline_7d_avg": null,
+      "avg_change_from_yesterday": null,
+      "avg_change_pct": null,
+      "price_change_from_yesterday": 196.18,
+      "price_change_pct": 4.0,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:58:34.855012"
     }
   ],
   "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": [
@@ -3061,6 +3080,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:44:26.671543"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 1.0,
+      "floor_price_usd": 1596.4,
+      "market_price_usd": 1596.4,
+      "daily_volume_usd": 1596.4,
+      "volume_7d": 11174.8,
+      "unified_volume_usd": 47892.0,
+      "estimated_actual_sales_today": 1.0,
+      "baseline_7d_avg": 1.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 24.21,
+      "price_change_pct": 1.5,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:58:44.416632"
     }
   ],
   "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": [
@@ -3081,6 +3119,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:44:35.707566"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 2.0,
+      "floor_price_usd": 495.01,
+      "market_price_usd": 495.01,
+      "daily_volume_usd": 990.02,
+      "volume_7d": 6930.14,
+      "unified_volume_usd": 29700.6,
+      "estimated_actual_sales_today": 2.0,
+      "baseline_7d_avg": 2.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 18.76,
+      "price_change_pct": 3.9,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:58:54.007895"
     }
   ],
   "d3929fc6-6afa-468a-b7a1-ccc0f392131a": [
@@ -3101,6 +3158,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:44:44.662199"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 1.0,
+      "floor_price_usd": 660.75,
+      "market_price_usd": 660.75,
+      "daily_volume_usd": 660.75,
+      "volume_7d": 4625.25,
+      "unified_volume_usd": 19822.5,
+      "estimated_actual_sales_today": 1.0,
+      "baseline_7d_avg": 1.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 0.0,
+      "price_change_pct": 0.0,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:03.308531"
     }
   ],
   "526c28b7-bc13-449b-a521-e63bdd81811a": [
@@ -3121,6 +3197,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:44:53.454445"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 2.0,
+      "floor_price_usd": 552.8,
+      "market_price_usd": 552.8,
+      "daily_volume_usd": 1105.6,
+      "volume_7d": 7739.2,
+      "unified_volume_usd": 33168.0,
+      "estimated_actual_sales_today": 2.0,
+      "baseline_7d_avg": 2.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 13.97,
+      "price_change_pct": 2.6,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:12.771816"
     }
   ],
   "6ea1659d-7b86-46c5-8fb2-0596262b8e68": [
@@ -3141,6 +3236,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:45:02.622411"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 8.0,
+      "floor_price_usd": 1050.72,
+      "market_price_usd": 1050.72,
+      "daily_volume_usd": 8405.76,
+      "volume_7d": 58840.32,
+      "unified_volume_usd": 252172.8,
+      "estimated_actual_sales_today": 8.0,
+      "baseline_7d_avg": 8.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 0.92,
+      "price_change_pct": 0.1,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:21.788989"
     }
   ],
   "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": [
@@ -3161,6 +3275,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:45:13.607233"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 5.0,
+      "floor_price_usd": 340.17,
+      "market_price_usd": 340.17,
+      "daily_volume_usd": 1700.85,
+      "volume_7d": 11905.95,
+      "unified_volume_usd": 51025.5,
+      "estimated_actual_sales_today": 5.0,
+      "baseline_7d_avg": 5.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 1.31,
+      "price_change_pct": 0.4,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:30.519948"
     }
   ],
   "9bfebc47-4a92-44b3-b157-8c53d6a6a064": [
@@ -3181,6 +3314,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:45:22.653309"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 8.0,
+      "floor_price_usd": 301.54,
+      "market_price_usd": 301.54,
+      "daily_volume_usd": 2412.32,
+      "volume_7d": 16886.24,
+      "unified_volume_usd": 72369.6,
+      "estimated_actual_sales_today": 8.0,
+      "baseline_7d_avg": 8.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": -7.24,
+      "price_change_pct": -2.3,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:40.016915"
     }
   ],
   "d0faf871-a930-4c80-a981-9df8741c90a9": [
@@ -3201,6 +3353,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:45:31.823250"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 7.0,
+      "floor_price_usd": 221.77,
+      "market_price_usd": 221.77,
+      "daily_volume_usd": 1552.39,
+      "volume_7d": 10866.73,
+      "unified_volume_usd": 46571.7,
+      "estimated_actual_sales_today": 7.0,
+      "baseline_7d_avg": 7.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 4.72,
+      "price_change_pct": 2.2,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:49.311496"
     }
   ],
   "62e94d8d-bde1-4aec-a4f4-98c28d5e98c6": [
@@ -3233,6 +3404,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:45:51.482755"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 19.0,
+      "floor_price_usd": 230.54,
+      "market_price_usd": 230.54,
+      "daily_volume_usd": 4380.26,
+      "volume_7d": 30661.82,
+      "unified_volume_usd": 131407.8,
+      "estimated_actual_sales_today": 19.0,
+      "baseline_7d_avg": 19.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": -0.56,
+      "price_change_pct": -0.2,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:00:06.879322"
     }
   ],
   "46039dfc-a980-4bbd-aada-8cc1e124b44b": [
@@ -3253,6 +3443,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:46:00.678542"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 20.0,
+      "floor_price_usd": 410.9,
+      "market_price_usd": 410.9,
+      "daily_volume_usd": 8218.0,
+      "volume_7d": 57526.0,
+      "unified_volume_usd": 246540.0,
+      "estimated_actual_sales_today": 20.0,
+      "baseline_7d_avg": 20.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": -16.79,
+      "price_change_pct": -3.9,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:00:18.100316"
     }
   ],
   "be5fccb2-a76b-45a4-aff9-46a57fd41d38": [
@@ -3297,6 +3506,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:46:28.739767"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 1.0,
+      "floor_price_usd": 828.57,
+      "market_price_usd": 828.57,
+      "daily_volume_usd": 828.57,
+      "volume_7d": 5799.99,
+      "unified_volume_usd": 24857.1,
+      "estimated_actual_sales_today": 1.0,
+      "baseline_7d_avg": 1.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 3.41,
+      "price_change_pct": 0.4,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:00:47.885045"
     }
   ],
   "7509a855-f6da-445e-b445-130824d81d04": [
@@ -3317,6 +3545,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:46:37.494861"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 9.0,
+      "floor_price_usd": 530.76,
+      "market_price_usd": 530.76,
+      "daily_volume_usd": 4776.84,
+      "volume_7d": 33437.88,
+      "unified_volume_usd": 143305.2,
+      "estimated_actual_sales_today": 9.0,
+      "baseline_7d_avg": 9.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": -9.8,
+      "price_change_pct": -1.8,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:00:58.768348"
     }
   ],
   "743bf253-98ca-49d5-93fe-a3eaef9f72c1": [
@@ -3337,6 +3584,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:46:47.350725"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 4.0,
+      "floor_price_usd": 876.16,
+      "market_price_usd": 876.16,
+      "daily_volume_usd": 3504.64,
+      "volume_7d": 24532.48,
+      "unified_volume_usd": 105139.2,
+      "estimated_actual_sales_today": 4.0,
+      "baseline_7d_avg": 4.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 21.53,
+      "price_change_pct": 2.5,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:01:08.234517"
     }
   ],
   "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": [
@@ -3357,6 +3623,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:46:56.455820"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 11.0,
+      "floor_price_usd": 338.8,
+      "market_price_usd": 338.8,
+      "daily_volume_usd": 3726.8,
+      "volume_7d": 26087.6,
+      "unified_volume_usd": 111804.0,
+      "estimated_actual_sales_today": 11.0,
+      "baseline_7d_avg": 11.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 11.44,
+      "price_change_pct": 3.5,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:01:16.770809"
     }
   ],
   "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": [
@@ -3377,6 +3662,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:45:41.794317"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 14.0,
+      "floor_price_usd": 624.88,
+      "market_price_usd": 624.88,
+      "daily_volume_usd": 8748.32,
+      "volume_7d": 61238.24,
+      "unified_volume_usd": 262449.6,
+      "estimated_actual_sales_today": 14.0,
+      "baseline_7d_avg": 14.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": -5.85,
+      "price_change_pct": -0.9,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T14:59:57.666479"
     }
   ],
   "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": [
@@ -3397,6 +3701,25 @@
       "spike_detected": null,
       "spike_magnitude_pct": null,
       "timestamp": "2026-01-22T12:46:09.744034"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 19.0,
+      "floor_price_usd": 212.6,
+      "market_price_usd": 212.6,
+      "daily_volume_usd": 4039.4,
+      "volume_7d": 28275.8,
+      "unified_volume_usd": 121182.0,
+      "estimated_actual_sales_today": 19.0,
+      "baseline_7d_avg": 19.0,
+      "avg_change_from_yesterday": 0.0,
+      "avg_change_pct": 0.0,
+      "price_change_from_yesterday": 0.65,
+      "price_change_pct": 0.3,
+      "spike_detected": null,
+      "spike_magnitude_pct": null,
+      "timestamp": "2026-01-26T15:00:27.747108"
     }
   ],
   "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": [
@@ -3430,6 +3753,25 @@
       "floor_price_usd": 601.7,
       "discovered_from_listings": true,
       "timestamp": "2026-01-23T15:20:42.026506"
+    },
+    {
+      "date": "2026-01-26",
+      "source": "apify_tcgplayer",
+      "boxes_sold_per_day": 18.0,
+      "floor_price_usd": 680.83,
+      "market_price_usd": 680.83,
+      "daily_volume_usd": 12254.94,
+      "volume_7d": 85784.58,
+      "unified_volume_usd": 367648.2,
+      "estimated_actual_sales_today": 18.0,
+      "baseline_7d_avg": 9.5,
+      "avg_change_from_yesterday": null,
+      "avg_change_pct": null,
+      "price_change_from_yesterday": null,
+      "price_change_pct": null,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 89.5,
+      "timestamp": "2026-01-26T15:00:38.235110"
     }
   ]
 }

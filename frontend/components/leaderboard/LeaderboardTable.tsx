@@ -13,13 +13,15 @@ interface LeaderboardTableProps {
   isLoading?: boolean;
   onSort?: (sortBy: string) => void;
   currentSort?: string;
+  timeRange?: '24h' | '7d' | '30d';
 }
 
 export function LeaderboardTable({
   boxes,
   isLoading = false,
   onSort,
-  currentSort = 'unified_volume_usd',
+  currentSort = 'unified_volume_7d_ema',
+  timeRange = '30d',
 }: LeaderboardTableProps) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -103,10 +105,14 @@ export function LeaderboardTable({
     <div className="space-y-0">
       {boxes.map((box, index) => {
         const isRankOne = box.rank === 1;
-        const priceChange = box.metrics.floor_price_30d_change_pct !== null && box.metrics.floor_price_30d_change_pct !== undefined
-          ? (typeof box.metrics.floor_price_30d_change_pct === 'number' 
-              ? box.metrics.floor_price_30d_change_pct 
-              : Number(box.metrics.floor_price_30d_change_pct))
+        // Get price change based on timeRange
+        const priceChangeValue = (timeRange === '24h' || timeRange === '7d') 
+          ? box.metrics.floor_price_1d_change_pct 
+          : box.metrics.floor_price_30d_change_pct;
+        const priceChange = priceChangeValue !== null && priceChangeValue !== undefined
+          ? (typeof priceChangeValue === 'number' 
+              ? priceChangeValue 
+              : Number(priceChangeValue))
           : null;
         const isPositive = priceChange !== null && priceChange > 0;
         const isNegative = priceChange !== null && priceChange < 0;
@@ -118,16 +124,16 @@ export function LeaderboardTable({
               style={{ borderBottom: index < boxes.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none' }}
               onClick={() => (window.location.href = `/boxes/${box.id}`)}
             >
-              <div className="grid grid-cols-12 gap-1 sm:gap-4 items-center px-1 sm:px-4">
+              <div className="grid grid-cols-12 gap-1 sm:gap-2 items-center">
               {/* Rank */}
-              <div className="col-span-1 text-left" style={{ height: '30px', fontFamily: 'Helvetica' }}>
+              <div className="col-span-1 text-left px-3" style={{ height: '30px', fontFamily: 'Helvetica' }}>
                 <span className="text-xs sm:text-sm text-foreground-muted font-mono" style={{ color: 'rgba(255, 255, 255, 1)' }}>
                   #{box.rank}
                 </span>
               </div>
 
               {/* Collection */}
-              <div className="col-span-3 flex items-center gap-1.5 sm:gap-4 min-h-[48px] sm:min-h-[80px] -ml-4 sm:-ml-0">
+              <div className="col-span-3 flex items-center gap-3 sm:gap-4 min-h-[48px] sm:min-h-[80px] px-3">
                 <div className="flex-shrink-0 w-12 h-12 sm:w-20 sm:h-20 flex items-center justify-center">
                   {box.image_url ? (
                     <img
@@ -146,15 +152,17 @@ export function LeaderboardTable({
                   className="flex-1 min-w-0 flex flex-col justify-center"
                   title={cleanProductName(box.product_name)}
                 >
-                  <div className="text-xs sm:text-base font-semibold text-white leading-tight" style={{ 
+                  <div className="text-xs sm:text-base font-semibold text-white" style={{ 
                     color: 'rgba(255, 255, 255, 0.95)',
-                    lineHeight: '1.3'
+                    lineHeight: '1.5',
+                    marginBottom: '4px'
                   }}>
                     {cleanProductName(box.product_name)}
                   </div>
                   {box.set_name && (
                     <div 
-                      className="text-[10px] sm:text-xs text-white/60 mt-0.5 sm:mt-1"
+                      className="text-[10px] sm:text-xs text-white/60"
+                      style={{ marginTop: '2px' }}
                       title={box.set_name}
                     >
                       {box.set_name}
@@ -174,50 +182,110 @@ export function LeaderboardTable({
               </div>
 
               {/* Floor */}
-              <div className="col-span-1 text-right">
+              <div className="col-span-1 text-right px-2">
                 <div className="text-xs sm:text-sm text-foreground financial-number">
                   {formatCurrency(box.metrics.floor_price_usd)}
                 </div>
               </div>
 
-              {/* Floor 30d % */}
-              <div className="col-span-1 text-right relative">
+              {/* Price Change % - Dynamic based on timeRange */}
+              <div className="col-span-1 text-center relative px-2">
                 <div 
-                  className={`text-xs sm:text-sm financial-number ${getPriceChangeColor(box.metrics.floor_price_30d_change_pct)}`}
+                  className={`text-xs sm:text-sm financial-number ${getPriceChangeColor(
+                    timeRange === '24h' || timeRange === '7d' 
+                      ? box.metrics.floor_price_1d_change_pct 
+                      : box.metrics.floor_price_30d_change_pct
+                  )}`}
                   style={{
-                    color: priceChange !== null 
-                      ? (priceChange > 0 ? '#10b981' : priceChange < 0 ? '#ef4444' : undefined)
-                      : undefined
+                    color: (() => {
+                      const change = timeRange === '24h' || timeRange === '7d' 
+                        ? box.metrics.floor_price_1d_change_pct 
+                        : box.metrics.floor_price_30d_change_pct;
+                      if (change === null || change === undefined) return undefined;
+                      const numChange = typeof change === 'number' ? change : Number(change);
+                      return numChange > 0 ? '#10b981' : numChange < 0 ? '#ef4444' : undefined;
+                    })()
                   }}
                 >
-                  {priceChange !== null
-                    ? `${isPositive ? '▲' : isNegative ? '▼' : ''} ${formatPercentage(box.metrics.floor_price_30d_change_pct)}`
-                    : '--'}
+                  {(() => {
+                    const change = timeRange === '24h' || timeRange === '7d' 
+                      ? box.metrics.floor_price_1d_change_pct 
+                      : box.metrics.floor_price_30d_change_pct;
+                    if (change === null || change === undefined) return '--';
+                    const numChange = typeof change === 'number' ? change : Number(change);
+                    const isPos = numChange > 0;
+                    const isNeg = numChange < 0;
+                    return `${isPos ? '▲' : isNeg ? '▼' : ''} ${formatPercentage(change)}`;
+                  })()}
                 </div>
               </div>
 
-              {/* 30d Volume */}
-              <div className="col-span-2 text-right">
+              {/* Volume - Dynamic based on timeRange */}
+              <div className="col-span-2 text-right px-2">
                 <div className="text-xs sm:text-sm font-semibold text-foreground financial-number">
-                  {box.metrics.unified_volume_usd !== null && box.metrics.unified_volume_usd !== undefined
-                    ? formatCurrency(box.metrics.unified_volume_usd)
-                    : '--'}
+                  {(() => {
+                    if (timeRange === '24h') {
+                      return box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
+                        ? formatCurrency(box.metrics.daily_volume_usd)
+                        : '--';
+                    } else if (timeRange === '7d') {
+                      // Prefer volume_7d (actual rolling sum of 7 days)
+                      // Fallback to daily_volume_usd * 7 (NOT unified_volume_7d_ema, which is an EMA, not a sum)
+                      const volume7d = (box.metrics as any).volume_7d !== null && (box.metrics as any).volume_7d !== undefined
+                        ? (box.metrics as any).volume_7d
+                        : (box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
+                          ? box.metrics.daily_volume_usd * 7
+                          : null);
+                      return volume7d !== null ? formatCurrency(volume7d) : '--';
+                    } else { // 30d
+                      // Prefer volume_30d (actual rolling sum of 30 days)
+                      // Fallback to unified_volume_usd or daily_volume_usd * 30
+                      const volume30d = (box.metrics as any).volume_30d !== null && (box.metrics as any).volume_30d !== undefined
+                        ? (box.metrics as any).volume_30d
+                        : (box.metrics.unified_volume_usd !== null && box.metrics.unified_volume_usd !== undefined
+                          ? box.metrics.unified_volume_usd
+                          : (box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
+                            ? box.metrics.daily_volume_usd * 30
+                            : null));
+                      return volume30d !== null ? formatCurrency(volume30d) : '--';
+                    }
+                  })()}
                 </div>
               </div>
 
-              {/* Sales - 30d Average */}
-              <div className="col-span-1 text-right">
+              {/* Sales - Dynamic based on timeRange */}
+              <div className="col-span-1 text-right px-3">
                 <div className="text-xs sm:text-sm text-foreground financial-number">
-                  {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
-                    ? formatNumber(box.metrics.boxes_sold_30d_avg)
-                    : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                    ? formatNumber(box.metrics.boxes_sold_per_day)
-                    : formatNumber(box.metrics.units_sold_count)}
+                  {(() => {
+                    if (timeRange === '24h') {
+                      // 24h: Show daily sales rate
+                      return box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
+                        ? formatNumber(box.metrics.boxes_sold_per_day)
+                        : formatNumber(box.metrics.units_sold_count);
+                    } else if (timeRange === '7d') {
+                      // 7d: Show total sales over 7 days (daily * 7)
+                      const sales7d = box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
+                        ? box.metrics.boxes_sold_per_day * 7
+                        : null;
+                      return sales7d !== null ? formatNumber(sales7d) : formatNumber(box.metrics.units_sold_count);
+                    } else { // 30d
+                      // 30d: Show total sales over 30 days (30d avg * 30, or daily * 30 as fallback)
+                      if (box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined) {
+                        // boxes_sold_30d_avg is average per day, multiply by 30 for total
+                        return formatNumber(box.metrics.boxes_sold_30d_avg * 30);
+                      } else if (box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined) {
+                        // Fallback: use daily rate * 30
+                        return formatNumber(box.metrics.boxes_sold_per_day * 30);
+                      } else {
+                        return formatNumber(box.metrics.units_sold_count);
+                      }
+                    }
+                  })()}
                 </div>
               </div>
 
               {/* Top 10 Card Value */}
-              <div className="col-span-2 text-right">
+              <div className="col-span-2 text-center px-3">
                 <div className="text-xs sm:text-sm font-semibold text-foreground financial-number">
                   {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
                     ? formatCurrency(box.metrics.top_10_value_usd)
@@ -226,7 +294,7 @@ export function LeaderboardTable({
               </div>
 
               {/* Last 1d Sparkline */}
-              <div className="col-span-1 flex justify-center">
+              <div className="col-span-1 flex justify-center px-3">
                 <div className={`marketplace-sparkline ${isPositive ? 'marketplace-sparkline-positive' : isNegative ? 'marketplace-sparkline-negative' : ''}`}>
                   <svg width="100" height="32" viewBox="0 0 100 32" className="w-full h-full">
                     {/* Placeholder sparkline - will be replaced with actual chart data */}
