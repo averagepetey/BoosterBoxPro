@@ -20,9 +20,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('30d');
+  // Default sort based on initial timeRange (30d)
   const [sortBy, setSortBy] = useState('unified_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('30d');
   const [isMounted, setIsMounted] = useState(false);
   const { data, isLoading, error } = useLeaderboard({
     sort: sortBy,
@@ -77,12 +78,15 @@ export default function DashboardPage() {
   };
 
   const getVolumeSortField = (): string => {
+    // Return the appropriate volume metric based on timeRange
     if (timeRange === '24h') {
       return 'daily_volume_usd';
     } else if (timeRange === '7d') {
-      return 'volume_7d';  // Use actual 7-day rolling sum
-    } else {
-      return 'unified_volume_usd';  // 30-day rolling sum
+      // Use volume_7d (rolling sum) for 7d to match what's displayed
+      // Backend will fall back to unified_volume_7d_ema if volume_7d is not available
+      return 'volume_7d';
+    } else { // 30d
+      return 'unified_volume_usd';
     }
   };
 
@@ -112,7 +116,7 @@ export default function DashboardPage() {
 
   const handleTimeRangeChange = (range: '24h' | '7d' | '30d') => {
     setTimeRange(range);
-    // If currently sorting by volume, update to the correct volume field for the new time range
+    // If currently sorting by volume, update to the correct metric for the new time range
     const isCurrentlySortingByVolume = 
       sortBy === 'daily_volume_usd' || 
       sortBy === 'volume_7d' ||
@@ -120,12 +124,28 @@ export default function DashboardPage() {
       sortBy === 'unified_volume_usd';
     
     if (isCurrentlySortingByVolume) {
+      // Update to the appropriate volume metric for the selected time range
       if (range === '24h') {
         setSortBy('daily_volume_usd');
       } else if (range === '7d') {
-        setSortBy('volume_7d');  // Use actual 7-day rolling sum
-      } else {
+        // Use volume_7d to match what's displayed in the table
+        setSortBy('volume_7d');
+      } else { // 30d
         setSortBy('unified_volume_usd');
+      }
+      setSortDirection('desc');
+    }
+    
+    // If currently sorting by sales, update to the correct metric for the new time range
+    const isCurrentlySortingBySales = 
+      sortBy === 'boxes_sold_per_day' || 
+      sortBy === 'boxes_sold_30d_avg';
+    
+    if (isCurrentlySortingBySales) {
+      if (range === '24h' || range === '7d') {
+        setSortBy('boxes_sold_per_day');
+      } else { // 30d
+        setSortBy('boxes_sold_30d_avg');
       }
       setSortDirection('desc');
     }
@@ -274,7 +294,7 @@ export default function DashboardPage() {
             <div className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1 relative flex-shrink-0">
               <div className="relative">
                 <select
-                  value={sortBy === 'daily_volume_usd' || sortBy === 'unified_volume_7d_ema' || sortBy === 'unified_volume_usd' ? 'volume' : sortBy}
+                  value={sortBy === 'daily_volume_usd' || sortBy === 'unified_volume_7d_ema' || sortBy === 'unified_volume_usd' || sortBy === 'volume_7d' ? 'volume' : sortBy}
                   onChange={(e) => handleSortChange(e.target.value)}
                   className="text-transparent font-medium bg-red-600/80 hover:bg-red-600/90 transition lb-anim pl-8 sm:pl-16 pr-5 sm:pr-8 py-1.5 text-xs rounded-full border-none focus:outline-none cursor-pointer appearance-none relative overflow-hidden"
                   style={{ WebkitAppearance: 'none', MozAppearance: 'none', color: 'transparent' }}
@@ -328,7 +348,7 @@ export default function DashboardPage() {
               <div className="min-w-[950px] sm:min-w-0 px-2 sm:px-6 py-2 sm:py-6">
             {/* Column Headers - Sticky */}
             <div 
-              className="sticky top-0 z-20 grid grid-cols-12 gap-1 sm:gap-4 px-1 sm:px-4 mb-2 sm:mb-4 pb-2 sm:pb-3 text-white/70 uppercase tracking-widest text-[9px] sm:text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-1 sm:gap-2 mb-2 sm:mb-4 pb-2 sm:pb-3 text-white/70 uppercase tracking-widest text-[9px] sm:text-xs rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
@@ -342,14 +362,14 @@ export default function DashboardPage() {
                 borderTopRightRadius: '1.5rem'
               }}
             >
-              <div className="col-span-1 text-left font-medium">
+              <div className="col-span-1 text-left font-medium px-3">
                 #
               </div>
-              <div className="col-span-3 text-left font-medium">
+              <div className="col-span-3 text-left font-medium px-3">
                 Collection
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors px-2"
                 onClick={() => handleSort('floor_price_usd')}
               >
                 Floor
@@ -358,34 +378,49 @@ export default function DashboardPage() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('floor_price_30d_change_pct')}
+                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors px-2"
+                onClick={() => {
+                  const priceChangeSort = timeRange === '24h' ? 'floor_price_1d_change_pct'
+                    : timeRange === '7d' ? 'floor_price_1d_change_pct' // Use 1d for 7d view (we don't have 7d price change)
+                    : 'floor_price_30d_change_pct';
+                  handleSort(priceChangeSort);
+                }}
               >
-                30d %
-                {sortBy === 'floor_price_30d_change_pct' && (
+                {timeRange === '24h' ? '1d %' : timeRange === '7d' ? '1d %' : '30d %'}
+                {(sortBy === 'floor_price_1d_change_pct' || sortBy === 'floor_price_30d_change_pct') && (
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
               <div 
-                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('unified_volume_usd')}
+                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors px-2"
+                onClick={() => {
+                  const volumeSort = timeRange === '24h' ? 'daily_volume_usd' 
+                    : timeRange === '7d' ? 'volume_7d' 
+                    : 'unified_volume_usd';
+                  handleSort(volumeSort);
+                }}
               >
-                30d Volume
-                {sortBy === 'unified_volume_usd' && (
+                {timeRange === '24h' ? '24h Volume' : timeRange === '7d' ? '7d Volume' : '30d Volume'}
+                {(sortBy === 'daily_volume_usd' || sortBy === 'volume_7d' || sortBy === 'unified_volume_7d_ema' || sortBy === 'unified_volume_usd') && (
                   <span className="ml-1 text-[10px] font-bold">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors"
-                onClick={() => handleSort('boxes_sold_30d_avg')}
+                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors px-3"
+                onClick={() => {
+                  const salesSort = timeRange === '24h' ? 'boxes_sold_per_day'
+                    : timeRange === '7d' ? 'boxes_sold_per_day'
+                    : 'boxes_sold_30d_avg';
+                  handleSort(salesSort);
+                }}
               >
-                Sales
-                {sortBy === 'boxes_sold_30d_avg' && (
+                {timeRange === '24h' ? 'Sales' : timeRange === '7d' ? '7d Sales' : '30d Sales'}
+                {(sortBy === 'boxes_sold_per_day' || sortBy === 'boxes_sold_30d_avg') && (
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
               <div 
-                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors"
+                className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors px-3"
                 onClick={() => handleSort('top_10_value_usd')}
               >
                 Top 10 Value
@@ -393,7 +428,7 @@ export default function DashboardPage() {
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
-              <div className="col-span-1 text-center font-medium">
+              <div className="col-span-1 text-center font-medium px-3">
                 1d
               </div>
             </div>
@@ -404,6 +439,7 @@ export default function DashboardPage() {
                 isLoading={isLoading}
                 onSort={handleSort}
                 currentSort={sortBy}
+                timeRange={timeRange}
               />
             )}
             {/* Debug: Show total count */}

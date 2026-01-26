@@ -306,7 +306,7 @@ def get_box_image_url(product_name: str | None) -> str | None:
 # Leaderboard endpoint - requires authentication and active subscription
 @app.get("/booster-boxes")
 async def get_booster_boxes(
-    sort: str = "unified_volume_usd",
+    sort: str = "unified_volume_7d_ema",  # Primary ranking metric: 7-day EMA volume
     limit: int = 10,
     offset: int = 0,
     current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
@@ -314,6 +314,7 @@ async def get_booster_boxes(
     """
     Get leaderboard of booster boxes.
     Requires authentication and active subscription (trial or paid).
+    Default sort: unified_volume_7d_ema (7-day EMA volume - most accurate ranking metric)
     """
     """
     Leaderboard endpoint - combines static box info with live database metrics
@@ -388,9 +389,20 @@ async def get_booster_boxes(
             # Use database metrics if available, otherwise fall back to JSON
             if latest_metrics:
                 box_data["metric_date"] = latest_metrics.metric_date.isoformat() if latest_metrics.metric_date else None
+                
+                # Calculate daily_volume_usd - prefer from historical data, or estimate from 30d volume
+                # NOTE: Do NOT use unified_volume_7d_ema to calculate daily volume - EMA is not a sum!
+                daily_vol = None
+                # First try to get from historical data (most accurate)
+                # If not available, estimate from unified_volume_usd (which is typically daily * 30)
+                if latest_metrics.unified_volume_usd:
+                    # unified_volume_usd is typically calculated as daily_volume_usd * 30
+                    daily_vol = float(latest_metrics.unified_volume_usd) / 30
+                
                 box_data["metrics"] = {
                     "floor_price_usd": float(latest_metrics.floor_price_usd) if latest_metrics.floor_price_usd else json_box.get("metrics", {}).get("floor_price_usd"),
                     "floor_price_1d_change_pct": float(latest_metrics.floor_price_1d_change_pct) if latest_metrics.floor_price_1d_change_pct else 0.0,
+                    "daily_volume_usd": daily_vol if daily_vol else json_box.get("metrics", {}).get("daily_volume_usd"),
                     "unified_volume_usd": float(latest_metrics.unified_volume_usd) if latest_metrics.unified_volume_usd else json_box.get("metrics", {}).get("unified_volume_usd"),
                     "unified_volume_7d_ema": float(latest_metrics.unified_volume_7d_ema) if latest_metrics.unified_volume_7d_ema else json_box.get("metrics", {}).get("unified_volume_7d_ema"),
                     "active_listings_count": latest_metrics.active_listings_count if latest_metrics.active_listings_count else json_box.get("metrics", {}).get("active_listings_count"),
@@ -403,6 +415,18 @@ async def get_booster_boxes(
             elif json_box.get("metrics"):
                 box_data["metrics"] = json_box["metrics"]
                 box_data["metric_date"] = json_box.get("metric_date")
+                
+                # Ensure daily_volume_usd exists - calculate from available metrics
+                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a sum
+                if not box_data["metrics"].get("daily_volume_usd"):
+                    if box_data["metrics"].get("unified_volume_usd"):
+                        # unified_volume_usd is typically daily_volume_usd * 30
+                        box_data["metrics"]["daily_volume_usd"] = float(box_data["metrics"]["unified_volume_usd"]) / 30
+                
+                # Ensure unified_volume_usd exists - calculate from available metrics
+                if not box_data["metrics"].get("unified_volume_usd"):
+                    if box_data["metrics"].get("daily_volume_usd"):
+                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["daily_volume_usd"]) * 30
             else:
                 # Skip boxes with no metrics and no JSON data
                 continue
@@ -452,6 +476,11 @@ async def get_booster_boxes(
                 try:
                     volume_7d = get_rolling_volume_sum(str(db_box.id), 7)
                     volume_30d = get_rolling_volume_sum(str(db_box.id), 30)
+                    # Add to metrics if available
+                    if volume_7d is not None:
+                        box_data["metrics"]["volume_7d"] = float(volume_7d)
+                    if volume_30d is not None:
+                        box_data["metrics"]["volume_30d"] = float(volume_30d)
                 except Exception as e:
                     print(f"⚠️  Error getting volume sums: {e}")
                     volume_7d = None
@@ -478,10 +507,11 @@ async def get_booster_boxes(
                 if hist_ema and hist_ema > 0:
                     box_data["metrics"]["unified_volume_7d_ema"] = hist_ema
                 
-                # Use historical daily volume (24h)
+                # Use historical daily volume (24h) - prioritize this over calculated
                 hist_daily_vol = latest_historical.get("daily_volume_usd")
                 if hist_daily_vol and hist_daily_vol > 0:
                     box_data["metrics"]["daily_volume_usd"] = hist_daily_vol
+                # If no historical daily volume, keep the calculated one from above
                 
                 # PRIORITY: Use Apify's calculated 30d volume (daily_vol * 30)
                 hist_30d_vol = latest_historical.get("unified_volume_usd")
@@ -490,6 +520,33 @@ async def get_booster_boxes(
                 elif hist_daily_vol and hist_daily_vol > 0:
                     # Fallback to extrapolation if not in historical
                     box_data["metrics"]["unified_volume_usd"] = hist_daily_vol * 30
+                # If no historical 30d volume and no daily volume, ensure we have a value
+                # If no historical 30d volume, try to calculate from available metrics
+                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a sum
+                elif not box_data["metrics"].get("unified_volume_usd"):
+                    if box_data["metrics"].get("volume_30d"):
+                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_30d"])
+                    elif box_data["metrics"].get("volume_7d"):
+                        # Estimate 30d from 7d sum
+                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_7d"]) * (30 / 7)
+                
+                # Ensure daily_volume_usd exists after historical data processing
+                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a sum, so dividing by 7 is incorrect
+                if not box_data["metrics"].get("daily_volume_usd"):
+                    if box_data["metrics"].get("unified_volume_usd"):
+                        # unified_volume_usd is typically daily_volume_usd * 30
+                        box_data["metrics"]["daily_volume_usd"] = float(box_data["metrics"]["unified_volume_usd"]) / 30
+                
+                # Ensure unified_volume_usd exists after historical data processing
+                if not box_data["metrics"].get("unified_volume_usd"):
+                    # Prefer volume_30d (actual rolling sum) if available
+                    if box_data["metrics"].get("volume_30d"):
+                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_30d"])
+                    elif box_data["metrics"].get("daily_volume_usd"):
+                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["daily_volume_usd"]) * 30
+                    elif box_data["metrics"].get("volume_7d"):
+                        # Estimate 30d from 7d sum
+                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_7d"]) * (30 / 7)
                 
                 # PRIORITY: Use Apify's calculated 7d volume (daily_vol * 7)
                 hist_7d_vol = latest_historical.get("volume_7d")
@@ -520,15 +577,58 @@ async def get_booster_boxes(
             
             result_boxes.append(box_data)
     
-    # Sort by the requested field (default: unified_volume_usd)
+    # Sort by the requested field (default: unified_volume_7d_ema)
     def get_sort_value(box):
         val = box.get("metrics", {}).get(sort)
-        if val is None:
-            return -1  # Put None values at the end (negative so they sort last)
+        if val is None or val == 0:
+            # If the sort field is missing, try to calculate from available metrics
+            metrics = box.get("metrics", {})
+            if sort == "daily_volume_usd":
+                # Try to calculate from 30d volume (NOT from EMA - EMA is not a sum)
+                if metrics.get("unified_volume_usd"):
+                    return float(metrics["unified_volume_usd"]) / 30
+                elif metrics.get("volume_7d"):
+                    # If we have 7d sum, estimate daily from that
+                    return float(metrics["volume_7d"]) / 7
+            elif sort == "unified_volume_usd":
+                # Try to calculate from daily volume or 7d sum
+                if metrics.get("daily_volume_usd"):
+                    return float(metrics["daily_volume_usd"]) * 30
+                elif metrics.get("volume_7d"):
+                    # Estimate 30d from 7d sum
+                    return float(metrics["volume_7d"]) * (30 / 7)
+                elif metrics.get("volume_30d"):
+                    # Use actual 30d sum if available
+                    return float(metrics["volume_30d"])
+            elif sort == "unified_volume_7d_ema":
+                # unified_volume_7d_ema is an EMA (smoothed average), not a sum
+                # For sorting purposes, use the actual EMA value if available
+                # Fallback to calculated estimates if needed
+                if metrics.get("unified_volume_7d_ema"):
+                    return float(metrics["unified_volume_7d_ema"])
+                elif metrics.get("volume_7d"):
+                    # If we have the actual 7d sum, use it (better than EMA for sorting)
+                    return float(metrics["volume_7d"])
+                elif metrics.get("daily_volume_usd"):
+                    # Estimate: daily * 7 (but this is a sum, not an EMA)
+                    return float(metrics["daily_volume_usd"]) * 7
+                elif metrics.get("unified_volume_usd"):
+                    return float(metrics["unified_volume_usd"]) * (7 / 30)
+            elif sort == "volume_7d":
+                # For volume_7d, prefer the actual rolling sum, fallback to calculated values
+                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a 7-day sum
+                if metrics.get("volume_7d"):
+                    return float(metrics["volume_7d"])
+                elif metrics.get("daily_volume_usd"):
+                    return float(metrics["daily_volume_usd"]) * 7
+                elif metrics.get("unified_volume_usd"):
+                    return float(metrics["unified_volume_usd"]) * (7 / 30)
+            return 0  # Put None/zero values at the end (0 sorts last when reverse=True)
         try:
-            return float(val) if isinstance(val, (int, float, str)) else -1
+            float_val = float(val) if isinstance(val, (int, float, str)) else 0
+            return float_val if float_val > 0 else 0  # Ensure positive values for sorting
         except (ValueError, TypeError):
-            return -1
+            return 0
     
     result_boxes.sort(key=get_sort_value, reverse=True)
     
