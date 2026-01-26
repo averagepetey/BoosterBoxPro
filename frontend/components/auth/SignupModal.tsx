@@ -34,7 +34,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     general?: string;
   }>({});
   
-  const [tier, setTier] = useState<'free' | 'premium' | 'pro'>('premium');
+  const [tier, setTier] = useState<'free' | 'pro+' | 'pro'>('pro+');
   const [isRegistering, setIsRegistering] = useState(false);
   
   // Reset form when modal closes
@@ -97,7 +97,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     
     try {
       const apiBaseUrl = getApiBaseUrl();
-      const fullUrl = `${apiBaseUrl}/auth/register`;
+      const fullUrl = `${apiBaseUrl}/api/v1/auth/register`;
       
       console.log('=== Signup Debug Info ===');
       console.log('API Base URL:', apiBaseUrl);
@@ -195,7 +195,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
       }
       
       // Now create Stripe checkout session with the auth token
-      const checkoutResponse = await fetch(`${apiBaseUrl}/payment/create-checkout-session`, {
+      const checkoutResponse = await fetch(`${apiBaseUrl}/api/v1/payment/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -243,12 +243,12 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     switch (tier) {
       case 'free':
         return 'FREE';
-      case 'premium':
-        return '$29/mo';
+      case 'pro+':
+        return '$10.50/mo';
       case 'pro':
         return '$79/mo';
       default:
-        return '$29/mo';
+        return '$10.50/mo';
     }
   };
   
@@ -421,7 +421,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
               Choose Your Plan
             </label>
             <div className="space-y-1.5">
-              {(['free', 'premium', 'pro'] as const).map((plan) => (
+              {(['free', 'pro+', 'pro'] as const).map((plan) => (
                 <button
                   key={plan}
                   type="button"
@@ -435,8 +435,8 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-sm font-semibold text-white capitalize">{plan}</span>
-                        {plan === 'premium' && (
+                        <span className="text-sm font-semibold text-white">{plan === 'pro+' ? 'Pro+' : plan.charAt(0).toUpperCase() + plan.slice(1)}</span>
+                        {plan === 'pro+' && (
                           <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full whitespace-nowrap">
                             POPULAR
                           </span>

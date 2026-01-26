@@ -42,8 +42,8 @@ const pricingTiers: PricingTier[] = [
     id: 2,
     tag: 'POPULAR',
     tagColor: 'green',
-    name: 'Premium',
-    price: '$29',
+    name: 'Pro+',
+    price: '$10.50',
     description: 'For serious collectors tracking multiple boxes.',
     features: [
       'Full leaderboard access',

@@ -18,8 +18,12 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     const url = `${BACKEND_URL}/booster-boxes${queryString ? `?${queryString}` : ''}`;
     
+    // Get authorization header from the incoming request
+    const authHeader = request.headers.get('authorization');
+    
     console.log('[API Proxy] Fetching from backend:', url);
     console.log('[API Proxy] BACKEND_URL:', BACKEND_URL);
+    console.log('[API Proxy] Has auth header:', !!authHeader);
     
     // Add timeout to prevent hanging (30 seconds for slow backend with historical data)
     const controller = new AbortController();
@@ -28,12 +32,20 @@ export async function GET(request: NextRequest) {
       controller.abort();
     }, 30000); // 30 second timeout
     
+    // Build headers for backend request
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Forward authorization header if present
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+    
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         // Don't cache - always fetch fresh data
         cache: 'no-store',
         signal: controller.signal,
