@@ -470,12 +470,13 @@ export function useLeaderboard(params: LeaderboardParams = {}) {
     queryKey: ['leaderboard', params],
     queryFn: async () => {
       // Always call the real API - no mock fallback
+      // 401 errors will be handled in getLeaderboard and redirect to login
       const result = await getLeaderboard(params);
       return result;
     },
     staleTime: 60 * 1000, // 1 minute
     refetchOnWindowFocus: false,
-    retry: 1, // Retry once on failure
+    retry: false, // Don't retry on 401 errors (will redirect instead)
     retryOnMount: true,
     refetchOnReconnect: true,
     refetchOnMount: true,
