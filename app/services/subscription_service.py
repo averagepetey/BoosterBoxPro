@@ -40,7 +40,8 @@ def has_active_access(user: User) -> bool:
     
     User has access if:
     - They are in trial period (trial_ended_at is in the future), OR
-    - They have an active subscription (subscription_status == 'active')
+    - They have an active subscription (subscription_status == 'active'), OR
+    - They have a trial subscription from Stripe (subscription_status == 'trial')
     
     Args:
         user: User model instance
@@ -48,12 +49,16 @@ def has_active_access(user: User) -> bool:
     Returns:
         True if user has active access, False otherwise
     """
-    # Check if trial is still active
+    # Check if trial is still active (based on trial_ended_at date)
     if check_trial_status(user):
         return True
     
-    # Check if subscription is active
+    # Check if subscription is active (paid subscription)
     if user.subscription_status == 'active':
+        return True
+    
+    # Check if subscription is in trial (Stripe trialing status)
+    if user.subscription_status == 'trial':
         return True
     
     return False

@@ -13,11 +13,13 @@ import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
+import { useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 
 export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState('unified_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('30d');
@@ -41,7 +43,7 @@ export default function DashboardPage() {
           const token = getAuthToken();
           const apiBaseUrl = getApiBaseUrl();
           
-          const response = await fetch(`${apiBaseUrl}/payment/verify-subscription/${sessionId}`, {
+          const response = await fetch(`${apiBaseUrl}/api/v1/payment/verify-subscription/${sessionId}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -52,9 +54,10 @@ export default function DashboardPage() {
           if (response.ok) {
             const result = await response.json();
             if (result.verified) {
+              // Refresh user data to get updated subscription status
+              queryClient.invalidateQueries({ queryKey: ['currentUser'] });
               // Subscription verified - remove session_id from URL
               router.replace('/dashboard');
-              // TODO: Show success message or update user subscription status
               console.log('Subscription verified:', result);
             }
           }

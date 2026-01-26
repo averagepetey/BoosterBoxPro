@@ -391,10 +391,14 @@ async def stripe_webhook(
 async def verify_subscription(
     session_id: str,
     http_request: Request,
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Verify subscription status after checkout.
     Frontend calls this after redirect from Stripe.
+    
+    This endpoint also ensures the user's subscription is updated in the database,
+    even if the webhook hasn't processed yet.
     
     Note: Session ID is safe to expose as it's a one-time use token
     and only reveals subscription status, not sensitive data.
@@ -411,6 +415,41 @@ async def verify_subscription(
         
         if session.payment_status == "paid" or session.subscription:
             logger.info(f"Subscription verified for session {session_id[:8]}...")
+            
+            # Ensure user subscription is updated in database (in case webhook hasn't processed)
+            if session.customer_email:
+                from app.models.user import User
+                from sqlalchemy import select
+                
+                stmt = select(User).where(User.email == session.customer_email)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
+                if user:
+                    # Update Stripe customer ID if available
+                    if session.get("customer") and not user.stripe_customer_id:
+                        user.stripe_customer_id = session["customer"]
+                    
+                    # Update subscription ID and status if available
+                    if session.subscription:
+                        if not user.stripe_subscription_id:
+                            user.stripe_subscription_id = session.subscription
+                        
+                        # Get subscription details to determine status
+                        subscription = get_subscription(session.subscription)
+                        if subscription:
+                            user.subscription_status = update_subscription_status(subscription)
+                            # Ensure trial dates are set if in trial
+                            if subscription.status == 'trialing' and subscription.trial_end:
+                                from datetime import datetime, timezone
+                                if not user.trial_started_at:
+                                    user.trial_started_at = datetime.fromtimestamp(subscription.trial_start, tz=timezone.utc)
+                                if not user.trial_ended_at:
+                                    user.trial_ended_at = datetime.fromtimestamp(subscription.trial_end, tz=timezone.utc)
+                        
+                        await db.commit()
+                        logger.info(f"Updated user {user.email} subscription from verify endpoint")
+            
             return {
                 "verified": True,
                 "subscription_id": session.subscription,

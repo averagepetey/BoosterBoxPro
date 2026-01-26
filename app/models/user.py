@@ -75,13 +75,18 @@ class User(Base):
         Returns True if:
         - User is in trial period (trial_ended_at is in the future)
         - User has active subscription (subscription_status == 'active')
+        - User has trial subscription from Stripe (subscription_status == 'trial')
         """
-        # Check if trial is still active
+        # Check if trial is still active (based on trial_ended_at date)
         if self.trial_ended_at and self.trial_ended_at > datetime.utcnow():
             return True
         
-        # Check if subscription is active
+        # Check if subscription is active (paid subscription)
         if self.subscription_status == 'active':
+            return True
+        
+        # Check if subscription is in trial (Stripe trialing status)
+        if self.subscription_status == 'trial':
             return True
         
         return False

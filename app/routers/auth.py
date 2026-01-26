@@ -103,6 +103,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     is_admin: bool = False
+    subscription_status: str = "inactive"
 
 
 def hash_password(password: str) -> str:
@@ -384,9 +385,25 @@ async def login(
     client_ip = getattr(request.state, 'client_ip', 'unknown')
     
     # Find user by email
-    stmt = select(User).where(User.email == login_data.email)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    try:
+        stmt = select(User).where(User.email == login_data.email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+    except Exception as db_error:
+        logger.error(f"Database error during login for {login_data.email[:3]}***: {str(db_error)}")
+        # Try to refresh the database connection
+        try:
+            await db.rollback()
+            # Retry the query
+            stmt = select(User).where(User.email == login_data.email)
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
+        except Exception as retry_error:
+            logger.error(f"Database retry failed: {str(retry_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database connection error. Please try again."
+            )
     
     if not user:
         # Log failed attempt
@@ -432,5 +449,6 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return UserResponse(
         id=str(current_user.id), 
         email=current_user.email, 
-        is_admin=current_user.is_admin  # Property checks DB role
+        is_admin=current_user.is_admin,  # Property checks DB role
+        subscription_status=current_user.subscription_status or "inactive"
     )
