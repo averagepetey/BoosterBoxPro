@@ -10,12 +10,17 @@ from app.config import settings
 
 # asyncpg does not accept 'sslmode' as a connect() kwarg; SQLAlchemy passes URL params through.
 # Strip sslmode from URL and pass a proper SSL context via connect_args so Supabase/Render work.
-# Using ssl.create_default_context() (not raw True) fixes "Database connection error" with Supabase.
+# Supabase often requires CERT_NONE from server environments (Render) when default context fails.
 _db_url = settings.database_url
 _connect_args = {}
 _needs_ssl = "sslmode=require" in _db_url or "supabase" in _db_url.lower()
 if _needs_ssl:
-    _connect_args["ssl"] = ssl.create_default_context()
+    _ctx = ssl.create_default_context()
+    if "supabase" in _db_url.lower():
+        # Supabase from Render often fails cert verification; use no-verify for connection.
+        _ctx.check_hostname = False
+        _ctx.verify_mode = ssl.CERT_NONE
+    _connect_args["ssl"] = _ctx
 if "sslmode=require" in _db_url:
     _db_url = _db_url.replace("?sslmode=require&", "?").replace("&sslmode=require", "").replace("?sslmode=require", "?")
     if _db_url.endswith("?"):

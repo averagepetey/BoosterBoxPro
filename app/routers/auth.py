@@ -24,6 +24,7 @@ import re
 from jose import jwt, JWTError
 from uuid import UUID, uuid4
 import logging
+import os
 import secrets
 
 from app.database import get_db
@@ -400,9 +401,12 @@ async def login(
             user = result.scalar_one_or_none()
         except Exception as retry_error:
             logger.error(f"Database retry failed: {str(retry_error)}")
+            detail = "Database connection error. Please try again."
+            if os.environ.get("DEBUG_DB_ERROR"):
+                detail += f" (Debug: {retry_error!s})"
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database connection error. Please try again."
+                detail=detail
             )
     
     if not user:
