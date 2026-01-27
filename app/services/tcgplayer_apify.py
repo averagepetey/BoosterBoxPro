@@ -558,6 +558,19 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             # Remove existing entry for today (update mode)
             historical[box_id] = [e for e in historical[box_id] if e.get("date") != today]
             historical[box_id].append(new_entry)
+
+            # Write to DB so live site updates without commits
+            try:
+                from app.services.box_metrics_writer import upsert_daily_metrics
+                upsert_daily_metrics(
+                    booster_box_id=box_id,
+                    metric_date=today,
+                    floor_price_usd=floor,
+                    boxes_sold_per_day=avg_daily,
+                    unified_volume_usd=volume_30d,
+                )
+            except Exception as e:
+                logger.warning(f"DB upsert skipped for {name}: {e}")
             
             # Log with day-over-day context
             change_str = f" ({avg_change_pct:+.1f}%)" if avg_change_pct else ""
