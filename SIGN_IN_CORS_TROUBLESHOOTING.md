@@ -9,7 +9,7 @@ Usually means the login request is hitting the wrong host (e.g. your Vercel URL 
 Often CORS or backend unreachable; see below.
 
 **“Database connection error. Please try again.”**  
-The request reached the backend but the DB failed during login. On Render, check **DATABASE_URL** in the API’s **Environment** tab: it must be your Supabase connection string with `?sslmode=require` (e.g. `postgresql+asyncpg://...@db.xxxxx.supabase.co:5432/postgres?sslmode=require`). The backend uses `ssl.create_default_context()` when `sslmode=require` is present. If it still fails, confirm Supabase allows connections from Render and that the URL has no typos.
+The request reached the backend but the DB failed during login. On Render, check **DATABASE_URL** in the API’s **Environment** tab: it must be your Supabase connection string (see **HOW_TO_SET_DATABASE_URL_ON_RENDER.md**). If it still fails, **see the real error**: in Render → your API → **Environment**, add **DEBUG_DB_ERROR** = **1**, save (wait for redeploy), then try sign-in again. The red banner will show the actual error (e.g. “password authentication failed”, “connection refused”, “timeout”). Use that to fix the issue, then remove **DEBUG_DB_ERROR**.
 
 **Note:** The backend allows **all `https://*.vercel.app`** origins by default. If you’re signing in from a Vercel deployment, CORS should work. If you use a custom domain or still see errors, use the steps below.
 
