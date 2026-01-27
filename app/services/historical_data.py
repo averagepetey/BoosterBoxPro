@@ -4,21 +4,34 @@ Handles loading and processing historical data for boxes
 """
 
 import json
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+# In-memory cache for load_historical_entries to avoid re-reading JSON on every box
+# (leaderboard calls get_box_historical_data 4+ times per box; this cuts file reads to 1 per minute)
+_historical_entries_cache: Optional[Dict[str, List[Dict[str, Any]]]] = None
+_historical_entries_cache_time: float = 0
+_HISTORICAL_CACHE_TTL_SECONDS: float = 60.0
+
 
 def load_historical_entries() -> Dict[str, List[Dict[str, Any]]]:
-    """Load all historical entries from JSON file"""
+    """Load all historical entries from JSON file (cached 60s to speed up leaderboard)."""
+    global _historical_entries_cache, _historical_entries_cache_time
+    now = time.monotonic()
+    if _historical_entries_cache is not None and (now - _historical_entries_cache_time) < _HISTORICAL_CACHE_TTL_SECONDS:
+        return _historical_entries_cache
     historical_file = Path(__file__).parent.parent.parent / "data" / "historical_entries.json"
-    
     if not historical_file.exists():
-        return {}
-    
+        _historical_entries_cache = {}
+        _historical_entries_cache_time = now
+        return _historical_entries_cache
     with open(historical_file, 'r') as f:
-        return json.load(f)
+        _historical_entries_cache = json.load(f)
+    _historical_entries_cache_time = now
+    return _historical_entries_cache
 
 
 # Mapping of database UUIDs to old leaderboard UUIDs
