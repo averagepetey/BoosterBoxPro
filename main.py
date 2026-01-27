@@ -128,14 +128,14 @@ app.add_middleware(
 )
 
 
-# Health check endpoint
-@app.get("/")
+# Health check endpoints (GET and HEAD so UptimeRobot / monitors work)
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     """Root endpoint - health check"""
     return {"message": "BoosterBoxPro API", "status": "running"}
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
