@@ -2,17 +2,21 @@
 Database Connection and Session Management
 """
 
+import ssl
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import text
 
 from app.config import settings
 
 # asyncpg does not accept 'sslmode' as a connect() kwarg; SQLAlchemy passes URL params through.
-# Strip sslmode from URL and pass ssl via connect_args so Supabase/Render work.
+# Strip sslmode from URL and pass a proper SSL context via connect_args so Supabase/Render work.
+# Using ssl.create_default_context() (not raw True) fixes "Database connection error" with Supabase.
 _db_url = settings.database_url
 _connect_args = {}
+_needs_ssl = "sslmode=require" in _db_url or "supabase" in _db_url.lower()
+if _needs_ssl:
+    _connect_args["ssl"] = ssl.create_default_context()
 if "sslmode=require" in _db_url:
-    _connect_args["ssl"] = True
     _db_url = _db_url.replace("?sslmode=require&", "?").replace("&sslmode=require", "").replace("?sslmode=require", "?")
     if _db_url.endswith("?"):
         _db_url = _db_url[:-1]

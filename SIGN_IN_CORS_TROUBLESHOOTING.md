@@ -1,12 +1,15 @@
 # Sign-in / CORS troubleshooting (Vercel → Render)
 
-If sign-in on Vercel shows **“Cannot connect to backend”** or **“Failed to fetch”**:
+If sign-in on Vercel shows **“Cannot connect to backend”**, **“Failed to fetch”**, or **“Database connection error. Please try again.”**:
 
 **“Not Found” (404)**  
 Usually means the login request is hitting the wrong host (e.g. your Vercel URL instead of your backend). Set **NEXT_PUBLIC_API_URL** on Vercel to your **Render backend** URL (e.g. `https://boosterboxpro.onrender.com`), then redeploy.
 
 **“Cannot connect” / “Failed to fetch”**  
 Often CORS or backend unreachable; see below.
+
+**“Database connection error. Please try again.”**  
+The request reached the backend but the DB failed during login. On Render, check **DATABASE_URL** in the API’s **Environment** tab: it must be your Supabase connection string with `?sslmode=require` (e.g. `postgresql+asyncpg://...@db.xxxxx.supabase.co:5432/postgres?sslmode=require`). The backend uses `ssl.create_default_context()` when `sslmode=require` is present. If it still fails, confirm Supabase allows connections from Render and that the URL has no typos.
 
 **Note:** The backend allows **all `https://*.vercel.app`** origins by default. If you’re signing in from a Vercel deployment, CORS should work. If you use a custom domain or still see errors, use the steps below.
 
