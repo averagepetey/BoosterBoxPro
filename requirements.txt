@@ -14,6 +14,7 @@ psycopg2-binary>=2.9.0  # PostgreSQL sync driver (required for Alembic)
 # Validation & Serialization
 pydantic>=2.0.0
 pydantic-settings>=2.0.0  # For settings management
+email-validator>=2.0.0  # Required by pydantic EmailStr (auth router)
 
 # Authentication & Security
 python-jose[cryptography]>=3.3.0
