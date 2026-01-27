@@ -105,6 +105,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const nextConfig: NextConfig = {
+  // Root (/) → /landing so the app always shows the real landing page
+  async redirects() {
+    return [
+      { source: '/', destination: '/landing', permanent: false },
+    ];
+  },
+
   // Security headers for all routes
   async headers() {
     return [
@@ -117,23 +124,35 @@ const nextConfig: NextConfig = {
   },
 
   // Keep serverless function under Vercel 250 MB limit (exclude dev + non-Linux deps)
+  // Patterns resolved from project root (frontend/). See https://vercel.com/kb/guide/troubleshooting-function-250mb-limit
   outputFileTracingExcludes: {
     '*': [
+      // macOS/Windows native binaries — Vercel runs Linux. ~98M from swc-darwin-arm64 alone.
+      'node_modules/@next/swc-darwin-arm64/**',
+      'node_modules/@next/swc-darwin-x64/**',
+      'node_modules/@next/swc-win32-x64-msvc/**',
+      'node_modules/@next/swc-win32-ia32-msvc/**',
+      'node_modules/lightningcss-darwin-arm64/**',
+      'node_modules/lightningcss-darwin-x64/**',
+      'node_modules/lightningcss-win32-x64-msvc/**',
+      // Dev / build-time only
       'node_modules/typescript/**',
       'node_modules/@types/**',
       'node_modules/eslint/**',
       'node_modules/@typescript-eslint/**',
-      'node_modules/eslint-plugin-*/**',
+      'node_modules/eslint-plugin-next/**',
       'node_modules/axe-core/**',
       'node_modules/caniuse-lite/**',
-      'node_modules/**/lightningcss-darwin*',
-      'node_modules/**/lightningcss-win32*',
-      'node_modules/@next/swc-darwin*/**',
-      'node_modules/@next/swc-win32*/**',
-      'node_modules/.cache/**',
+      'node_modules/es-abstract/**',
+      'node_modules/@napi-rs/**',
+      'node_modules/@babel/**',
+      // Build cache / static — served by CDN
+      '.next/cache/**',
+      'public/**',
     ],
   },
 
+  // Don’t bundle these into the function; load from runtime. Helps keep size down.
   // Disable x-powered-by header
   poweredByHeader: false,
 };

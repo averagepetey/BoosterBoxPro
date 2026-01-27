@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getApiBaseUrl } from '@/lib/api/client';
+import { getApiBaseUrl } from '../../lib/api/client';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 

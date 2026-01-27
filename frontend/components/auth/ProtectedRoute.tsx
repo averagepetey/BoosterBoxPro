@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { getAuthToken } from '@/lib/api/client';
+import { getAuthToken } from '../../lib/api/client';
 import { useAuthModals } from './AuthModalsProvider';
 
 interface ProtectedRouteProps {

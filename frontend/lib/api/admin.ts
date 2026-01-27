@@ -3,7 +3,7 @@
  * Functions for admin operations (screenshot upload, data entry)
  */
 
-import { getApiBaseUrl, getAuthToken } from './client';
+import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
 
 export interface ScreenshotProcessingResponse {
   success: boolean;

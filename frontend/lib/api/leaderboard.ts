@@ -3,7 +3,7 @@
  * Functions for fetching leaderboard data
  */
 
-import { getAuthToken } from './client';
+import { getAuthToken } from '@/lib/api/client';
 
 export interface LeaderboardParams {
   sort?: string;
@@ -112,7 +112,7 @@ export async function getLeaderboard(params: LeaderboardParams = {}): Promise<Le
     // Handle 401 Unauthorized - clear token and redirect to login
     if (response.status === 401) {
       // Clear invalid/expired token
-      const { removeAuthToken } = await import('./client');
+      const { removeAuthToken } = await import('@/lib/api/client');
       removeAuthToken();
       
       // Redirect to landing page (where user can login)

@@ -7,8 +7,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { login, register, getCurrentUser, logout, LoginRequest, RegisterRequest, UserResponse } from '@/lib/api/auth';
-import { getAuthToken } from '@/lib/api/client';
+import { login, register, getCurrentUser, logout, LoginRequest, RegisterRequest, UserResponse } from '../lib/api/auth';
+import { getAuthToken } from '../lib/api/client';
 
 export function useAuth() {
   const router = useRouter();

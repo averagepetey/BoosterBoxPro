@@ -3,7 +3,7 @@
  * Functions for user authentication
  */
 
-import { getApiBaseUrl, getAuthToken, setAuthToken, removeAuthToken } from './client';
+import { getApiBaseUrl, getAuthToken, setAuthToken, removeAuthToken } from '@/lib/api/client';
 
 export interface LoginRequest {
   email: string;
@@ -66,12 +66,14 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
     setAuthToken(authData.access_token);
     return authData;
   } catch (error) {
-    // Handle network errors (Failed to fetch)
+    // Handle network errors (Failed to fetch) – often CORS or backend unreachable
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      const isProduction = apiUrl.startsWith('https://');
+      const hint = isProduction
+        ? 'Check: 1) Render CORS_ORIGINS includes this site’s URL. 2) Backend may be waking up (try again in 30s).'
+        : 'Ensure the backend is running (e.g. port 8000 for local).';
       throw new Error(
-        `Cannot connect to backend server at ${apiUrl}. ` +
-        `Please ensure the backend is running on port 8000. ` +
-        `Error: ${error.message}`
+        `Cannot connect to backend at ${apiUrl}. ${hint} Error: ${error.message}`
       );
     }
     // Re-throw other errors

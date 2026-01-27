@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigation } from '@/components/ui/Navigation';
-import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
+import { getApiBaseUrl, getAuthToken } from '../../../lib/api/client';
 
 export default function AdminScreenshotsPage() {
   const router = useRouter();
