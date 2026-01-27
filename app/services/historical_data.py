@@ -174,36 +174,37 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
     return merged
 
 
-def get_box_historical_data(box_id: str) -> List[Dict[str, Any]]:
+def get_box_historical_data(box_id: str, prefer_db: bool = True) -> List[Dict[str, Any]]:
     """
     Get historical data for a specific box.
-    Merges data from both database UUID and old leaderboard UUID if they differ.
-    Also consolidates multiple entries for the same date.
+    When prefer_db=True (default), reads from box_metrics_unified first; falls back to
+    historical_entries.json so behavior and calculations stay the same.
+    Merges data from both database UUID and old leaderboard UUID when using JSON.
     """
+    # Prefer DB: same entry shape, no formula changes
+    if prefer_db:
+        try:
+            from app.services.db_historical_reader import get_box_historical_entries_from_db
+            resolved_id = LEADERBOARD_TO_DB_UUID_MAP.get(box_id, box_id)
+            db_entries = get_box_historical_entries_from_db(resolved_id)
+            if db_entries:
+                entries = merge_same_date_entries(db_entries)
+                entries.sort(key=lambda x: x.get('date', ''))
+                return entries
+        except Exception:
+            pass
+    # Fallback: JSON (unchanged behavior)
     historical_data = load_historical_entries()
-    
-    # Get data under the provided box_id
     entries = list(historical_data.get(box_id, []))
-    
-    # Check if there's an alternate UUID to look up
     alternate_id = None
     if box_id in DB_TO_LEADERBOARD_UUID_MAP:
         alternate_id = DB_TO_LEADERBOARD_UUID_MAP[box_id]
     elif box_id in LEADERBOARD_TO_DB_UUID_MAP:
         alternate_id = LEADERBOARD_TO_DB_UUID_MAP[box_id]
-    
-    # Merge data from alternate UUID if it exists
     if alternate_id and alternate_id in historical_data:
-        alternate_entries = historical_data[alternate_id]
-        # Add all alternate entries
-        entries.extend(alternate_entries)
-    
-    # Merge entries with the same date
+        entries.extend(historical_data[alternate_id])
     entries = merge_same_date_entries(entries)
-    
-    # Sort by date
     entries.sort(key=lambda x: x.get('date', ''))
-    
     return entries
 
 
