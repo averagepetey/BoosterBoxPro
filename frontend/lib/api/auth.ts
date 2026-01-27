@@ -69,11 +69,15 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
     // Handle network errors (Failed to fetch) – often CORS or backend unreachable
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       const isProduction = apiUrl.startsWith('https://');
+      const origin =
+        typeof window !== 'undefined'
+          ? window.location.origin
+          : 'this site';
       const hint = isProduction
-        ? 'Check: 1) Render CORS_ORIGINS includes this site’s URL. 2) Backend may be waking up (try again in 30s).'
+        ? `Add this exact URL to Render CORS_ORIGINS: ${origin} (no trailing slash). Then save, wait for redeploy, and try again. If backend was sleeping, wait ~30s and retry.`
         : 'Ensure the backend is running (e.g. port 8000 for local).';
       throw new Error(
-        `Cannot connect to backend at ${apiUrl}. ${hint} Error: ${error.message}`
+        `Cannot connect to backend at ${apiUrl}. ${hint} [${error.message}]`
       );
     }
     // Re-throw other errors

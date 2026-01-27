@@ -32,8 +32,13 @@ class Settings(BaseSettings):
     
     @property
     def cors_origins_list(self) -> List[str]:
-        """Parse comma-separated CORS origins into a list"""
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        """Parse comma-separated CORS origins into a list. Strips trailing slashes so
+        CORS_ORIGINS=https://app.vercel.app/ still matches browser Origin https://app.vercel.app"""
+        return [
+            origin.strip().rstrip("/")
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
     
     # Rate limiting
     rate_limit_enabled: bool = True
