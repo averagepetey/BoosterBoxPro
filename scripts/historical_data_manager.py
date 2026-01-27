@@ -4,9 +4,10 @@ Manages historical data entries for each box, tracking what has been entered and
 """
 
 import json
+import sys
 from datetime import date, datetime
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from typing import Dict, Any, List, Optional
 
 
 class HistoricalDataManager:
@@ -78,11 +79,35 @@ class HistoricalDataManager:
         
         # Add entry
         all_data[box_id].append(entry_data)
-        
+
         # Sort by date
         all_data[box_id].sort(key=lambda x: x.get("date", ""))
-        
-        return self.save_historical_data(all_data)
+
+        ok = self.save_historical_data(all_data)
+        if not ok:
+            return False
+
+        # Write to DB so live site updates without commits
+        entry_date = entry_data.get("date") or date.today().isoformat()
+        _root = Path(__file__).resolve().parent.parent
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        try:
+            from app.services.box_metrics_writer import upsert_daily_metrics
+            from app.services.historical_data import LEADERBOARD_TO_DB_UUID_MAP
+            db_id = LEADERBOARD_TO_DB_UUID_MAP.get(box_id, box_id)
+            upsert_daily_metrics(
+                booster_box_id=db_id,
+                metric_date=entry_date,
+                floor_price_usd=entry_data.get("floor_price_usd"),
+                boxes_sold_per_day=entry_data.get("boxes_sold_per_day") or entry_data.get("boxes_sold_today"),
+                active_listings_count=entry_data.get("active_listings_count"),
+                unified_volume_usd=entry_data.get("unified_volume_usd") or entry_data.get("daily_volume_usd"),
+                boxes_added_today=entry_data.get("boxes_added_today"),
+            )
+        except Exception:
+            pass  # DB write is best-effort; JSON save already succeeded
+        return True
     
     def entry_exists(self, box_id: str, entry_date: str, data_type: Optional[str] = None) -> bool:
         """Check if an entry exists for a box and date"""

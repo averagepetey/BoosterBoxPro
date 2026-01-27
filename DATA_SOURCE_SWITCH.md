@@ -36,19 +36,18 @@ After the backfill, leaderboard and box-detail “historical” logic will use D
 
 ---
 
-## Writers: Use DB So the Site Updates Without Commits
+## Writers: Wired to DB So the Site Updates Without Commits
 
-For **new** scraped/imported data to show up on the deployed app without commits:
+Writers now call `app.services.box_metrics_writer.upsert_daily_metrics` so **new** scraped/imported data shows on the deployed app without commits:
 
-1. **Write to the database** (e.g. `box_metrics_unified`, `booster_boxes`) from:
-   - Listings scraper
-   - Daily refresh / Apify
-   - Screenshot/chat/manual entry flows (e.g. `historical_data_manager` → also insert into `box_metrics_unified`)
-   - Any script that currently appends to `historical_entries.json` or updates `leaderboard.json`
+| Writer | Where it’s wired | Fields written |
+|--------|------------------|----------------|
+| **Listings scraper** | `scripts/listings_scraper.save_results()` | `floor_price_usd`, `active_listings_count` |
+| **Apify / daily refresh** | `app/services/tcgplayer_apify.refresh_all_boxes_sales_data()` | `floor_price_usd`, `boxes_sold_per_day`, `unified_volume_usd` |
+| **Historical data manager** | `scripts/historical_data_manager.add_entry()` | `floor_price_usd`, `boxes_sold_per_day`, `active_listings_count`, `unified_volume_usd`, `boxes_added_today` (from `entry_data`) |
 
-2. **Optional:** Keep writing JSON for local/backup, but treat DB as the source of truth for the live API.
-
-3. **Deployed app:** Already reads from DB first. As long as writers update the DB (and you’ve run the backfill for existing history), the site reflects new data as soon as it’s in the DB—no deploy or commit of data files needed.
+- JSON is still written for local/backup; DB is the source of truth for the live API.
+- The deployed app reads from DB first. After backfill + writer wiring, the site reflects new data as soon as it’s in the DB—no deploy or commit of data files needed.
 
 ---
 
@@ -66,7 +65,11 @@ If you need to force JSON-only again:
 |------|------|
 | `app/services/db_historical_reader.py` | Reads `box_metrics_unified` and returns the same entry shape as JSON. |
 | `app/services/historical_data.py` | `get_box_historical_data(..., prefer_db=True)` tries DB first, then JSON. |
+| `app/services/box_metrics_writer.py` | `upsert_daily_metrics(...)` writes one row into `box_metrics_unified`. |
 | `scripts/backfill_historical_json_to_db.py` | One-time backfill: `historical_entries.json` → `box_metrics_unified`. |
+| `scripts/listings_scraper.py` | `save_results()` calls `upsert_daily_metrics` per result. |
+| `app/services/tcgplayer_apify.py` | `refresh_all_boxes_sales_data()` calls `upsert_daily_metrics` per box. |
+| `scripts/historical_data_manager.py` | `add_entry()` calls `upsert_daily_metrics` after saving JSON (leaderboard→DB id mapping applied). |
 | `main.py` | No change; leaderboard already prefers DB and uses JSON as fallback. |
 
 No changes to formulas, sort logic, or API response shape—only where historical rows are loaded from.

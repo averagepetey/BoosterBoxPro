@@ -8,8 +8,9 @@ Reference: Setup Guides/LISTINGS_SCRAPER_RULES.md
 
 import asyncio
 import json
-import random
 import logging
+import random
+import sys
 import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -587,21 +588,30 @@ async def run_scraper():
 
 
 def save_results(results: List[Dict]):
-    """Save scraped data to historical_entries.json"""
+    """Save scraped data to historical_entries.json and to box_metrics_unified (DB)."""
     today = datetime.now().strftime('%Y-%m-%d')
-    
+    # Ensure project root on path so we can import app.services
+    _root = Path(__file__).resolve().parent.parent
+    if str(_root) not in sys.path:
+        sys.path.insert(0, str(_root))
+
     try:
         with open('data/historical_entries.json', 'r') as f:
             hist = json.load(f)
-    except:
+    except Exception:
         hist = {}
-    
+
+    try:
+        from app.services.box_metrics_writer import upsert_daily_metrics
+    except ImportError:
+        upsert_daily_metrics = None
+
     for result in results:
         box_id = result['box_id']
-        
+
         if box_id not in hist:
             hist[box_id] = []
-        
+
         # Create entry
         entry = {
             'date': today,
@@ -613,11 +623,23 @@ def save_results(results: List[Dict]):
             'pages_scraped': result.get('pages_scraped'),
             'filters_applied': result.get('filters_applied'),
         }
-        
+
         # Remove existing entry for today (update mode)
         hist[box_id] = [e for e in hist[box_id] if e.get('date') != today]
         hist[box_id].append(entry)
-        
+
+        if upsert_daily_metrics:
+            ok = upsert_daily_metrics(
+                booster_box_id=box_id,
+                metric_date=today,
+                floor_price_usd=result.get('floor_price'),
+                active_listings_count=result.get('listings_within_20pct'),
+            )
+            if ok:
+                logger.debug(f"DB upsert ok for {box_id}")
+            else:
+                logger.warning(f"DB upsert failed for {box_id} (e.g. missing FK)")
+
         logger.info(f"Saved {box_id}: {result.get('listings_within_20pct')} listings @ ${result.get('floor_price', 0):.2f}")
     
     # Backup and save
