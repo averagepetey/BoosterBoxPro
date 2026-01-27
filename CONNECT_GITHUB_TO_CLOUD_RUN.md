@@ -153,7 +153,7 @@ After selecting your repository, you'll see configuration options:
 
    ```
    Name: DATABASE_URL
-   Value: postgresql+asyncpg://postgres.umjtdtksqxtyqeqddwkv:Chessmoves4321!@aws-0-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
+   Value: postgresql+asyncpg://user:YOUR_PASSWORD@your-supabase-host:5432/postgres?sslmode=require
    ```
 
    ```
@@ -163,7 +163,7 @@ After selecting your repository, you'll see configuration options:
 
    ```
    Name: JWT_SECRET_KEY
-   Value: tXbFlD96NTtBs52ZaIataOYNODXuUPJKksSeerKkDiEm4G0QKF1DkTE3NaxfIHO05ZFRFkroNd7NqNiatygSCQ
+   Value: your-jwt-secret-key-here
    ```
 
    ```
@@ -179,12 +179,12 @@ After selecting your repository, you'll see configuration options:
 
    ```
    Name: STRIPE_PUBLISHABLE_KEY
-   Value: pk_test_51SkEyEKDTumXT1F1xwjypV989kCNsNxCvoP9VHGJuwCwjAuAFgLaynW4iD3i3ZCasOqxZa0GnwvdRWjbfwzpB3QP00bG10AvUd
+   Value: pk_test_your_publishable_key_here
    ```
 
    ```
    Name: STRIPE_WEBHOOK_SECRET
-   Value: whsec_05ad1b0fb9ff06782e93c4a5dd99311dad8c9fb0604d8b0106ba83b902ad2f92
+   Value: whsec_your_webhook_secret_here
    ```
 
    ```

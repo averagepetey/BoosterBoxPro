@@ -87,9 +87,9 @@ python-3.11.0
 4. **Set Environment Variables**
    Go to Variables tab and add:
    ```
-   DATABASE_URL=postgresql+asyncpg://postgres.umjtdtksqxtyqeqddwkv:Chessmoves4321!@aws-0-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
+   DATABASE_URL=postgresql+asyncpg://user:YOUR_PASSWORD@your-supabase-host:5432/postgres?sslmode=require
    ENVIRONMENT=production
-   JWT_SECRET_KEY=tXbFlD96NTtBs52ZaIataOYNODXuUPJKksSeerKkDiEm4G0QKF1DkTE3NaxfIHO05ZFRFkroNd7NqNiatygSCQ
+   JWT_SECRET_KEY=your-jwt-secret-key-here
    CORS_ORIGINS=https://your-frontend-domain.vercel.app,https://yourdomain.com
    STRIPE_SECRET_KEY=sk_live_xxx (or sk_test_xxx for testing)
    STRIPE_PUBLISHABLE_KEY=pk_live_xxx (or pk_test_xxx for testing)

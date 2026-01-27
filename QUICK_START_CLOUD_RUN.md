@@ -67,13 +67,13 @@
 Click **"Variables & Secrets"** tab, then **"Add Variable"** for each:
 
 ```bash
-DATABASE_URL=postgresql+asyncpg://postgres.umjtdtksqxtyqeqddwkv:Chessmoves4321!@aws-0-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
+DATABASE_URL=postgresql+asyncpg://user:YOUR_PASSWORD@your-supabase-host:5432/postgres?sslmode=require
 ENVIRONMENT=production
-JWT_SECRET_KEY=tXbFlD96NTtBs52ZaIataOYNODXuUPJKksSeerKkDiEm4G0QKF1DkTE3NaxfIHO05ZFRFkroNd7NqNiatygSCQ
+JWT_SECRET_KEY=your-jwt-secret-key-here
 CORS_ORIGINS=https://your-frontend.vercel.app,https://yourdomain.com
 STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_SECRET_KEY
-STRIPE_PUBLISHABLE_KEY=pk_test_51SkEyEKDTumXT1F1xwjypV989kCNsNxCvoP9VHGJuwCwjAuAFgLaynW4iD3i3ZCasOqxZa0GnwvdRWjbfwzpB3QP00bG10AvUd
-STRIPE_WEBHOOK_SECRET=whsec_05ad1b0fb9ff06782e93c4a5dd99311dad8c9fb0604d8b0106ba83b902ad2f92
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 STRIPE_PRICE_ID_PRO_PLUS=price_1StEqdKDTumXT1F1ft6PlwAP
 APIFY_API_TOKEN=your_apify_api_token_here
 ADMIN_API_KEY=your-secret-api-key-here

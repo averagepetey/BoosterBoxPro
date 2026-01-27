@@ -34,15 +34,13 @@ If you only see one **Command** field in the cron area, that’s the one that ru
 
 Add these two variables in the Cron Job’s **Environment** → **Add Environment Variable**. Use these values (same as in `RENDER_ENV_VARS_QUICK_COPY.md` / your API):
 
-**DATABASE_URL**
-```
-postgresql+asyncpg://postgres.umjtdtksqxtyqeqddwkv:Chessmoves4321!@aws-0-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
-```
+**DATABASE_URL**  
+*(Copy from your Render API’s Environment tab, or from your .env. Use the same Supabase/Postgres URL you use for the API.)*
 
 **APIFY_API_TOKEN**  
 *(Same value as in your Render API’s Environment. Copy from there or from your .env; it’s not stored in the repo for security.)*
 
-In the Cron Job form: **Environment** → **Add Environment Variable** → create `DATABASE_URL` and `APIFY_API_TOKEN` and paste the values above.
+In the Cron Job form: **Environment** → **Add Environment Variable** → create `DATABASE_URL` and `APIFY_API_TOKEN` and paste the same values you use in your API (from its Environment tab or your .env).
 
 If you use an **Environment Group** that already has these, you can attach that group to the Cron Job instead.
 
