@@ -2,7 +2,13 @@
 
 If sign-in on Vercel shows **“Cannot connect to backend”** or **“Failed to fetch”**:
 
-**Note:** The backend now allows **all `https://*.vercel.app`** origins by default. If you’re signing in from a Vercel deployment (e.g. `https://your-app.vercel.app` or a preview URL), CORS should work without setting `CORS_ORIGINS`. If you use a custom domain or still see errors, use the steps below.
+**“Not Found” (404)**  
+Usually means the login request is hitting the wrong host (e.g. your Vercel URL instead of your backend). Set **NEXT_PUBLIC_API_URL** on Vercel to your **Render backend** URL (e.g. `https://boosterboxpro.onrender.com`), then redeploy.
+
+**“Cannot connect” / “Failed to fetch”**  
+Often CORS or backend unreachable; see below.
+
+**Note:** The backend allows **all `https://*.vercel.app`** origins by default. If you’re signing in from a Vercel deployment, CORS should work. If you use a custom domain or still see errors, use the steps below.
 
 ---
 
@@ -29,11 +35,12 @@ After changing **CORS_ORIGINS**, save. Render will redeploy. Wait until the serv
 
 ---
 
-## 3. Confirm Vercel’s API URL
+## 3. Confirm Vercel’s API URL (fixes “Not Found” 404)
 
 - **Vercel** → Project → **Settings** → **Environment Variables**.
-- **NEXT_PUBLIC_API_URL** must be your Render API URL, e.g. `https://boosterboxpro.onrender.com` (no trailing slash).
-- If you change it, **redeploy** the frontend (or push a commit) so the new value is used.
+- **NEXT_PUBLIC_API_URL** must be your **Render backend** URL, e.g. `https://boosterboxpro.onrender.com` (no trailing slash).
+- **Wrong:** your Vercel frontend URL (e.g. `https://your-app.vercel.app`) → that causes 404 because there is no `/api/v1/auth/login` on Vercel.
+- If you change it, **redeploy** the frontend (Deployments → … → Redeploy) so the new value is used; `NEXT_PUBLIC_*` is baked in at build time.
 
 ---
 

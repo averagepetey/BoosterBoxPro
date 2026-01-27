@@ -51,15 +51,17 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Login failed' }));
-      
-      // Handle FastAPI validation errors (array format)
-      if (Array.isArray(error.detail)) {
-        const messages = error.detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ');
-        throw new Error(messages || 'Login failed');
+      const msg = Array.isArray(error.detail)
+        ? error.detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ')
+        : (error.detail || error.message || 'Login failed');
+
+      // 404 = login route not found → usually wrong API URL (e.g. pointing at Vercel instead of Render)
+      if (response.status === 404) {
+        throw new Error(
+          `Login endpoint not found (404). In Vercel → Settings → Environment Variables, set NEXT_PUBLIC_API_URL to your backend URL (e.g. https://boosterboxpro.onrender.com). Current attempt was: ${loginUrl}`
+        );
       }
-      
-      // Handle simple error message
-      throw new Error(error.detail || error.message || 'Login failed');
+      throw new Error(msg || 'Login failed');
     }
 
     const authData: AuthResponse = await response.json();
