@@ -19,6 +19,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 import traceback
 import logging
+import time
 
 from app.config import settings
 from app.database import init_db
@@ -303,6 +304,10 @@ def get_box_image_url(product_name: str | None) -> str | None:
     return f"/images/boxes/{filename}"
 
 
+# In-memory response cache for leaderboard (repeat requests return instantly)
+_leaderboard_cache: dict = {}
+
+
 # Leaderboard endpoint - requires authentication and active subscription
 @app.get("/booster-boxes")
 async def get_booster_boxes(
@@ -319,6 +324,12 @@ async def get_booster_boxes(
     """
     Leaderboard endpoint - combines static box info with live database metrics
     """
+    cache_key = (sort, limit, offset)
+    now_ts = time.time()
+    if cache_key in _leaderboard_cache:
+        cached_response, expiry = _leaderboard_cache[cache_key]
+        if now_ts < expiry:
+            return cached_response
     import json
     from pathlib import Path
     from datetime import date
@@ -641,7 +652,7 @@ async def get_booster_boxes(
     total = len(result_boxes)
     paginated_boxes = result_boxes[offset:offset + limit]
     
-    return {
+    response = {
         "data": paginated_boxes,
         "meta": {
             "total": total,
@@ -651,6 +662,9 @@ async def get_booster_boxes(
             "offset": offset,
         }
     }
+    ttl = settings.cache_ttl_leaderboard
+    _leaderboard_cache[cache_key] = (response, now_ts + ttl)
+    return response
 
 
 # Box detail endpoint - requires authentication and active subscription

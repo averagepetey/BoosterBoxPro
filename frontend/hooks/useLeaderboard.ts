@@ -474,7 +474,7 @@ export function useLeaderboard(params: LeaderboardParams = {}) {
       const result = await getLeaderboard(params);
       return result;
     },
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 5 * 60 * 1000, // 5 minutes - show cached data immediately, refetch in background
     refetchOnWindowFocus: false,
     retry: false, // Don't retry on 401 errors (will redirect instead)
     retryOnMount: true,
