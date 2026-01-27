@@ -27,10 +27,10 @@
 
 ## Frontend & launch
 
-- [ ] Deploy frontend to Vercel (or other host)
-- [ ] Set `NEXT_PUBLIC_API_URL=https://boosterboxpro.onrender.com`
-- [ ] Set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (if using Stripe)
-- [ ] In Render env, set `CORS_ORIGINS` to your real frontend URL (e.g. `https://yourapp.vercel.app`)
+- [ ] Deploy frontend to Vercel — use **Root Directory: `frontend`**; see `VERCEL_DEPLOYMENT.md`
+- [ ] Set `NEXT_PUBLIC_API_URL=https://boosterboxpro.onrender.com` in Vercel env
+- [ ] Set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in Vercel (if using Stripe)
+- [ ] In Render env, set `CORS_ORIGINS` to your Vercel URL (e.g. `https://boosterboxpropro-xxx.vercel.app`)
 - [ ] Redeploy backend after changing CORS
 - [ ] Smoke-test: sign up, login, dashboard, leaderboard, box detail
 
