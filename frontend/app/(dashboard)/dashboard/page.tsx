@@ -12,7 +12,7 @@ import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { NewReleases } from '@/components/leaderboard/NewReleases';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
+import { getApiBaseUrl, getAuthToken } from '../../../lib/api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 

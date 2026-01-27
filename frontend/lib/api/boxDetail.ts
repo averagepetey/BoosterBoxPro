@@ -3,7 +3,7 @@
  * Functions for fetching individual box detail data
  */
 
-import { getApiBaseUrl, getAuthToken } from './client';
+import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
 // Note: getApiBaseUrl used for time-series and rank history endpoints
 import { BoxMetricsSummary } from './leaderboard';
 
