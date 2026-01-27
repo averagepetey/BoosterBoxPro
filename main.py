@@ -107,21 +107,25 @@ except ImportError as e:
 
 # 4. CORS Configuration
 # In development, allow all origins (for ease of development)
-# In production, restrict to specific domains only
+# In production, restrict to specific domains + allow *.vercel.app
 if settings.environment == "development":
-    # Development: allow all origins but disable credentials to work with wildcard
     cors_origins = ["*"]
     cors_credentials = False
+    cors_origin_regex = None
     logger.info("🔓 CORS: Development mode - allowing all origins")
 else:
-    # Production: specific origins from config
     cors_origins = settings.cors_origins_list
     cors_credentials = True
-    logger.info(f"🔒 CORS: Production mode - allowed origins: {cors_origins}")
+    # Allow any https *.vercel.app so Vercel production + preview URLs work without listing each one
+    cors_origin_regex = r"https://.*\.vercel\.app"
+    logger.info(f"🔒 CORS: Production - origins: {cors_origins}, regex: *.vercel.app")
+    if not cors_origins:
+        logger.warning("⚠️  CORS_ORIGINS is empty - *.vercel.app still allowed via regex. Add CORS_ORIGINS for custom domains.")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=cors_credentials,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Admin-API-Key"],
