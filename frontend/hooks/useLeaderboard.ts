@@ -6,8 +6,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getLeaderboard, LeaderboardParams, LeaderboardResponse } from '@/lib/api/leaderboard';
-import { getBoxImageUrl } from '@/lib/utils/boxImages';
+import { getLeaderboard, LeaderboardParams, LeaderboardResponse } from '../lib/api/leaderboard';
+import { getBoxImageUrl } from '../lib/utils/boxImages';
 
 // Mock data - only used when NEXT_PUBLIC_USE_MOCK_DATA=true is set
 // Default behavior: API failures will show error state, not mock data

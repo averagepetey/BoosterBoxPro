@@ -5,7 +5,7 @@
 
 'use client';
 
-import { LeaderboardBox } from '@/lib/api/leaderboard';
+import { LeaderboardBox } from '../../lib/api/leaderboard';
 import { useState } from 'react';
 
 interface LeaderboardTableProps {

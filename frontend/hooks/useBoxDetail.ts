@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getBoxDetail, getBoxTimeSeries, getBoxRankHistory, BoxDetail, TimeSeriesDataPoint, RankHistoryPoint } from '@/lib/api/boxDetail';
+import { getBoxDetail, getBoxTimeSeries, getBoxRankHistory, BoxDetail, TimeSeriesDataPoint, RankHistoryPoint } from '../lib/api/boxDetail';
 
 export function useBoxDetail(id: string) {
   const [box, setBox] = useState<BoxDetail | null>(null);
