@@ -15,7 +15,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 5 * 60 * 1000, // 5 minutes - data doesn't change that frequently
-            cacheTime: 10 * 60 * 1000, // 10 minutes - keep in cache
+            gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache (formerly cacheTime in v4)
             refetchOnWindowFocus: false, // Don't refetch on window focus
             refetchOnMount: false, // Use cached data if available
             retry: 1, // Only retry once on failure

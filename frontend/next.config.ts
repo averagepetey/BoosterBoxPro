@@ -115,7 +115,25 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  
+
+  // Keep serverless function under Vercel 250 MB limit (exclude dev + non-Linux deps)
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/typescript/**',
+      'node_modules/@types/**',
+      'node_modules/eslint/**',
+      'node_modules/@typescript-eslint/**',
+      'node_modules/eslint-plugin-*/**',
+      'node_modules/axe-core/**',
+      'node_modules/caniuse-lite/**',
+      'node_modules/**/lightningcss-darwin*',
+      'node_modules/**/lightningcss-win32*',
+      'node_modules/@next/swc-darwin*/**',
+      'node_modules/@next/swc-win32*/**',
+      'node_modules/.cache/**',
+    ],
+  },
+
   // Disable x-powered-by header
   poweredByHeader: false,
 };
