@@ -1,0 +1,23 @@
+# Render Blueprint – Cron Job for daily data refresh (Apify + listings scraper)
+# Schedule: 1pm EST (18:00 UTC). Script adds a random 0–30 min delay so the actual
+# run happens at a random time within the 1pm window (avoids a fixed hit every day).
+# Cron expression: "0 18 * * *". During EDT use "0 17 * * *" for 1pm local.
+#
+# If you already have a Web Service created manually, you can add this cron job by:
+# 1. Dashboard → New + → Cron Job, then use the settings below, OR
+# 2. Dashboard → Blueprints → Create Blueprint Instance, connect this repo (creates only the cron job).
+#
+# Required env vars (same as your API): DATABASE_URL, APIFY_API_TOKEN.
+# Add them in the Cron Job’s Environment tab, or use an Environment Group.
+services:
+  - type: cron
+    name: boosterboxpro-daily-refresh
+    runtime: python
+    schedule: "0 18 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/daily_refresh.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APIFY_API_TOKEN
+        sync: false

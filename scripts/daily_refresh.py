@@ -6,20 +6,25 @@ Runs in two phases:
 1. Apify API - Fetches sales data from TCGplayer via Apify
 2. Listings Scraper - Scrapes active listings count from TCGplayer
 
-Run manually: python scripts/daily_refresh.py
-Run via cron (12pm daily): 0 12 * * * cd /path/to/project && venv/bin/python scripts/daily_refresh.py
+Schedule: cron at 1pm EST (18:00 UTC). Script adds a random 0–30 min delay so the
+actual run happens at a random time within the 1pm half‑hour (avoids a fixed hit every day).
+
+Run manually (immediate): python scripts/daily_refresh.py --no-delay
+Run via cron (random around 1pm EST): schedule "0 18 * * *", startCommand "python scripts/daily_refresh.py"
 """
 
 import sys
 import os
 import asyncio
+import random
+import time
 from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 
@@ -79,7 +84,18 @@ def main():
     logger.info("Starting daily TCGplayer refresh (Apify + Scraper)")
     logger.info(f"⏰ Start time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 70)
-    
+
+    # Random delay (0–30 min) when run by cron so actual work happens at a random time within the 1pm window
+    skip_delay = "--no-delay" in sys.argv
+    if not skip_delay:
+        delay_min, delay_max = 0, 30  # minutes (cron fires at 1pm EST; jitter keeps hit time variable)
+        delay_sec = random.randint(delay_min * 60, delay_max * 60)
+        eta = datetime.now() + timedelta(seconds=delay_sec)
+        logger.info(f"🎲 Random delay: sleeping {delay_sec // 60} min (work will start ~{eta.strftime('%H:%M')} local)")
+        time.sleep(delay_sec)
+        logger.info("✅ Delay complete, starting Apify + Scraper now.")
+        start_time = datetime.now()  # treat real work start as start_time for duration
+
     status = {
         "status": "running",
         "start_time": start_time.isoformat(),
