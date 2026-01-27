@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first (for better Docker layer caching)
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install Python dependencies (PIP_ROOT_USER_ACTION=ignore silences "Running pip as root" warning)
+ENV PIP_ROOT_USER_ACTION=ignore
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
