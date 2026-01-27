@@ -5,18 +5,18 @@
 
 'use client';
 
+import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { NewReleases } from '@/components/leaderboard/NewReleases';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
-import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -461,5 +461,17 @@ export default function DashboardPage() {
         </main>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center lb-page">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/30" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
