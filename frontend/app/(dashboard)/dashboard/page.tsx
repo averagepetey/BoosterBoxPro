@@ -337,12 +337,12 @@ function DashboardContent() {
                 border: '1px solid rgba(255, 255, 255, 0.15) !important'
               }}
             >
-            {/* Horizontal Scroll Wrapper for desktop table; mobile uses card layout (no scroll) */}
-            <div className="overflow-x-auto xl:overflow-x-auto scrollbar-hide">
-              <div className="min-w-0 xl:min-w-[950px] px-2 sm:px-6 py-2 sm:py-6">
-            {/* Column Headers - Desktop only (hidden below xl when mobile cards show) */}
+            {/* Horizontal Scroll Wrapper for Mobile */}
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="min-w-[950px] sm:min-w-0 px-2 sm:px-6 py-2 sm:py-6">
+            {/* Column Headers - Sticky */}
             <div 
-              className="hidden xl:grid sticky top-0 z-20 grid-cols-12 gap-1 sm:gap-2 mb-2 sm:mb-4 pb-2 sm:pb-3 text-white/70 uppercase tracking-widest text-[9px] sm:text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-1 sm:gap-2 mb-2 sm:mb-4 pb-2 sm:pb-3 text-white/70 uppercase tracking-widest text-[9px] sm:text-xs rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
@@ -437,7 +437,6 @@ function DashboardContent() {
                   onSort={handleSort}
                   currentSort={sortBy}
                   timeRange={timeRange}
-                  responsiveMobileLayout={true}
                 />
                 {isFetchingMore && (
                   <div className="mt-2 text-center text-white/50 text-xs">
