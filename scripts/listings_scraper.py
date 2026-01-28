@@ -107,7 +107,7 @@ JAPANESE_INDICATORS = [
 ]
 
 SUSPICIOUS_KEYWORDS = [
-    'damaged', 'opened', 'no shrink', 'loose',
+    'damaged', 'opened', 'no shrink', 'no shrink wrap', 'loose',
     'played', 'heavy play', 'poor condition',
     'missing', 'incomplete', 'resealed',
     'no seal', 'unsealed', 'box only',
