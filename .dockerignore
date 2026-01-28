@@ -58,8 +58,8 @@ node_modules/
 data/
 mock_data/
 
-# Scripts (not needed in production)
-scripts/
+# Scripts are needed for the cron job (daily_refresh.py); do not ignore
+# scripts/
 
 # Chrome extension
 chrome-extension/
