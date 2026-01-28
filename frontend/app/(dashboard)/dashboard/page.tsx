@@ -331,7 +331,7 @@ function DashboardContent() {
 
             {/* Table Container - Scrollable (always show so skeleton/table layout is stable) */}
             <div 
-              className="relative rounded-none sm:rounded-3xl overflow-hidden leaderboard-container"
+              className="relative rounded-none xl:rounded-3xl overflow-hidden leaderboard-container"
               style={{
                 background: '#141414 !important',
                 border: '1px solid rgba(255, 255, 255, 0.15) !important'
@@ -339,10 +339,10 @@ function DashboardContent() {
             >
             {/* Horizontal Scroll Wrapper for Mobile */}
             <div className="overflow-x-auto scrollbar-hide">
-              <div className="min-w-[950px] sm:min-w-0 px-2 sm:px-6 py-2 sm:py-6">
+              <div className="min-w-[950px] xl:min-w-0 px-2 xl:px-6 py-2 xl:py-6">
             {/* Column Headers - Sticky */}
             <div 
-              className="sticky top-0 z-20 grid grid-cols-12 gap-1 sm:gap-2 mb-2 sm:mb-4 pb-2 sm:pb-3 text-white/70 uppercase tracking-widest text-[9px] sm:text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-1 xl:gap-2 mb-2 xl:mb-4 pb-2 xl:pb-3 text-white/70 uppercase tracking-widest text-[9px] xl:text-xs rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
