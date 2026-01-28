@@ -12,6 +12,7 @@ import logging
 import os
 import random
 import sys
+import time
 import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -274,14 +275,31 @@ async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
     listings = []
     
     try:
-        # Wait for listing items to load
-        await page.wait_for_selector('.listing-item', timeout=10000)
+        # Wait for listings to appear - try multiple selectors (TCGplayer DOM varies)
+        listing_selector = None
+        for selector, timeout_ms in [
+            ('.listing-item', 8000),
+            ('[class*="listing"]', 5000),
+            ('[class*="Listing"]', 5000),
+            ('[data-testid*="listing"]', 3000),
+            ('[class*="listing-item"]', 3000),
+        ]:
+            try:
+                await page.wait_for_selector(selector, timeout=timeout_ms)
+                listing_selector = selector
+                logger.debug(f"  Listings container found: {selector}")
+                break
+            except Exception:
+                continue
+        if not listing_selector:
+            logger.warning("  No listing container found (tried .listing-item, [class*='listing'], etc.) - extracting with broad selector")
         
-        # Use JavaScript to extract listing data (more reliable than individual queries)
+        # Use JavaScript to extract listing data; try multiple selectors if primary missing
+        selector_js = listing_selector or '.listing-item, [class*="listing"], [class*="Listing"]'
         listings_data = await page.evaluate('''
-            () => {
+            (sel) => {
                 const listings = [];
-                const listingElements = document.querySelectorAll('.listing-item');
+                const listingElements = document.querySelectorAll(sel);
                 
                 listingElements.forEach(el => {
                     try {
@@ -351,7 +369,7 @@ async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
                 
                 return listings;
             }
-        ''')
+        ''', selector_js)
         
         listings = listings_data if listings_data else []
         
@@ -395,20 +413,29 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
             await page.evaluate(f'window.scrollTo(0, {(i+1) * 400})')
             await asyncio.sleep(0.3)
         
-        # Click on "Listings" tab to show all listings
+        # Click on "Listings" tab to show all listings (required for pagination to exist)
         try:
-            listings_tab = await page.query_selector('text=Listings')
-            if listings_tab:
-                await listings_tab.click()
-                await asyncio.sleep(2)  # Wait for listings to load
-                logger.debug("  Clicked Listings tab")
+            for loc in [page.locator('text=Listings').first, page.get_by_text('Listings', exact=True).first]:
+                if await loc.count() > 0:
+                    await loc.click()
+                    await asyncio.sleep(2)  # Wait for listings to load
+                    logger.debug("  Clicked Listings tab")
+                    break
         except Exception as e:
-            logger.debug(f"  No Listings tab: {e}")
+            logger.debug(f"  Listings tab: {e}")
         
         await asyncio.sleep(1)
         
+        box_start = time.time()
+        BOX_TIMEOUT_SEC = 150  # Per-box max so cron doesn't hang
+        
         while current_page <= max_pages:
+            if (time.time() - box_start) > BOX_TIMEOUT_SEC:
+                logger.warning(f"  Box timeout ({BOX_TIMEOUT_SEC}s), saving progress for {box_id}")
+                break
+            
             # Scrape current page (filter for boxes only - $100+)
+            logger.info(f"  Scraping page {current_page}...")
             page_listings = await scrape_listings_page(page, min_price=min_box_price)
             
             if not page_listings:
@@ -428,33 +455,180 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                     logger.info(f"  Reached 20% threshold (${threshold:.2f}), stopping pagination")
                     break
             
-            # Try to go to next page - click numbered pagination buttons (1, 2, 3, etc.)
+            # Try to go to next page - scroll to bottom first so pagination "1, 2, 3" is in view
             next_page_num = current_page + 1
-            
-            # Get all pagination buttons and find the one with the exact page number (skip active)
             page_button = None
-            
+            logger.info(f"  Trying to go to page {next_page_num}...")
+
+            # Scroll to bottom of listings so pagination row is visible (TCGplayer puts 1,2,3 at bottom)
             try:
-                pagination_buttons = await page.query_selector_all('[class*="pagination"] button, [class*="pagination"] a')
-                
-                for btn in pagination_buttons:
-                    try:
-                        text = (await btn.inner_text()).strip()
-                        classes = await btn.get_attribute('class') or ''
-                        
-                        # Skip if it's the active/current page
-                        if 'is-active' in classes or 'active' in classes.lower():
-                            continue
-                        
-                        # Check if it matches the next page number
-                        if text == str(next_page_num):
-                            page_button = btn
-                            logger.debug(f"  Found page {next_page_num} button")
-                            break
-                    except:
-                        pass
+                await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                await asyncio.sleep(1.5)
+                # Scroll up a bit so pagination isn't at the very edge
+                await page.evaluate('window.scrollTo(0, document.body.scrollHeight - 400)')
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+
+            # Strategy 0: TCGplayer-style numbered buttons "1", "2", "3" at bottom - find and click
+            try:
+                clicked = await page.evaluate('''(nextPageNum) => {
+                    const want = String(nextPageNum);
+                    // Any clickable: button, a, or [role=button] whose text is exactly the page number
+                    const sel = "button, a[href], [role=\\"button\\"]";
+                    const candidates = Array.from(document.querySelectorAll(sel)).filter(el => {
+                        const t = (el.textContent || "").trim();
+                        if (t !== want) return false;
+                        if (el.disabled || el.getAttribute("aria-disabled") === "true") return false;
+                        return true;
+                    });
+                    // Prefer element that has siblings with single digits (pagination row)
+                    const withSiblings = candidates.filter(el => {
+                        const parent = el.parentElement;
+                        if (!parent) return false;
+                        const sibs = Array.from(parent.children).map(c => (c.textContent || "").trim());
+                        return sibs.some(t => /^\\d+$/.test(t));
+                    });
+                    const toClick = withSiblings.length ? withSiblings[0] : candidates[0];
+                    if (toClick) {
+                        toClick.scrollIntoView({ block: "center" });
+                        toClick.click();
+                        return true;
+                    }
+                    return false;
+                }''', next_page_num)
+                if clicked:
+                    logger.debug(f"  Clicked page {next_page_num} via numbered buttons (1,2,3)")
+                    await asyncio.sleep(human_delay() + 2)
+                    await page.evaluate('window.scrollTo(0, 500)')
+                    await asyncio.sleep(1)
+                    current_page = next_page_num
+                    continue
             except Exception as e:
-                logger.debug(f"  Error finding pagination buttons: {e}")
+                logger.debug(f"  Numbered-buttons strategy error: {e}")
+
+            # Strategy 1: class*="pagination" or "Page" (button/link with page number)
+            try:
+                for selector in (
+                    '[class*="pagination"] button, [class*="pagination"] a',
+                    '[class*="Page"] button, [class*="Page"] a',
+                    'button[class*="page"], a[class*="page"]',
+                    '[data-page]',
+                    'nav button, nav a',
+                ):
+                    els = await page.query_selector_all(selector)
+                    for btn in els:
+                        try:
+                            text = (await btn.inner_text()).strip()
+                            classes = (await btn.get_attribute('class') or '').lower()
+                            if 'active' in classes or 'current' in classes or 'selected' in classes:
+                                continue
+                            if text == str(next_page_num):
+                                page_button = btn
+                                logger.debug(f"  Found page {next_page_num} via selector: {selector[:40]}...")
+                                break
+                        except Exception:
+                            pass
+                    if page_button:
+                        break
+            except Exception as e:
+                logger.debug(f"  Pagination selector error: {e}")
+
+            # Strategy 2: any button/link with exact text = page number (e.g. "2") - no nav requirement
+            if not page_button:
+                try:
+                    all_buttons = await page.query_selector_all('button, a[href]')
+                    for btn in all_buttons:
+                        try:
+                            text = (await btn.inner_text()).strip()
+                            if text != str(next_page_num):
+                                continue
+                            if await btn.get_attribute('disabled') or await btn.get_attribute('aria-disabled') == 'true':
+                                continue
+                            # Prefer if it has a sibling that is also a single digit (1, 3) = pagination row
+                            has_sibling_number = await btn.evaluate('''el => {
+                                const p = el.parentElement;
+                                if (!p) return false;
+                                return Array.from(p.children).some(c => /^\\d+$/.test((c.textContent||"").trim()));
+                            }''')
+                            if has_sibling_number or not page_button:
+                                page_button = btn
+                                logger.debug(f"  Found page {next_page_num} via text match (1,2,3)")
+                                if has_sibling_number:
+                                    break
+                        except Exception:
+                            pass
+                except Exception as e:
+                    logger.debug(f"  Text match pagination error: {e}")
+
+            # Strategy 3: "Next" or ">" (use locator - no :has-text in query_selector)
+            if not page_button:
+                try:
+                    for label in ('Next', 'next', '>', '›', '»'):
+                        loc = page.locator('button, a').filter(has_text=label).first
+                        n = await loc.count()
+                        if n > 0:
+                            el = await loc.element_handle()
+                            if el:
+                                is_disabled = await el.get_attribute('disabled') or await el.get_attribute('aria-disabled')
+                                if not is_disabled:
+                                    page_button = el
+                                    logger.debug(f"  Found next page via label: {label}")
+                                    break
+                    if not page_button:
+                        for sel in ('[aria-label*="next"]', '[aria-label*="Next"]'):
+                            aria_next = await page.query_selector(sel)
+                            if aria_next and await aria_next.get_attribute('aria-disabled') != 'true':
+                                page_button = aria_next
+                                logger.debug("  Found next page via aria-label")
+                                break
+                except Exception as e:
+                    logger.debug(f"  Next button error: {e}")
+
+            # Strategy 3b: Playwright get_by_role / get_by_text for "2" (handles aria and visible text)
+            if not page_button:
+                try:
+                    for loc in [
+                        page.get_by_role('button', name=str(next_page_num)),
+                        page.get_by_role('link', name=str(next_page_num)),
+                        page.get_by_text(str(next_page_num), exact=True),
+                    ]:
+                        if await loc.count() > 0:
+                            await loc.first.scroll_into_view_if_needed()
+                            await asyncio.sleep(0.3)
+                            await loc.first.click()
+                            page_button = True  # mark as handled
+                            logger.debug(f"  Clicked page {next_page_num} via get_by_role/get_by_text")
+                            break
+                    if page_button:
+                        await asyncio.sleep(human_delay() + 2)
+                        await page.evaluate('window.scrollTo(0, 500)')
+                        await asyncio.sleep(1)
+                        current_page = next_page_num
+                        continue
+                except Exception as e:
+                    logger.debug(f"  get_by_role/get_by_text pagination: {e}")
+
+            # Strategy 4: URL with page param (navigate directly if DOM pagination not found)
+            if not page_button:
+                try:
+                    from urllib.parse import parse_qs, urlencode, urlparse
+                    parsed = urlparse(page.url)
+                    base = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                    params = parse_qs(parsed.query) if parsed.query else {}
+                    # Use existing page param name if present, else "page"
+                    page_param = next((k for k in ('page', 'pageNumber', 'p', 'pageNum') if k in params), 'page')
+                    params[page_param] = [str(next_page_num)]
+                    new_url = base + '?' + urlencode(params, doseq=True)
+                    await page.goto(new_url, wait_until='domcontentloaded', timeout=30000)
+                    await asyncio.sleep(human_delay() + 2)
+                    await page.evaluate('window.scrollTo(0, 500)')
+                    await asyncio.sleep(1)
+                    current_page = next_page_num
+                    logger.debug(f"  Navigated to page {current_page} via URL")
+                    continue  # skip the click block below
+                except Exception as e:
+                    logger.debug(f"  URL pagination error: {e}")
             
             if page_button:
                 # Check if disabled

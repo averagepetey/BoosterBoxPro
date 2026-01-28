@@ -339,10 +339,10 @@ function DashboardContent() {
             >
             {/* Horizontal Scroll Wrapper for Mobile */}
             <div className="overflow-x-auto scrollbar-hide">
-              <div className="min-w-[950px] xl:min-w-0 px-3 xl:px-6 py-3 xl:py-6">
-            {/* Column Headers - Sticky */}
+              <div className="min-w-[950px] xl:min-w-0 px-3 max-[430px]:px-2 xl:px-6 py-3 max-[430px]:py-2 xl:py-6">
+            {/* Column Headers - Sticky; smaller only at iPhone Max (≤430px) */}
             <div 
-              className="sticky top-0 z-20 grid grid-cols-12 gap-2 xl:gap-2 mb-3 xl:mb-4 pb-3 xl:pb-3 text-white/70 uppercase tracking-widest text-xs xl:text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-2 max-[430px]:gap-1 xl:gap-2 mb-3 max-[430px]:mb-2 xl:mb-4 pb-3 max-[430px]:pb-2 xl:pb-3 text-white/70 uppercase tracking-widest text-xs max-[430px]:text-[10px] xl:text-xs rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
