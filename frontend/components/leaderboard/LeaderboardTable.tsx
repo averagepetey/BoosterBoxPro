@@ -60,7 +60,8 @@ export function LeaderboardTable({
     if (numValue >= 1000) {
       return `${(numValue / 1000).toFixed(1)}K`;
     }
-    return numValue.toString();
+    // Always show 1 decimal place to avoid floating-point precision issues
+    return numValue.toFixed(1);
   };
 
   const getRankChangeIcon = (direction: string | null): string => {
