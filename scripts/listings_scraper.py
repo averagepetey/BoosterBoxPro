@@ -491,9 +491,21 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 page_units = sum(l.get('quantity', 1) for l in page_listings)
                 logger.info(f"  Page {current_page}: {len(page_listings)} box listings, {page_units} units (≥${min_box_price})")
                 all_listings.extend(page_listings)
-            
-            # Do not stop pagination based on "20% above floor" - keep scraping all pages
-            # so we count every listing/unit (e.g. page 2 may have 13 units; threshold stop was wrong).
+                
+                # Check if we've passed the 20% threshold: stop when current page's lowest price is above floor + 20%
+                # We need at least some listings to calculate floor, and we need to apply filters to get "legitimate" floor
+                if len(all_listings) >= 3:  # Need a few listings to establish floor
+                    # Apply basic filters to get legitimate floor (same as process_listings)
+                    filtered = [l for l in all_listings if not is_japanese_listing(l)]
+                    filtered = [l for l in filtered if not is_suspicious_listing(l)]
+                    if filtered:
+                        floor = min(l['price'] for l in filtered)
+                        threshold = floor * WITHIN_20PCT_THRESHOLD
+                        page_lowest = min(l['price'] for l in page_listings)
+                        
+                        if page_lowest > threshold:
+                            logger.info(f"  Stopping pagination: page lowest (${page_lowest:.2f}) > 20% threshold (${threshold:.2f}) above floor (${floor:.2f})")
+                            break
             
             # Try to go to next page - scroll to bottom first so pagination "1, 2, 3" is in view
             next_page_num = current_page + 1
