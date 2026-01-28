@@ -168,38 +168,49 @@ def main():
         save_completion_status(status)
         return 1
     
-    # Phase 2: Listings Scraper
-    logger.info("")
-    logger.info("=" * 50)
-    logger.info("Phase 2: Listings Scraper - Fetching Active Listings")
-    logger.info("=" * 50)
-    
-    scraper_success = 0
-    scraper_errors = 0
-    try:
-        scraper_success, scraper_errors = asyncio.run(run_listings_scraper())
-        status["scraper"]["success_count"] = scraper_success
-        status["scraper"]["error_count"] = scraper_errors
-        status["scraper"]["completed"] = True
-        
+    # Phase 2: Listings Scraper (skip if SKIP_SCRAPER=1 to stay under 512Mi on Render free cron)
+    skip_scraper = os.environ.get("SKIP_SCRAPER", "").lower() in ("1", "true", "yes")
+    if skip_scraper:
         logger.info("")
-        logger.info("✅ Phase 2 (Scraper) complete!")
+        logger.info("=" * 50)
+        logger.info("Phase 2: Listings Scraper SKIPPED (SKIP_SCRAPER=1)")
+        logger.info("=" * 50)
+        scraper_success = 0
+        scraper_errors = 0
+        status["scraper"]["completed"] = True
+        status["scraper"]["skipped"] = True
+    else:
+        logger.info("")
+        logger.info("=" * 50)
+        logger.info("Phase 2: Listings Scraper - Fetching Active Listings")
+        logger.info("=" * 50)
         
-    except Exception as e:
-        status["scraper"]["error"] = str(e)
-        logger.error(f"Scraper phase failed: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        
-        # Send alert
+        scraper_success = 0
+        scraper_errors = 0
         try:
-            from app.services.alert_service import alert_cron_failure
-            alert_cron_failure("daily-refresh", str(e), "Scraper")
-        except Exception as alert_err:
-            logger.warning(f"Failed to send alert: {alert_err}")
-        
-        save_completion_status(status)
-        return 1
+            scraper_success, scraper_errors = asyncio.run(run_listings_scraper())
+            status["scraper"]["success_count"] = scraper_success
+            status["scraper"]["error_count"] = scraper_errors
+            status["scraper"]["completed"] = True
+            
+            logger.info("")
+            logger.info("✅ Phase 2 (Scraper) complete!")
+            
+        except Exception as e:
+            status["scraper"]["error"] = str(e)
+            logger.error(f"Scraper phase failed: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # Send alert
+            try:
+                from app.services.alert_service import alert_cron_failure
+                alert_cron_failure("daily-refresh", str(e), "Scraper")
+            except Exception as alert_err:
+                logger.warning(f"Failed to send alert: {alert_err}")
+            
+            save_completion_status(status)
+            return 1
     
     # Calculate duration
     end_time = datetime.now()
@@ -214,7 +225,7 @@ def main():
     logger.info(f"⏰ End: {end_time.strftime('%H:%M:%S')}")
     logger.info(f"⏱️  Duration: {duration:.1f} seconds ({duration/60:.1f} minutes)")
     logger.info(f"Apify: {apify_result['success_count']} success, {apify_result['error_count']} errors")
-    logger.info(f"Scraper: {scraper_success} success, {scraper_errors} errors")
+    logger.info(f"Scraper: {scraper_success} success, {scraper_errors} errors" + (" (skipped)" if skip_scraper else ""))
     logger.info("=" * 70)
     
     # Update status

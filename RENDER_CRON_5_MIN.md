@@ -52,3 +52,24 @@ If you use an **Environment Group** that already has these, you can attach that 
 - On the cron job’s page, click **Trigger Run** once to test.
 
 Done. It runs daily at 1pm EST; the script adds a 0–30 min jitter. See `DAILY_REFRESH_CRON_SETUP.md` for details.
+
+---
+
+## 5. If cron fails: "Out of memory (used over 512Mi)"
+
+Render’s **free** cron jobs have a **512 MiB** memory limit. The daily refresh runs **Apify** (Phase 1) and a **Playwright/Chromium** listings scraper (Phase 2). Chromium can exceed 512 MiB.
+
+**Try in this order:**
+
+1. **Reduce Chromium memory**  
+   In the Cron Job’s **Environment**, add:
+   - **CRON_LOW_MEMORY** = `1`  
+   This uses a smaller viewport and extra Chromium flags to lower memory. Redeploy and trigger a run.
+
+2. **Skip the scraper (Phase 2) on cron**  
+   If it still OOMs, you can run only Apify on Render and run the scraper elsewhere (e.g. locally):
+   - **SKIP_SCRAPER** = `1`  
+   Phase 1 (Apify sales data) still runs; Phase 2 (listings scraper) is skipped. Leaderboard sales/volume data will still update; only listings-related metrics won’t refresh on cron.
+
+3. **Upgrade plan**  
+   Paid Render plans give more RAM (e.g. 512 MiB+). Upgrading the cron job’s instance allows both phases to run without SKIP_SCRAPER.
