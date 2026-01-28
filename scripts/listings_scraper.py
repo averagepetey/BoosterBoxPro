@@ -111,7 +111,10 @@ SUSPICIOUS_KEYWORDS = [
     'played', 'heavy play', 'poor condition',
     'missing', 'incomplete', 'resealed',
     'no seal', 'unsealed', 'box only',
-    'empty', 'display', 'for display'
+    'empty', 'display', 'for display',
+    # Exclude loose packs, packs (not booster box), unsealed box, no box
+    'loose packs', 'loose pack', 'unsealed box', 'no box',
+    'packs only', 'pack only', 'unsealed or no box', 'no box.',
 ]
 
 # Thresholds
@@ -171,11 +174,12 @@ def is_japanese_listing(listing: Dict) -> bool:
 
 
 def is_suspicious_listing(listing: Dict) -> bool:
-    """Check if listing has suspicious keywords"""
+    """Check if listing has suspicious keywords (title, description, condition, variant)"""
     text = (
         listing.get('title', '') +
         listing.get('description', '') +
-        listing.get('condition', '')
+        listing.get('condition', '') +
+        listing.get('variant', '')
     ).lower()
     return any(keyword in text for keyword in SUSPICIOUS_KEYWORDS)
 
