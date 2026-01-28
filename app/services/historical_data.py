@@ -144,7 +144,7 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
             for entry in date_entries:
                 total_listings_added += entry.get('boxes_added_today', 0) or 0
         
-        # Count active listings within 20% of floor price
+        # Active listings = total boxes within 20% of floor (the only metric we care about)
         floor_price = base.get('floor_price_usd')
         if floor_price and floor_price > 0 and all_listings:
             max_price = floor_price * 1.20  # 20% above floor
@@ -152,11 +152,10 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
                 l for l in all_listings
                 if (l.get('price', 0) or 0) + (l.get('shipping', 0) or 0) <= max_price
             ]
-            total_listings = len(listings_within_20pct)
+            total_listings = sum(l.get('quantity', 1) for l in listings_within_20pct)  # boxes, not row count
         elif floor_price and floor_price > 0:
-            # If we have floor price but no raw_listings, filter by active_listings_count
-            # (assuming it was already filtered during processing)
-            total_listings = total_listings  # Keep existing count
+            # No raw_listings: use existing active_listings_count (already total boxes within 20%)
+            total_listings = total_listings  # Keep max from entries
         # else: total_listings stays as max from entries
         
         # Update merged entry
@@ -181,12 +180,17 @@ def get_box_historical_data(box_id: str, prefer_db: bool = True) -> List[Dict[st
     historical_entries.json so behavior and calculations stay the same.
     Merges data from both database UUID and old leaderboard UUID when using JSON.
     """
-    # Prefer DB: same entry shape, no formula changes
+    # Prefer DB: same entry shape, no formula changes.
+    # Query by box_id first (what booster_boxes.id uses; listings scraper writes this).
+    # Also query by resolved_id (TCGPlayer/DB UUID) so we pick up any legacy backfill rows.
     if prefer_db:
         try:
             from app.services.db_historical_reader import get_box_historical_entries_from_db
             resolved_id = LEADERBOARD_TO_DB_UUID_MAP.get(box_id, box_id)
-            db_entries = get_box_historical_entries_from_db(resolved_id)
+            db_entries = get_box_historical_entries_from_db(box_id)
+            if resolved_id != box_id:
+                alt_entries = get_box_historical_entries_from_db(resolved_id)
+                db_entries = list(db_entries) + list(alt_entries)
             if db_entries:
                 entries = merge_same_date_entries(db_entries)
                 entries.sort(key=lambda x: x.get('date', ''))
