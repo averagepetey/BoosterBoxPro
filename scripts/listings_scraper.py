@@ -107,12 +107,12 @@ JAPANESE_INDICATORS = [
 ]
 
 SUSPICIOUS_KEYWORDS = [
-    'damaged', 'opened', 'no shrink', 'no shrink wrap', 'loose',
-    'played', 'heavy play', 'poor condition',
+    'damaged', 'opened', 'no shrink wrap',  # no shrink wrap = unsealed; avoid bare 'no shrink' false positives
+    'heavy play', 'poor condition',  # removed 'played' - matches TCG condition "Lightly Played"/"Moderately Played"
     'missing', 'incomplete', 'resealed',
     'no seal', 'unsealed', 'box only',
     'empty', 'display', 'for display',
-    # Exclude loose packs, packs (not booster box), unsealed box, no box
+    # Exclude loose packs / not booster box (phrases only; avoid 'loose' alone)
     'loose packs', 'loose pack', 'unsealed box', 'no box',
     'packs only', 'pack only', 'unsealed or no box', 'no box.',
 ]
@@ -173,15 +173,23 @@ def is_japanese_listing(listing: Dict) -> bool:
     return any(indicator in text for indicator in JAPANESE_INDICATORS)
 
 
-def is_suspicious_listing(listing: Dict) -> bool:
-    """Check if listing has suspicious keywords (title, description, condition, variant)"""
+def get_suspicious_keyword(listing: Dict) -> Optional[str]:
+    """Return the first matching suspicious keyword, or None if listing is clean."""
     text = (
         listing.get('title', '') +
         listing.get('description', '') +
         listing.get('condition', '') +
         listing.get('variant', '')
     ).lower()
-    return any(keyword in text for keyword in SUSPICIOUS_KEYWORDS)
+    for keyword in SUSPICIOUS_KEYWORDS:
+        if keyword in text:
+            return keyword
+    return None
+
+
+def is_suspicious_listing(listing: Dict) -> bool:
+    """Check if listing has suspicious keywords (title, description, condition, variant)"""
+    return get_suspicious_keyword(listing) is not None
 
 
 def filter_outlier_prices(listings: List[Dict], market_price: float) -> List[Dict]:
@@ -234,6 +242,13 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
     suspicious_removed = len(listings) - len(clean_listings)
     if suspicious_removed > 0:
         logger.info(f"  After suspicious filter: {len(clean_listings)} ({suspicious_removed} removed)")
+        # Log one example so we can tune keywords if needed
+        for l in listings:
+            kw = get_suspicious_keyword(l)
+            if kw:
+                snippet = (l.get('title', '') or l.get('condition', ''))[:80]
+                logger.info(f"    Example removed: keyword '{kw}' in: {snippet!r}...")
+                break
     listings = clean_listings
     
     # Step 3: Smart outlier detection
@@ -241,11 +256,8 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
     
     if not listings:
         return {
-            'total_listings': 0,
-            'total_quantity': 0,
             'floor_price': None,
             'listings_within_20pct': 0,
-            'quantity_within_20pct': 0,
             'filters_applied': {
                 'japanese_removed': jp_removed,
                 'suspicious_removed': suspicious_removed,
@@ -258,20 +270,17 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
             l['quantity'] = 1
     floor_price = min(l['price'] for l in listings)
     
-    # Step 5: Count listings and quantity within 20% of floor
+    # Step 5: The only metric we care about = total boxes on the market within 20% above lowest legitimate
     threshold = floor_price * WITHIN_20PCT_THRESHOLD
     within_20pct = [l for l in listings if l['price'] <= threshold]
-    total_quantity = sum(l.get('quantity', 1) for l in listings)
-    quantity_within_20pct = sum(l.get('quantity', 1) for l in within_20pct)
+    boxes_within_20pct = sum(l.get('quantity', 1) for l in within_20pct)
     
-    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold:.2f}): {len(within_20pct)} rows, {quantity_within_20pct} units")
+    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold:.2f}): {boxes_within_20pct} boxes (listings metric)")
     
     return {
-        'total_listings': len(listings),
-        'total_quantity': total_quantity,
         'floor_price': floor_price,
-        'listings_within_20pct': quantity_within_20pct,  # total units within 20% (not row count)
-        'quantity_within_20pct': quantity_within_20pct,
+        # The only metric that matters: total boxes within 20% of floor. Stored as active_listings_count ("listings").
+        'listings_within_20pct': boxes_within_20pct,
         'filters_applied': {
             'japanese_removed': jp_removed,
             'suspicious_removed': suspicious_removed,
@@ -479,18 +488,12 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 logger.info(f"  Page {current_page}: No box listings found (all < ${min_box_price}), continuing...")
                 # Keep going - boxes might be on later pages
             else:
-                logger.info(f"  Page {current_page}: {len(page_listings)} box listings (≥${min_box_price})")
+                page_units = sum(l.get('quantity', 1) for l in page_listings)
+                logger.info(f"  Page {current_page}: {len(page_listings)} box listings, {page_units} units (≥${min_box_price})")
                 all_listings.extend(page_listings)
             
-            # Check if we've passed the 20% threshold (only if we have listings)
-            if all_listings:
-                floor = min(l['price'] for l in all_listings)
-                threshold = floor * WITHIN_20PCT_THRESHOLD
-                highest_on_page = max(l['price'] for l in page_listings) if page_listings else 0
-                
-                if highest_on_page > threshold:
-                    logger.info(f"  Reached 20% threshold (${threshold:.2f}), stopping pagination")
-                    break
+            # Do not stop pagination based on "20% above floor" - keep scraping all pages
+            # so we count every listing/unit (e.g. page 2 may have 13 units; threshold stop was wrong).
             
             # Try to go to next page - scroll to bottom first so pagination "1, 2, 3" is in view
             next_page_num = current_page + 1
@@ -839,21 +842,24 @@ def save_results(results: List[Dict]):
         from app.services.box_metrics_writer import upsert_daily_metrics
     except ImportError:
         upsert_daily_metrics = None
+    try:
+        from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP
+    except ImportError:
+        DB_TO_LEADERBOARD_UUID_MAP = {}
 
     for result in results:
         box_id = result['box_id']
+        boxes_within_20pct = result.get('listings_within_20pct') or 0
 
         if box_id not in hist:
             hist[box_id] = []
 
-        # Create entry (active_listings_count = total quantity within 20%, total_listings = row count, total_quantity = sum of qty)
+        # Listings = only metric we care about: total boxes within 20% of lowest legitimate. Stored as active_listings_count.
         entry = {
             'date': today,
             'source': 'tcgplayer_scraper',
             'floor_price_usd': result.get('floor_price'),
-            'active_listings_count': result.get('listings_within_20pct'),  # total units within 20%
-            'total_listings': result.get('total_listings'),  # number of listing rows
-            'total_quantity': result.get('total_quantity'),  # sum of quantity across all rows
+            'active_listings_count': boxes_within_20pct,
             'scrape_timestamp': result.get('scrape_timestamp'),
             'pages_scraped': result.get('pages_scraped'),
             'filters_applied': result.get('filters_applied'),
@@ -863,19 +869,22 @@ def save_results(results: List[Dict]):
         hist[box_id] = [e for e in hist[box_id] if e.get('date') != today]
         hist[box_id].append(entry)
 
+        # Write to DB using the ID that exists in booster_boxes (leaderboard UUID).
+        # TCGPLAYER_URLS use TCGPlayer/DB UUIDs; booster_boxes.id may be leaderboard UUIDs.
+        booster_box_id_for_db = DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)
         if upsert_daily_metrics:
             ok = upsert_daily_metrics(
-                booster_box_id=box_id,
+                booster_box_id=booster_box_id_for_db,
                 metric_date=today,
                 floor_price_usd=result.get('floor_price'),
-                active_listings_count=result.get('listings_within_20pct'),
+                active_listings_count=boxes_within_20pct,
             )
             if ok:
                 logger.debug(f"DB upsert ok for {box_id}")
             else:
                 logger.warning(f"DB upsert failed for {box_id} (e.g. missing FK)")
 
-        logger.info(f"Saved {box_id}: {result.get('listings_within_20pct')} units (within 20%), {result.get('total_listings')} rows, {result.get('total_quantity')} total qty @ ${result.get('floor_price', 0):.2f}")
+        logger.info(f"Saved {box_id}: listings={boxes_within_20pct} (boxes within 20% of floor) @ ${result.get('floor_price', 0):.2f}")
     
     # Backup and save
     backup_path = Path(f'data/historical_entries_backup_{today}.json')
