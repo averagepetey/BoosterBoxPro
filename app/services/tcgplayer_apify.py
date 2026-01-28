@@ -591,9 +591,15 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             logger.error(f"Error fetching {name}: {str(e)}")
             error_count += 1
     
-    # Save updated data
-    with open(historical_file, "w") as f:
-        json.dump(historical, f, indent=2)
+    # Save updated data to JSON (legacy/backup - optional, don't fail if directory doesn't exist)
+    # Primary storage is now database (box_metrics_unified) via upsert_daily_metrics above
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+        with open(historical_file, "w") as f:
+            json.dump(historical, f, indent=2)
+        logger.debug(f"Saved historical data to {historical_file} (backup)")
+    except Exception as e:
+        logger.warning(f"Could not save to JSON backup (non-fatal): {e}")
     
     # Get top 5 by volume
     top_5 = sorted(results, key=lambda x: x["vol"], reverse=True)[:5]
