@@ -146,6 +146,77 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/health/cron")
+async def cron_health():
+    """
+    Cron job health check endpoint.
+    Returns status of last daily refresh run.
+    Can be monitored by UptimeRobot or similar services.
+    """
+    from pathlib import Path
+    import json
+    from datetime import datetime, timedelta
+    
+    status_file = Path(__file__).parent / "logs" / "daily_refresh_status.json"
+    
+    if not status_file.exists():
+        return {
+            "status": "unknown",
+            "message": "No status file found - cron may not have run yet",
+            "last_check": None
+        }
+    
+    try:
+        with open(status_file, 'r') as f:
+            status = json.load(f)
+        
+        last_end_time = status.get("end_time")
+        if last_end_time:
+            try:
+                last_end = datetime.fromisoformat(last_end_time.replace('Z', '+00:00'))
+                hours_ago = (datetime.now(last_end.tzinfo) - last_end).total_seconds() / 3600
+            except:
+                hours_ago = None
+        else:
+            hours_ago = None
+        
+        # Consider unhealthy if:
+        # - Last run was more than 25 hours ago (should run daily ~1pm EST)
+        # - Last run failed (overall_success = false)
+        is_healthy = True
+        message = "Cron is healthy"
+        
+        if status.get("status") == "running":
+            is_healthy = True
+            message = "Cron is currently running"
+        elif not status.get("overall_success", False):
+            is_healthy = False
+            message = f"Cron last run failed: {status.get('apify', {}).get('error') or status.get('scraper', {}).get('error') or 'Unknown error'}"
+        elif hours_ago and hours_ago > 25:
+            is_healthy = False
+            message = f"Cron hasn't run in {hours_ago:.1f} hours (expected daily)"
+        
+        return {
+            "status": "healthy" if is_healthy else "unhealthy",
+            "message": message,
+            "last_run": {
+                "end_time": last_end_time,
+                "hours_ago": round(hours_ago, 1) if hours_ago else None,
+                "overall_success": status.get("overall_success", False),
+                "apify_success": status.get("apify", {}).get("success_count", 0),
+                "apify_errors": status.get("apify", {}).get("error_count", 0),
+                "scraper_success": status.get("scraper", {}).get("success_count", 0),
+                "scraper_errors": status.get("scraper", {}).get("error_count", 0),
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to read status file: {str(e)}",
+            "last_check": None
+        }
+
+
 # Global exception handler to ensure CORS headers are included in error responses
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

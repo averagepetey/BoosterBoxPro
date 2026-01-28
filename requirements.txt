@@ -28,6 +28,7 @@ slowapi>=0.1.9  # Rate limiting
 
 # HTTP Client (for testing and future API integrations)
 httpx>=0.25.0
+requests>=2.31.0  # For Slack webhook alerts
 
 # Data Processing
 pandas>=2.0.0
