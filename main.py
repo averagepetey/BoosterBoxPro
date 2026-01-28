@@ -736,8 +736,19 @@ async def get_box_detail(
                     print(f"⚠️  Error getting avg sales: {e}")
                     avg_sales_30d = None
             
-            # Get avg boxes added per day (may be None if not captured yet)
-            avg_boxes_added_per_day = latest.get("avg_boxes_added_per_day") or 0
+            # Get avg boxes added per day - calculate from historical if not present
+            avg_boxes_added_per_day = latest.get("avg_boxes_added_per_day")
+            if avg_boxes_added_per_day is None and len(historical_data) > 0:
+                # Calculate 30-day average from historical entries
+                recent_entries = historical_data[-30:] if len(historical_data) >= 30 else historical_data
+                boxes_added_values = [e.get("boxes_added_today", 0) for e in recent_entries 
+                                     if e.get("boxes_added_today") is not None]
+                if boxes_added_values:
+                    avg_boxes_added_per_day = sum(boxes_added_values) / len(boxes_added_values)
+                else:
+                    avg_boxes_added_per_day = 0
+            else:
+                avg_boxes_added_per_day = avg_boxes_added_per_day or 0
             
             # Calculate days_to_20pct_increase using full formula:
             # T₊ = inventory below +20% tier (active_listings_count)
@@ -774,6 +785,30 @@ async def get_box_detail(
             volume_7d = latest.get("volume_7d") or (daily_vol * 7 if daily_vol else 0)
             volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
             
+            # Calculate unified_volume_7d_ema if not present (7-day EMA of volumes)
+            unified_volume_7d_ema = latest.get("unified_volume_7d_ema")
+            if unified_volume_7d_ema is None and len(historical_data) >= 2:
+                # Get volumes from last 7 entries (or all if less than 7)
+                recent_entries = historical_data[-7:] if len(historical_data) >= 7 else historical_data
+                volumes = []
+                for e in recent_entries:
+                    vol = e.get("unified_volume_usd")
+                    if vol is None:
+                        # Fallback: calculate from daily_volume_usd
+                        daily = e.get("daily_volume_usd")
+                        if daily:
+                            vol = daily * 30  # 30-day projection
+                    if vol:
+                        volumes.append(float(vol))
+                
+                if volumes:
+                    # Calculate EMA (alpha = 0.3 for 7-day period)
+                    alpha = 0.3
+                    ema = volumes[0]
+                    for vol in volumes[1:]:
+                        ema = (alpha * vol) + ((1 - alpha) * ema)
+                    unified_volume_7d_ema = round(ema, 2)
+            
             box_metrics = {
                 "floor_price_usd": latest.get("floor_price_usd"),
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
@@ -781,7 +816,7 @@ async def get_box_detail(
                 "daily_volume_usd": daily_vol,
                 "volume_7d": volume_7d,
                 "unified_volume_usd": volume_30d,
-                "unified_volume_7d_ema": latest.get("unified_volume_7d_ema"),
+                "unified_volume_7d_ema": unified_volume_7d_ema,
                 "boxes_sold_per_day": boxes_sold_per_day,
                 "boxes_added_today": latest.get("boxes_added_today"),
                 "days_to_20pct_increase": days_to_20pct,

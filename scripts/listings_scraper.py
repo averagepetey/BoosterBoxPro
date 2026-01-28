@@ -107,12 +107,18 @@ JAPANESE_INDICATORS = [
 ]
 
 SUSPICIOUS_KEYWORDS = [
-    'damaged', 'opened', 'no shrink wrap',  # no shrink wrap = unsealed; avoid bare 'no shrink' false positives
-    'heavy play', 'poor condition',  # removed 'played' - matches TCG condition "Lightly Played"/"Moderately Played"
+    # Clear damage/condition issues
+    'damaged', 'opened', 'no shrink wrap',  # no shrink wrap = unsealed
+    'heavy play', 'poor condition',
     'missing', 'incomplete', 'resealed',
-    'no seal', 'unsealed', 'box only',
-    'empty', 'display', 'for display',
-    # Exclude loose packs / not booster box (phrases only; avoid 'loose' alone)
+    'no seal', 'unsealed',
+    # Only flag "box only" if it's NOT a booster box (context-dependent, handled in function)
+    'box only',
+    # Only flag "empty" if it's "empty box" (context-dependent)
+    'empty',
+    # Only flag "display" if it's "for display" or "display only" (context-dependent)
+    'display', 'for display',
+    # Exclude loose packs / not booster box (phrases only)
     'loose packs', 'loose pack', 'unsealed box', 'no box',
     'packs only', 'pack only', 'unsealed or no box', 'no box.',
 ]
@@ -175,14 +181,61 @@ def is_japanese_listing(listing: Dict) -> bool:
 
 def get_suspicious_keyword(listing: Dict) -> Optional[str]:
     """Return the first matching suspicious keyword, or None if listing is clean."""
-    text = (
-        listing.get('title', '') +
-        listing.get('description', '') +
-        listing.get('condition', '') +
-        listing.get('variant', '')
-    ).lower()
+    import re
+    title = (listing.get('title', '') or '').lower()
+    description = (listing.get('description', '') or '').lower()
+    condition = (listing.get('condition', '') or '').lower()
+    variant = (listing.get('variant', '') or '').lower()
+    full_text = title + ' ' + description + ' ' + condition + ' ' + variant
+    
+    # Skip if this is clearly a legitimate booster box listing
+    # Check for legitimate booster box indicators first
+    legitimate_indicators = [
+        'booster box', 'premium booster', 'extra booster', 'premium box',
+        'factory sealed', 'sealed', 'mint', 'near mint', 'new'
+    ]
+    has_legitimate_indicator = any(indicator in full_text for indicator in legitimate_indicators)
+    
+    # Only apply suspicious filter if we don't have strong legitimate indicators
+    # OR if we have both legitimate AND suspicious indicators (then suspicious wins)
+    
     for keyword in SUSPICIOUS_KEYWORDS:
-        if keyword in text:
+        escaped = re.escape(keyword)
+        if ' ' in keyword:
+            pattern = r'\b' + escaped + r'\b'
+        else:
+            pattern = r'\b' + escaped + r'\b'
+        
+        if re.search(pattern, full_text):
+            # Skip ambiguous matches if we have legitimate indicators
+            if has_legitimate_indicator:
+                # These keywords are too ambiguous when we have legitimate indicators
+                ambiguous_keywords = ['display', 'empty', 'box only']
+                if keyword in ambiguous_keywords:
+                    # Only flag if it's clearly suspicious context
+                    if keyword == 'display':
+                        # Only flag if it's "for display" or "display only", not "display case"
+                        if not re.search(r'\b(for\s+)?display\s+(only|purposes?)\b', full_text):
+                            continue
+                    elif keyword == 'empty':
+                        # Only flag if it's "empty box" explicitly, not just "empty"
+                        if not re.search(r'\bempty\s+box\b', full_text):
+                            continue
+                    elif keyword == 'box only':
+                        # Skip if it's part of legitimate booster box text
+                        if 'booster box' in full_text or 'premium box' in full_text:
+                            continue
+            
+            # Additional context checks
+            if keyword == 'display':
+                # Skip "display case" (legitimate storage)
+                if 'display case' in full_text:
+                    continue
+            elif keyword == 'box only':
+                # Skip if it's clearly a booster box listing
+                if 'booster box' in full_text or 'premium box' in full_text:
+                    continue
+            
             return keyword
     return None
 
@@ -242,13 +295,21 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
     suspicious_removed = len(listings) - len(clean_listings)
     if suspicious_removed > 0:
         logger.info(f"  After suspicious filter: {len(clean_listings)} ({suspicious_removed} removed)")
-        # Log one example so we can tune keywords if needed
+        # Log examples to debug - show first 3 removed listings and their matching keywords
+        removed_count = 0
+        keyword_counts = {}
         for l in listings:
             kw = get_suspicious_keyword(l)
             if kw:
-                snippet = (l.get('title', '') or l.get('condition', ''))[:80]
-                logger.info(f"    Example removed: keyword '{kw}' in: {snippet!r}...")
-                break
+                if removed_count < 3:
+                    snippet = (l.get('title', '') or l.get('condition', '') or l.get('variant', ''))[:100]
+                    logger.info(f"    Removed #{removed_count+1}: keyword '{kw}' in: {snippet!r}")
+                keyword_counts[kw] = keyword_counts.get(kw, 0) + 1
+                removed_count += 1
+        
+        # Show summary of which keywords matched most
+        if keyword_counts:
+            logger.info(f"    Keyword matches: {dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))}")
     listings = clean_listings
     
     # Step 3: Smart outlier detection
