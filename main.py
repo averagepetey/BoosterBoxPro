@@ -337,7 +337,7 @@ async def get_booster_boxes(
     import json
     from pathlib import Path
     from datetime import date
-    from sqlalchemy import select, desc
+    from sqlalchemy import select, desc, func, and_
     from app.database import AsyncSessionLocal
     from app.models.booster_box import BoosterBox
     from app.models.unified_box_metrics import UnifiedBoxMetrics
@@ -360,33 +360,49 @@ async def get_booster_boxes(
     # Create a lookup by product_name for the JSON data
     json_boxes_by_name = {box.get("product_name"): box for box in boxes}
     
-    # Query database for all boxes and their latest metrics
+    # Query database for all boxes and their latest metrics (batch: 2 queries + 1 historical call)
     async with AsyncSessionLocal() as db:
-        # Get all booster boxes from database
+        # 1) All booster boxes
         stmt = select(BoosterBox)
         result = await db.execute(stmt)
         db_boxes = result.scalars().all()
         
-        # Build result list with live metrics from database
+        # 2) Latest UnifiedBoxMetrics per box in one query
+        subq = (
+            select(UnifiedBoxMetrics.booster_box_id, func.max(UnifiedBoxMetrics.metric_date).label("md"))
+            .group_by(UnifiedBoxMetrics.booster_box_id)
+        ).subquery()
+        mstmt = select(UnifiedBoxMetrics).join(
+            subq,
+            and_(
+                UnifiedBoxMetrics.booster_box_id == subq.c.booster_box_id,
+                UnifiedBoxMetrics.metric_date == subq.c.md,
+            ),
+        )
+        mres = await db.execute(mstmt)
+        metrics_list = mres.scalars().all()
+        metrics_by_box = {str(m.booster_box_id): m for m in metrics_list}
+        
+        # 3) Batch historical snapshot for all boxes (one DB hit)
+        try:
+            from app.services.historical_data import get_all_boxes_latest_for_leaderboard
+            box_ids = [str(b.id) for b in db_boxes]
+            hist_by_box = get_all_boxes_latest_for_leaderboard(box_ids)
+        except Exception:
+            hist_by_box = {}
+        
         result_boxes = []
-        seen_product_names = set()  # Track seen product names to prevent duplicates
+        seen_product_names = set()
         
         for db_box in db_boxes:
-            # Skip test boxes
             if "(Test)" in db_box.product_name or "Test Box" in db_box.product_name:
                 continue
-            
-            # Skip if we've already added this product_name (prevent duplicates)
             if db_box.product_name in seen_product_names:
                 continue
             seen_product_names.add(db_box.product_name)
-            # Get the latest metrics for this box
-            metrics_stmt = select(UnifiedBoxMetrics).where(
-                UnifiedBoxMetrics.booster_box_id == db_box.id
-            ).order_by(desc(UnifiedBoxMetrics.metric_date)).limit(1)
             
-            metrics_result = await db.execute(metrics_stmt)
-            latest_metrics = metrics_result.scalar_one_or_none()
+            latest_metrics = metrics_by_box.get(str(db_box.id))
+            hist = hist_by_box.get(str(db_box.id), {})
             
             # Start with JSON data if available, otherwise build from DB
             json_box = json_boxes_by_name.get(db_box.product_name, {})
@@ -443,152 +459,33 @@ async def get_booster_boxes(
                     if box_data["metrics"].get("daily_volume_usd"):
                         box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["daily_volume_usd"]) * 30
             else:
-                # Skip boxes with no metrics and no JSON data
                 continue
             
-            # Add 30d change and get accurate metrics from historical data service
-            try:
-                from app.services.historical_data import (
-                    get_box_month_over_month_price_change, 
-                    get_box_price_history, 
-                    get_box_30d_avg_sales,
-                    get_rolling_volume_sum
-                )
-            except ImportError as e:
-                # If import fails, set functions to None
-                get_box_month_over_month_price_change = None
-                get_box_price_history = None
-                get_box_30d_avg_sales = None
-                get_rolling_volume_sum = None
-                print(f"⚠️  Warning: Could not import historical_data functions: {e}")
-            
-            price_change_mom = None
-            if get_box_month_over_month_price_change:
-                try:
-                    price_change_mom = get_box_month_over_month_price_change(str(db_box.id))
-                except Exception as e:
-                    print(f"⚠️  Error getting price change: {e}")
-                    price_change_mom = None
-            if price_change_mom is not None:
-                box_data["metrics"]["floor_price_30d_change_pct"] = price_change_mom
-            
-            # Calculate 30d average sales from historical data
-            avg_sales_30d = None
-            if get_box_30d_avg_sales:
-                try:
-                    avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
-                except Exception as e:
-                    print(f"⚠️  Error getting avg sales: {e}")
-                    avg_sales_30d = None
-            if avg_sales_30d is not None:
-                box_data["metrics"]["boxes_sold_30d_avg"] = avg_sales_30d
-            
-            # Get rolling volume sums for accurate rankings
-            # These are ACTUAL sums of daily volumes, not extrapolations
-            volume_7d = None
-            volume_30d = None
-            if get_rolling_volume_sum:
-                try:
-                    volume_7d = get_rolling_volume_sum(str(db_box.id), 7)
-                    volume_30d = get_rolling_volume_sum(str(db_box.id), 30)
-                    # Add to metrics if available
-                    if volume_7d is not None:
-                        box_data["metrics"]["volume_7d"] = float(volume_7d)
-                    if volume_30d is not None:
-                        box_data["metrics"]["volume_30d"] = float(volume_30d)
-                except Exception as e:
-                    print(f"⚠️  Error getting volume sums: {e}")
-                    volume_7d = None
-                    volume_30d = None
-            
-            # Get the most recent historical entry with calculated metrics
-            historical_data = None
-            if get_box_price_history:
-                try:
-                    historical_data = get_box_price_history(str(db_box.id), days=90)
-                except Exception as e:
-                    print(f"⚠️  Error getting price history: {e}")
-                    historical_data = None
-            if historical_data:
-                latest_historical = historical_data[-1]
-                
-                # PRIORITY: Use historical floor_price_usd (from Apify marketPrice - more accurate)
-                hist_floor = latest_historical.get("floor_price_usd")
-                if hist_floor and hist_floor > 0:
-                    box_data["metrics"]["floor_price_usd"] = hist_floor
-                
-                # Use historical 7d EMA
-                hist_ema = latest_historical.get("unified_volume_7d_ema")
-                if hist_ema and hist_ema > 0:
-                    box_data["metrics"]["unified_volume_7d_ema"] = hist_ema
-                
-                # Use historical daily volume (24h) - prioritize this over calculated
-                hist_daily_vol = latest_historical.get("daily_volume_usd")
-                if hist_daily_vol and hist_daily_vol > 0:
-                    box_data["metrics"]["daily_volume_usd"] = hist_daily_vol
-                # If no historical daily volume, keep the calculated one from above
-                
-                # PRIORITY: Use Apify's calculated 30d volume (daily_vol * 30)
-                hist_30d_vol = latest_historical.get("unified_volume_usd")
-                if hist_30d_vol and hist_30d_vol > 0:
-                    box_data["metrics"]["unified_volume_usd"] = hist_30d_vol
-                elif hist_daily_vol and hist_daily_vol > 0:
-                    # Fallback to extrapolation if not in historical
-                    box_data["metrics"]["unified_volume_usd"] = hist_daily_vol * 30
-                # If no historical 30d volume and no daily volume, ensure we have a value
-                # If no historical 30d volume, try to calculate from available metrics
-                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a sum
-                elif not box_data["metrics"].get("unified_volume_usd"):
-                    if box_data["metrics"].get("volume_30d"):
-                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_30d"])
-                    elif box_data["metrics"].get("volume_7d"):
-                        # Estimate 30d from 7d sum
-                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_7d"]) * (30 / 7)
-                
-                # Ensure daily_volume_usd exists after historical data processing
-                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a sum, so dividing by 7 is incorrect
-                if not box_data["metrics"].get("daily_volume_usd"):
-                    if box_data["metrics"].get("unified_volume_usd"):
-                        # unified_volume_usd is typically daily_volume_usd * 30
-                        box_data["metrics"]["daily_volume_usd"] = float(box_data["metrics"]["unified_volume_usd"]) / 30
-                
-                # Ensure unified_volume_usd exists after historical data processing
-                if not box_data["metrics"].get("unified_volume_usd"):
-                    # Prefer volume_30d (actual rolling sum) if available
-                    if box_data["metrics"].get("volume_30d"):
-                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_30d"])
-                    elif box_data["metrics"].get("daily_volume_usd"):
-                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["daily_volume_usd"]) * 30
-                    elif box_data["metrics"].get("volume_7d"):
-                        # Estimate 30d from 7d sum
-                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["volume_7d"]) * (30 / 7)
-                
-                # PRIORITY: Use Apify's calculated 7d volume (daily_vol * 7)
-                hist_7d_vol = latest_historical.get("volume_7d")
-                if hist_7d_vol and hist_7d_vol > 0:
-                    box_data["metrics"]["volume_7d"] = hist_7d_vol
-                elif hist_daily_vol and hist_daily_vol > 0:
-                    # Fallback to extrapolation if not in historical
-                    box_data["metrics"]["volume_7d"] = hist_daily_vol * 7
-                
-                # Use historical boxes_sold_per_day if available
-                hist_sold = latest_historical.get("boxes_sold_per_day")
-                if hist_sold and hist_sold > 0:
-                    current_sold = box_data["metrics"].get("boxes_sold_per_day", 0) or 0
-                    if hist_sold > current_sold:
-                        box_data["metrics"]["boxes_sold_per_day"] = hist_sold
-                
-                # Use historical boxes_sold_30d_avg if available
-                hist_30d_avg = latest_historical.get("boxes_sold_30d_avg")
-                if hist_30d_avg is not None and hist_30d_avg > 0:
-                    box_data["metrics"]["boxes_sold_30d_avg"] = hist_30d_avg
-                
-                # Use historical boxes_added_today if available
-                hist_added = latest_historical.get("boxes_added_today")
-                if hist_added and hist_added > 0:
-                    current_added = box_data["metrics"].get("boxes_added_today", 0) or 0
-                    if hist_added > current_added:
-                        box_data["metrics"]["boxes_added_today"] = hist_added
+            # Overlay batch historical snapshot (floor_price, volumes, 30d change, etc.)
+            if hist:
+                if hist.get("floor_price_30d_change_pct") is not None:
+                    box_data["metrics"]["floor_price_30d_change_pct"] = hist["floor_price_30d_change_pct"]
+                if hist.get("boxes_sold_30d_avg") is not None:
+                    box_data["metrics"]["boxes_sold_30d_avg"] = hist["boxes_sold_30d_avg"]
+                if hist.get("volume_7d") is not None:
+                    box_data["metrics"]["volume_7d"] = float(hist["volume_7d"])
+                if hist.get("volume_30d") is not None:
+                    box_data["metrics"]["volume_30d"] = float(hist["volume_30d"])
+                # Prefer historical floor/volume when present (Apify/market data)
+                if hist.get("floor_price_usd") and hist["floor_price_usd"] > 0:
+                    box_data["metrics"]["floor_price_usd"] = hist["floor_price_usd"]
+                if hist.get("unified_volume_7d_ema") and hist["unified_volume_7d_ema"] > 0:
+                    box_data["metrics"]["unified_volume_7d_ema"] = hist["unified_volume_7d_ema"]
+                if hist.get("daily_volume_usd") and hist["daily_volume_usd"] > 0:
+                    box_data["metrics"]["daily_volume_usd"] = hist["daily_volume_usd"]
+                if hist.get("unified_volume_usd") and hist["unified_volume_usd"] > 0:
+                    box_data["metrics"]["unified_volume_usd"] = hist["unified_volume_usd"]
+                if hist.get("boxes_sold_per_day") is not None:
+                    box_data["metrics"]["boxes_sold_per_day"] = hist["boxes_sold_per_day"]
+                if hist.get("boxes_added_today") is not None:
+                    box_data["metrics"]["boxes_added_today"] = hist["boxes_added_today"]
+                if hist.get("active_listings_count") is not None:
+                    box_data["metrics"]["active_listings_count"] = hist["active_listings_count"]
             
             result_boxes.append(box_data)
     

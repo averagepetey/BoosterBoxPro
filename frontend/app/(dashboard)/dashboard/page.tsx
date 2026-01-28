@@ -9,6 +9,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
+import { LeaderboardSkeleton } from '@/components/leaderboard/LeaderboardSkeleton';
 import { NewReleases } from '@/components/leaderboard/NewReleases';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -25,9 +26,10 @@ function DashboardContent() {
   const [sortBy, setSortBy] = useState('unified_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isMounted, setIsMounted] = useState(false);
-  const { data, isLoading, error } = useLeaderboard({
+  const { data, isLoading, error, isFetchingMore } = useLeaderboard({
     sort: sortBy,
-    limit: 100, // Maximum allowed by backend
+    fastLimit: 25,  // First paint: load 25 rows quickly
+    fullLimit: 100, // Then load full list in background
   });
 
   useEffect(() => {
@@ -327,15 +329,7 @@ function DashboardContent() {
           {/* Leaderboard */}
           <div className="mb-4">
 
-            {isLoading && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/30 mx-auto mb-2"></div>
-                <p className="text-white/60 text-sm">Loading leaderboard...</p>
-              </div>
-            )}
-
-            {/* Table Container - Scrollable */}
-            {(!isLoading || data) && (
+            {/* Table Container - Scrollable (always show so skeleton/table layout is stable) */}
             <div 
               className="relative rounded-none sm:rounded-3xl overflow-hidden leaderboard-container"
               style={{
@@ -433,17 +427,25 @@ function DashboardContent() {
               </div>
             </div>
 
-            {data && data.data && data.data.length > 0 && (
-              <LeaderboardTable
-                boxes={data.data}
-                isLoading={isLoading}
-                onSort={handleSort}
-                currentSort={sortBy}
-                timeRange={timeRange}
-              />
-            )}
-            {/* Debug: Show total count */}
-            {data && data.data && data.data.length > 0 && (
+            {isLoading && !data ? (
+              <LeaderboardSkeleton />
+            ) : data?.data && data.data.length > 0 ? (
+              <>
+                <LeaderboardTable
+                  boxes={data.data}
+                  isLoading={false}
+                  onSort={handleSort}
+                  currentSort={sortBy}
+                  timeRange={timeRange}
+                />
+                {isFetchingMore && (
+                  <div className="mt-2 text-center text-white/50 text-xs">
+                    Loading remaining boxes…
+                  </div>
+                )}
+              </>
+            ) : null}
+            {data?.data && data.data.length > 0 && (
               <div className="mt-4 text-center text-white/60 text-sm">
                 {error && (
                   <p className="text-yellow-400/80 text-xs mb-2">
@@ -456,7 +458,6 @@ function DashboardContent() {
               </div>
             </div>
             </div>
-            )}
           </div>
         </main>
       </div>

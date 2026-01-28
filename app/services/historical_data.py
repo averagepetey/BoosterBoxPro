@@ -994,3 +994,59 @@ def get_box_volume_metrics(box_id: str) -> dict:
     }
 
 
+def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+    """
+    Batch load latest snapshot + derived metrics for many boxes in one DB hit.
+    Used by /booster-boxes leaderboard to avoid N per-box historical calls.
+    Returns {box_id: {floor_price_usd, daily_volume_usd, unified_volume_7d_ema, unified_volume_usd,
+             volume_7d, volume_30d, boxes_sold_30d_avg, floor_price_30d_change_pct, ...}}.
+    """
+    try:
+        from app.services.db_historical_reader import get_all_boxes_historical_entries_from_db
+        all_entries = get_all_boxes_historical_entries_from_db(box_ids)
+    except Exception:
+        all_entries = {}
+    out: Dict[str, Dict[str, Any]] = {}
+    cutoff_7 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    cutoff_30 = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    for box_id, entries in all_entries.items():
+        if not entries:
+            out[box_id] = {}
+            continue
+        entries = sorted(entries, key=lambda x: x.get('date', ''))
+        latest = entries[-1]
+        recent_7 = [e for e in entries if (e.get('date') or '') >= cutoff_7]
+        recent_30 = [e for e in entries if (e.get('date') or '') >= cutoff_30]
+        volume_7d = None
+        if recent_7:
+            s = sum((e.get('daily_volume_usd') or 0) for e in recent_7)
+            volume_7d = round(s, 2) if s > 0 else None
+        volume_30d = None
+        if recent_30:
+            s = sum((e.get('daily_volume_usd') or 0) for e in recent_30)
+            volume_30d = round(s, 2) if s > 0 else None
+        boxes_sold_30d_avg = None
+        if recent_30:
+            vals = [(e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0) for e in recent_30]
+            boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
+        monthly = filter_to_one_per_month(entries)
+        floor_price_30d_change_pct = None
+        if len(monthly) >= 2:
+            curr = monthly[-1].get('floor_price_usd')
+            prev = monthly[-2].get('floor_price_usd')
+            if curr and curr > 0 and prev and prev > 0:
+                floor_price_30d_change_pct = round(((curr - prev) / prev) * 100, 2)
+        out[box_id] = {
+            'floor_price_usd': latest.get('floor_price_usd'),
+            'daily_volume_usd': latest.get('daily_volume_usd'),
+            'unified_volume_7d_ema': latest.get('unified_volume_7d_ema'),
+            'unified_volume_usd': latest.get('unified_volume_usd'),
+            'volume_7d': volume_7d,
+            'volume_30d': volume_30d,
+            'boxes_sold_30d_avg': boxes_sold_30d_avg,
+            'floor_price_30d_change_pct': floor_price_30d_change_pct,
+            'boxes_sold_per_day': latest.get('boxes_sold_per_day') or latest.get('boxes_sold_today'),
+            'boxes_added_today': latest.get('boxes_added_today'),
+            'active_listings_count': latest.get('active_listings_count'),
+        }
+    return out

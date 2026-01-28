@@ -465,20 +465,53 @@ const MOCK_DATA: LeaderboardResponse = {
   },
 };
 
-export function useLeaderboard(params: LeaderboardParams = {}) {
-  return useQuery<LeaderboardResponse>({
-    queryKey: ['leaderboard', params],
-    queryFn: async () => {
-      // Always call the real API - no mock fallback
-      // 401 errors will be handled in getLeaderboard and redirect to login
-      const result = await getLeaderboard(params);
-      return result;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes - show cached data immediately, refetch in background
-    refetchOnWindowFocus: false,
-    retry: false, // Don't retry on 401 errors (will redirect instead)
-    retryOnMount: true,
-    refetchOnReconnect: true,
-    refetchOnMount: true,
+const commonOpts = {
+  staleTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: false,
+  retry: false,
+  retryOnMount: true,
+  refetchOnReconnect: true,
+  refetchOnMount: true,
+};
+
+export function useLeaderboard(params: LeaderboardParams & { fastLimit?: number; fullLimit?: number } = {}) {
+  const { fastLimit, fullLimit, ...rest } = params;
+  const useTwoPhase = fastLimit != null && fullLimit != null;
+  const fastLimitVal = useTwoPhase ? fastLimit! : (rest.limit ?? 100);
+  const fullLimitVal = useTwoPhase ? fullLimit! : fastLimitVal;
+
+  const fastQuery = useQuery<LeaderboardResponse>({
+    queryKey: ['leaderboard', { ...rest, limit: fastLimitVal }],
+    queryFn: () => getLeaderboard({ ...rest, limit: fastLimitVal }),
+    ...commonOpts,
   });
+
+  const fullQuery = useQuery<LeaderboardResponse>({
+    queryKey: ['leaderboard', { ...rest, limit: fullLimitVal }],
+    queryFn: () => getLeaderboard({ ...rest, limit: fullLimitVal }),
+    ...commonOpts,
+    enabled: useTwoPhase ? !!fastQuery.data : false,
+  });
+
+  if (useTwoPhase) {
+    const data = fullQuery.data ?? fastQuery.data;
+    const isLoading = fastQuery.isLoading;
+    const isFetchingMore = fullQuery.isFetching && !!fastQuery.data;
+    return {
+      data,
+      isLoading,
+      isFetchingMore,
+      error: fastQuery.error ?? fullQuery.error,
+      isError: fastQuery.isError || fullQuery.isError,
+      refetch: () => {
+        fastQuery.refetch();
+        fullQuery.refetch();
+      },
+      isRefetching: fastQuery.isRefetching || fullQuery.isRefetching,
+      status: fastQuery.status,
+      fetchStatus: fullQuery.data ? fullQuery.fetchStatus : fastQuery.fetchStatus,
+    } as ReturnType<typeof useQuery<LeaderboardResponse>> & { isFetchingMore?: boolean };
+  }
+
+  return { ...fastQuery, isFetchingMore: false };
 }
