@@ -364,18 +364,27 @@ async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
                         const sellerEl = el.querySelector('[class*="seller"], [class*="Seller"]');
                         const seller = sellerEl ? sellerEl.innerText.trim() : '';
                         
-                        // Parse quantity listed (e.g. "Qty: 3", "3 available", "x3")
+                        // Parse quantity listed (e.g. "1 of 3" = 3, "Qty: 3", "3 available")
                         let quantity = 1;
-                        const qtyMatch = fullText.match(/(?:qty|quantity|available)[\s:]*?(\d+)|(?:^|[\s\xd7x])(\d+)\s*(?:available|left|in stock)/i)
-                            || fullText.match(/^(\d+)\s*$/m);
-                        if (qtyMatch) {
-                            const n = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
+                        const ofMatch = fullText.match(/(\d+)\s*of\s*(\d+)/i);  // TCGPlayer "1 of 3" = 3 available
+                        if (ofMatch) {
+                            const n = parseInt(ofMatch[2], 10);  // second number is total
                             if (n >= 1 && n <= 9999) quantity = n;
                         }
-                        const numInText = fullText.match(/\b(\d+)\s*(?:available|units|boxes|in stock)/i);
-                        if (numInText && quantity === 1) {
-                            const n = parseInt(numInText[1], 10);
-                            if (n >= 1 && n <= 9999) quantity = n;
+                        if (quantity === 1) {
+                            const qtyMatch = fullText.match(/(?:qty|quantity|available)[\s:]*?(\d+)|(?:^|[\s\xd7x])(\d+)\s*(?:available|left|in stock)/i)
+                                || fullText.match(/^(\d+)\s*$/m);
+                            if (qtyMatch) {
+                                const n = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
+                                if (n >= 1 && n <= 9999) quantity = n;
+                            }
+                        }
+                        if (quantity === 1) {
+                            const numInText = fullText.match(/\b(\d+)\s*(?:available|units|boxes|in stock)/i);
+                            if (numInText) {
+                                const n = parseInt(numInText[1], 10);
+                                if (n >= 1 && n <= 9999) quantity = n;
+                            }
                         }
                         
                         // Only include if price is valid
