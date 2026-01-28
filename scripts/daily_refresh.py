@@ -157,6 +157,14 @@ def main():
         logger.error(f"Apify phase failed: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
+        
+        # Send alert
+        try:
+            from app.services.alert_service import alert_cron_failure
+            alert_cron_failure("daily-refresh", str(e), "Apify")
+        except Exception as alert_err:
+            logger.warning(f"Failed to send alert: {alert_err}")
+        
         save_completion_status(status)
         return 1
     
@@ -182,6 +190,14 @@ def main():
         logger.error(f"Scraper phase failed: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
+        
+        # Send alert
+        try:
+            from app.services.alert_service import alert_cron_failure
+            alert_cron_failure("daily-refresh", str(e), "Scraper")
+        except Exception as alert_err:
+            logger.warning(f"Failed to send alert: {alert_err}")
+        
         save_completion_status(status)
         return 1
     
@@ -212,6 +228,22 @@ def main():
     )
     
     save_completion_status(status)
+    
+    # Optional success alert (only if ALERT_ON_SUCCESS=true)
+    if not status["overall_success"]:
+        try:
+            from app.services.alert_service import alert_cron_failure
+            error_msg = f"Apify errors: {status['apify']['error_count']}, Scraper errors: {status['scraper']['error_count']}"
+            alert_cron_failure("daily-refresh", error_msg, "Overall")
+        except Exception as alert_err:
+            logger.warning(f"Failed to send alert: {alert_err}")
+    else:
+        try:
+            from app.services.alert_service import alert_cron_success
+            summary = f"Apify: {status['apify']['success_count']} boxes, Scraper: {status['scraper']['success_count']} boxes"
+            alert_cron_success("daily-refresh", duration, summary)
+        except Exception as alert_err:
+            logger.warning(f"Failed to send success alert: {alert_err}")
     
     logger.info("")
     logger.info("📊 Check status file: logs/daily_refresh_status.json")
