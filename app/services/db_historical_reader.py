@@ -96,3 +96,48 @@ def get_box_historical_entries_from_db(booster_box_id: str) -> List[Dict[str, An
         return [_row_to_entry(r) for r in rows]
     except Exception:
         return []
+
+
+def get_all_boxes_historical_entries_from_db(box_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Load per-day history for many boxes in one query. Used by leaderboard batch path.
+    Returns {booster_box_id: [entries...]} with same entry shape as get_box_historical_entries_from_db.
+    """
+    if not box_ids:
+        return {}
+    try:
+        from sqlalchemy import text, bindparam
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            # Expanding=True turns :ids into (id1, id2, ...) for IN
+            q = text("""
+                SELECT booster_box_id, metric_date, floor_price_usd, floor_price_1d_change_pct,
+                       boxes_sold_per_day, active_listings_count, unified_volume_usd,
+                       unified_volume_7d_ema, boxes_sold_30d_avg, boxes_added_today
+                FROM box_metrics_unified
+                WHERE booster_box_id IN :ids
+                ORDER BY booster_box_id, metric_date ASC
+            """).bindparams(bindparam("ids", expanding=True))
+            rows = conn.execute(q, {"ids": box_ids}).fetchall()
+        out: Dict[str, List[Dict[str, Any]]] = {}
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            bid = str(d["booster_box_id"])
+            uv = float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None
+            ent = {
+                "date": d["metric_date"].isoformat() if hasattr(d.get("metric_date"), "isoformat") else str(d.get("metric_date") or ""),
+                "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
+                "floor_price_1d_change_pct": float(d["floor_price_1d_change_pct"]) if d.get("floor_price_1d_change_pct") is not None else None,
+                "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+                "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+                "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
+                "unified_volume_usd": uv,
+                "unified_volume_7d_ema": float(d["unified_volume_7d_ema"]) if d.get("unified_volume_7d_ema") is not None else None,
+                "daily_volume_usd": (uv / 30.0) if uv is not None else None,
+                "boxes_sold_30d_avg": float(d["boxes_sold_30d_avg"]) if d.get("boxes_sold_30d_avg") is not None else None,
+                "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
+            }
+            out.setdefault(bid, []).append(ent)
+        return out
+    except Exception:
+        return {}
