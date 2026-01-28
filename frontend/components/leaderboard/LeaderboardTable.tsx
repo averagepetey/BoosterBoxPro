@@ -14,6 +14,8 @@ interface LeaderboardTableProps {
   onSort?: (sortBy: string) => void;
   currentSort?: string;
   timeRange?: '24h' | '7d' | '30d';
+  /** When true, show mobile card layout below xl (dashboard only). When false, always show desktop table (e.g. landing). */
+  responsiveMobileLayout?: boolean;
 }
 
 export function LeaderboardTable({
@@ -22,6 +24,7 @@ export function LeaderboardTable({
   onSort,
   currentSort = 'unified_volume_7d_ema',
   timeRange = '30d',
+  responsiveMobileLayout = false,
 }: LeaderboardTableProps) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -102,8 +105,106 @@ export function LeaderboardTable({
     );
   }
 
-  return (
-    <div className="space-y-0">
+  // Volume display for current timeRange
+  const getVolumeDisplay = (box: LeaderboardBox) => {
+    if (timeRange === '24h') {
+      return box.metrics.daily_volume_usd != null ? formatCurrency(box.metrics.daily_volume_usd) : '--';
+    }
+    if (timeRange === '7d') {
+      const v = (box.metrics as any).volume_7d ?? (box.metrics.daily_volume_usd != null ? box.metrics.daily_volume_usd * 7 : null);
+      return v != null ? formatCurrency(v) : '--';
+    }
+    const v = (box.metrics as any).volume_30d ?? box.metrics.unified_volume_usd ?? (box.metrics.daily_volume_usd != null ? box.metrics.daily_volume_usd * 30 : null);
+    return v != null ? formatCurrency(v) : '--';
+  };
+
+  const getSalesDisplay = (box: LeaderboardBox) => {
+    if (timeRange === '24h') {
+      return box.metrics.boxes_sold_per_day != null ? formatNumber(box.metrics.boxes_sold_per_day) : formatNumber(box.metrics.units_sold_count);
+    }
+    if (timeRange === '7d') {
+      const s = box.metrics.boxes_sold_per_day != null ? box.metrics.boxes_sold_per_day * 7 : null;
+      return s != null ? formatNumber(s) : formatNumber(box.metrics.units_sold_count);
+    }
+    if (box.metrics.boxes_sold_30d_avg != null) return formatNumber(box.metrics.boxes_sold_30d_avg * 30);
+    if (box.metrics.boxes_sold_per_day != null) return formatNumber(box.metrics.boxes_sold_per_day * 30);
+    return formatNumber(box.metrics.units_sold_count);
+  };
+
+  const getPriceChangeDisplay = (box: LeaderboardBox) => {
+    const change = timeRange === '24h' || timeRange === '7d'
+      ? box.metrics.floor_price_1d_change_pct
+      : box.metrics.floor_price_30d_change_pct;
+    if (change == null) return '--';
+    const num = typeof change === 'number' ? change : Number(change);
+    const sign = num >= 0 ? '+' : '';
+    return `${sign}${num.toFixed(2)}%`;
+  };
+
+  const getPriceChangeColorClass = (box: LeaderboardBox) => {
+    const change = timeRange === '24h' || timeRange === '7d'
+      ? box.metrics.floor_price_1d_change_pct
+      : box.metrics.floor_price_30d_change_pct;
+    return getPriceChangeColor(change);
+  };
+
+  // Mobile card layout (only when responsiveMobileLayout; visible below xl / 1280px — e.g. at 1233px)
+  const mobileCards = responsiveMobileLayout ? (
+    <div className="xl:hidden space-y-2 px-2 sm:px-4 py-2">
+      {boxes.map((box) => {
+        const isRankOne = box.rank === 1;
+        const priceChangeColor = getPriceChangeColorClass(box);
+        return (
+          <div
+            key={box.id}
+            onClick={() => (window.location.href = `/boxes/${box.id}`)}
+            className={`rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-3 cursor-pointer transition-all duration-200 active:scale-[0.99] ${isRankOne ? 'ring-1 ring-amber-400/40' : ''}`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-mono text-white/70 w-6 flex-shrink-0">#{box.rank}</span>
+              <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-lg overflow-hidden bg-white/10">
+                {box.image_url ? (
+                  <img src={box.image_url} alt={box.product_name} className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-lg">📦</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-white truncate" title={cleanProductName(box.product_name)}>
+                  {cleanProductName(box.product_name)}
+                </div>
+                {box.set_name && (
+                  <div className="text-xs text-white/60 truncate" title={box.set_name}>{box.set_name}</div>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="text-[10px] uppercase text-white/50 tracking-wider">Floor</div>
+                <div className="text-sm font-semibold text-white financial-number">{formatCurrency(box.metrics.floor_price_usd)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase text-white/50 tracking-wider">{timeRange === '24h' ? '1d %' : timeRange === '7d' ? '1d %' : '30d %'}</div>
+                <div className={`text-sm font-semibold financial-number ${priceChangeColor}`}>{getPriceChangeDisplay(box)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase text-white/50 tracking-wider">{timeRange === '24h' ? 'Vol' : timeRange === '7d' ? '7d Vol' : '30d Vol'}</div>
+                <div className="text-sm font-semibold text-white financial-number">{getVolumeDisplay(box)}</div>
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-xs text-white/70">
+              <span>{timeRange === '24h' ? 'Sales' : timeRange === '7d' ? '7d Sales' : '30d Sales'}</span>
+              <span className="font-semibold text-white">{getSalesDisplay(box)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
+
+  // Desktop table (visible from xl when responsive, else always)
+  const desktopTable = (
+    <div className={responsiveMobileLayout ? 'hidden xl:block space-y-0' : 'space-y-0'}>
       {boxes.map((box, index) => {
         const isRankOne = box.rank === 1;
         // Get price change based on timeRange
@@ -317,4 +418,12 @@ export function LeaderboardTable({
       })}
     </div>
   );
+
+  return (
+    <>
+      {mobileCards}
+      {desktopTable}
+    </>
+  );
 }
+
