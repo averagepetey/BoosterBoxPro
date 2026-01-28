@@ -76,10 +76,10 @@ export function HeroSection() {
           </div>
           <div className="text-center">
             <div className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-0.5">
-              &lt;24H
+              Fastest
             </div>
             <div className="text-[10px] sm:text-xs text-white/60">
-              LATENCY
+              DATA REFRESHES IN MARKET
             </div>
           </div>
           <div className="text-center">
