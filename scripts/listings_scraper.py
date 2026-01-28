@@ -534,18 +534,38 @@ async def run_scraper():
     async with async_playwright() as p:
         # Use Playwright's Chromium (works in Docker). Use channel="chrome" only when Chrome is installed (e.g. local).
         use_chrome = os.environ.get("SCRAPER_USE_CHROME", "").lower() in ("1", "true", "yes")
+        low_mem = os.environ.get("CRON_LOW_MEMORY", "").lower() in ("1", "true", "yes")  # Render 512Mi cron
+        launch_args = [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",  # Avoid /dev/shm in Docker/low-mem
+            "--disable-gpu",
+            "--no-zygote",
+            "--disable-software-rasterizer",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-default-apps",
+            "--disable-sync",
+            "--metrics-recording-only",
+            "--mute-audio",
+        ]
         launch_options = {
-            "headless": True,  # Required in Docker; set SCRAPER_USE_CHROME=1 locally for headed Chrome
-            "args": ["--no-sandbox", "--disable-setuid-sandbox"],
+            "headless": True,
+            "args": launch_args,
         }
         if use_chrome:
             launch_options["channel"] = "chrome"
             launch_options["headless"] = False
         browser = await p.chromium.launch(**launch_options)
         
+        # Smaller viewport in low-memory (e.g. Render 512Mi) to reduce rendering memory
+        viewport = profile['viewport']
+        if low_mem:
+            viewport = {"width": 1280, "height": 720}
+            logger.info("Low-memory mode: using 1280x720 viewport")
         context = await browser.new_context(
             user_agent=profile['user_agent'],
-            viewport=profile['viewport'],
+            viewport=viewport,
         )
         
         page = await context.new_page()
