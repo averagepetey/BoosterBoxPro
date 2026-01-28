@@ -470,26 +470,44 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
             except Exception:
                 pass
 
-            # Strategy 0: TCGplayer-style numbered buttons "1", "2", "3" at bottom - find and click
+            # Strategy 4 first: URL with page param - avoids scroll_into_view timeouts entirely
             try:
+                from urllib.parse import parse_qs, urlencode, urlparse
+                parsed = urlparse(page.url)
+                base = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                params = parse_qs(parsed.query) if parsed.query else {}
+                page_param = next((k for k in ('page', 'pageNumber', 'p', 'pageNum') if k in params), 'page')
+                params[page_param] = [str(next_page_num)]
+                new_url = base + '?' + urlencode(params, doseq=True)
+                await page.goto(new_url, wait_until='domcontentloaded', timeout=30000)
+                await asyncio.sleep(human_delay() + 2)
+                await page.evaluate('window.scrollTo(0, 500)')
+                await asyncio.sleep(1)
+                current_page = next_page_num
+                logger.info(f"  Navigated to page {current_page} via URL")
+                continue
+            except Exception as e:
+                logger.debug(f"  URL pagination (first) failed: {e}")
+
+            # Strategy 0: TCGplayer-style numbered buttons "1", "2", "3" at bottom - find and click (JS, no Playwright scroll)
+            try:
+                # First try non-disabled only; then try including disabled (some sites use disabled for styling)
                 clicked = await page.evaluate('''(nextPageNum) => {
                     const want = String(nextPageNum);
-                    // Any clickable: button, a, or [role=button] whose text is exactly the page number
                     const sel = "button, a[href], [role=\\"button\\"]";
-                    const candidates = Array.from(document.querySelectorAll(sel)).filter(el => {
+                    const all = Array.from(document.querySelectorAll(sel)).filter(el => {
                         const t = (el.textContent || "").trim();
-                        if (t !== want) return false;
-                        if (el.disabled || el.getAttribute("aria-disabled") === "true") return false;
-                        return true;
+                        return t === want;
                     });
-                    // Prefer element that has siblings with single digits (pagination row)
-                    const withSiblings = candidates.filter(el => {
+                    const notDisabled = all.filter(el => !el.disabled && el.getAttribute("aria-disabled") !== "true");
+                    const withSiblings = (arr) => arr.filter(el => {
                         const parent = el.parentElement;
                         if (!parent) return false;
                         const sibs = Array.from(parent.children).map(c => (c.textContent || "").trim());
                         return sibs.some(t => /^\\d+$/.test(t));
                     });
-                    const toClick = withSiblings.length ? withSiblings[0] : candidates[0];
+                    const toClick = (withSiblings(notDisabled).length ? withSiblings(notDisabled)[0] : notDisabled[0])
+                        || (withSiblings(all).length ? withSiblings(all)[0] : all[0]);
                     if (toClick) {
                         toClick.scrollIntoView({ block: "center" });
                         toClick.click();
@@ -585,7 +603,8 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 except Exception as e:
                     logger.debug(f"  Next button error: {e}")
 
-            # Strategy 3b: Playwright get_by_role / get_by_text for "2" (handles aria and visible text)
+            # Strategy 3b: Playwright get_by_role / get_by_text for "2" - short timeout to avoid 30s scroll hang
+            SCROLL_TIMEOUT_MS = 8000
             if not page_button:
                 try:
                     for loc in [
@@ -594,7 +613,7 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                         page.get_by_text(str(next_page_num), exact=True),
                     ]:
                         if await loc.count() > 0:
-                            await loc.first.scroll_into_view_if_needed()
+                            await loc.first.scroll_into_view_if_needed(timeout=SCROLL_TIMEOUT_MS)
                             await asyncio.sleep(0.3)
                             await loc.first.click()
                             page_button = True  # mark as handled
@@ -609,43 +628,19 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 except Exception as e:
                     logger.debug(f"  get_by_role/get_by_text pagination: {e}")
 
-            # Strategy 4: URL with page param (navigate directly if DOM pagination not found)
-            if not page_button:
-                try:
-                    from urllib.parse import parse_qs, urlencode, urlparse
-                    parsed = urlparse(page.url)
-                    base = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-                    params = parse_qs(parsed.query) if parsed.query else {}
-                    # Use existing page param name if present, else "page"
-                    page_param = next((k for k in ('page', 'pageNumber', 'p', 'pageNum') if k in params), 'page')
-                    params[page_param] = [str(next_page_num)]
-                    new_url = base + '?' + urlencode(params, doseq=True)
-                    await page.goto(new_url, wait_until='domcontentloaded', timeout=30000)
-                    await asyncio.sleep(human_delay() + 2)
-                    await page.evaluate('window.scrollTo(0, 500)')
-                    await asyncio.sleep(1)
-                    current_page = next_page_num
-                    logger.debug(f"  Navigated to page {current_page} via URL")
-                    continue  # skip the click block below
-                except Exception as e:
-                    logger.debug(f"  URL pagination error: {e}")
-            
             if page_button:
-                # Check if disabled
+                # Click page number button (try even if marked disabled - some sites use it for styling)
                 is_disabled = await page_button.get_attribute('disabled')
                 aria_disabled = await page_button.get_attribute('aria-disabled')
                 classes = await page_button.get_attribute('class') or ''
-                
-                if is_disabled or aria_disabled == 'true' or 'disabled' in classes.lower():
-                    logger.info(f"  No more pages available (page {next_page_num} button disabled)")
-                    break
-                
-                # Click page number button
+                marked_disabled = is_disabled or aria_disabled == 'true' or 'disabled' in classes.lower()
+
                 try:
-                    logger.debug(f"  Clicking page {next_page_num} button...")
-                    await page_button.scroll_into_view_if_needed()
+                    logger.debug(f"  Clicking page {next_page_num} button..." + (" (marked disabled, trying anyway)" if marked_disabled else ""))
+                    await page_button.scroll_into_view_if_needed(timeout=8000)
                     await asyncio.sleep(0.5)
-                    await page_button.click()
+                    # Use force=True if marked disabled so Playwright doesn't refuse the click
+                    await page_button.click(force=marked_disabled)
                     
                     # Wait for new page to load
                     await asyncio.sleep(human_delay() + 2)  # Extra wait for page load
@@ -657,7 +652,10 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                     current_page = next_page_num
                     logger.debug(f"  Navigated to page {current_page}")
                 except Exception as e:
-                    logger.warning(f"  Error clicking page {next_page_num} button: {e}")
+                    if marked_disabled:
+                        logger.info(f"  No more pages available (page {next_page_num} button disabled, click failed)")
+                    else:
+                        logger.warning(f"  Error clicking page {next_page_num} button: {e}")
                     break
             else:
                 logger.info(f"  No page {next_page_num} button found (reached end)")
