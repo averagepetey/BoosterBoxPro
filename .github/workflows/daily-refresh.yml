@@ -1,0 +1,45 @@
+# Daily TCGplayer refresh (Apify + Listings Scraper)
+# Runs at 1pm EST (18:00 UTC) with 16GB RAM - no 512Mi limit like Render free cron.
+# Add secrets: DATABASE_URL, APIFY_API_TOKEN (Repo → Settings → Secrets and variables → Actions).
+
+name: Daily Refresh (Apify + Scraper)
+
+on:
+  schedule:
+    # 1pm EST = 18:00 UTC (adjust if DST: 17:00 or 18:00)
+    - cron: '0 18 * * *'
+  workflow_dispatch: # allow manual run
+
+jobs:
+  daily-refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
+      - name: Run daily refresh
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+        run: python scripts/daily_refresh.py --no-delay

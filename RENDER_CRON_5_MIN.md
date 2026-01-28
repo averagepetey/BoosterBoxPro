@@ -1,10 +1,14 @@
-# Render cron – 5‑minute setup
+# Render cron – reference only (cron runs on GitHub)
 
-Do this in the **Render dashboard** (same project as your API).
+**The daily refresh cron is intended to run only on GitHub Actions.** See **`CRON_GITHUB_ONLY.md`** for the current setup.
+
+If you still have a Render cron job for the daily refresh, **disable or delete it** so the job runs only on GitHub (avoids OOM and duplicate runs).
+
+The sections below are kept for reference if you ever need to recreate or inspect a Render cron.
 
 ---
 
-## 1. Create the Cron Job
+## 1. Create the Cron Job (reference)
 
 - **New +** → **Cron Job**.
 - **Connect** the BoosterBoxPro repo, branch `main`.
@@ -57,19 +61,18 @@ Done. It runs daily at 1pm EST; the script adds a 0–30 min jitter. See `DAILY_
 
 ## 5. If cron fails: "Out of memory (used over 512Mi)"
 
-Render’s **free** cron jobs have a **512 MiB** memory limit. The daily refresh runs **Apify** (Phase 1) and a **Playwright/Chromium** listings scraper (Phase 2). Chromium can exceed 512 MiB.
+Render’s **free** cron jobs have a **512 MiB** memory limit. The daily refresh runs **Apify** (Phase 1) and a **Playwright/Chromium** listings scraper (Phase 2). Chromium often exceeds 512 MiB.
 
-**Try in this order:**
+**Options (see `CRON_ALTERNATIVES_MEMORY.md` for full details):**
 
-1. **Reduce Chromium memory**  
-   In the Cron Job’s **Environment**, add:
-   - **CRON_LOW_MEMORY** = `1`  
-   This uses a smaller viewport and extra Chromium flags to lower memory. Redeploy and trigger a run.
+1. **Move to GitHub Actions (free, ~16 GB RAM)**  
+   Use the workflow in `.github/workflows/daily-refresh.yml`. Add repo secrets `DATABASE_URL` and `APIFY_API_TOKEN`, then disable or remove this Render cron so only Actions runs the job.
 
-2. **Skip the scraper (Phase 2) on cron**  
-   If it still OOMs, you can run only Apify on Render and run the scraper elsewhere (e.g. locally):
-   - **SKIP_SCRAPER** = `1`  
-   Phase 1 (Apify sales data) still runs; Phase 2 (listings scraper) is skipped. Leaderboard sales/volume data will still update; only listings-related metrics won’t refresh on cron.
+2. **Reduce Chromium memory on Render**  
+   In the Cron Job’s **Environment**, add **CRON_LOW_MEMORY** = `1`. Redeploy and trigger a run. May still OOM.
 
-3. **Upgrade plan**  
-   Paid Render plans give more RAM (e.g. 512 MiB+). Upgrading the cron job’s instance allows both phases to run without SKIP_SCRAPER.
+3. **Skip the scraper on Render**  
+   Add **SKIP_SCRAPER** = `1`. Phase 1 (Apify) still runs; Phase 2 (scraper) is skipped. Run the scraper locally when needed.
+
+4. **Upgrade plan**  
+   Paid Render gives more RAM so both phases can run without SKIP_SCRAPER.
