@@ -9,6 +9,7 @@ Reference: Setup Guides/LISTINGS_SCRAPER_RULES.md
 import asyncio
 import json
 import logging
+import os
 import random
 import sys
 import numpy as np
@@ -531,12 +532,16 @@ async def run_scraper():
     errors = []
     
     async with async_playwright() as p:
-        # Launch browser with stealth - use real Chrome for better fingerprint
-        browser = await p.chromium.launch(
-            headless=False,  # Headed mode for better fingerprint
-            channel="chrome",  # Use installed Chrome (better TLS fingerprint)
-            args=['--start-minimized']
-        )
+        # Use Playwright's Chromium (works in Docker). Use channel="chrome" only when Chrome is installed (e.g. local).
+        use_chrome = os.environ.get("SCRAPER_USE_CHROME", "").lower() in ("1", "true", "yes")
+        launch_options = {
+            "headless": True,  # Required in Docker; set SCRAPER_USE_CHROME=1 locally for headed Chrome
+            "args": ["--no-sandbox", "--disable-setuid-sandbox"],
+        }
+        if use_chrome:
+            launch_options["channel"] = "chrome"
+            launch_options["headless"] = False
+        browser = await p.chromium.launch(**launch_options)
         
         context = await browser.new_context(
             user_agent=profile['user_agent'],
