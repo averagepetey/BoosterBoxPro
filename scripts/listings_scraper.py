@@ -242,27 +242,36 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
     if not listings:
         return {
             'total_listings': 0,
+            'total_quantity': 0,
             'floor_price': None,
             'listings_within_20pct': 0,
+            'quantity_within_20pct': 0,
             'filters_applied': {
                 'japanese_removed': jp_removed,
                 'suspicious_removed': suspicious_removed,
             }
         }
     
-    # Step 4: Calculate floor price
+    # Step 4: Calculate floor price; ensure quantity exists (default 1)
+    for l in listings:
+        if 'quantity' not in l or l.get('quantity', 0) < 1:
+            l['quantity'] = 1
     floor_price = min(l['price'] for l in listings)
     
-    # Step 5: Count within 20% of floor
+    # Step 5: Count listings and quantity within 20% of floor
     threshold = floor_price * WITHIN_20PCT_THRESHOLD
     within_20pct = [l for l in listings if l['price'] <= threshold]
+    total_quantity = sum(l.get('quantity', 1) for l in listings)
+    quantity_within_20pct = sum(l.get('quantity', 1) for l in within_20pct)
     
-    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold:.2f}): {len(within_20pct)}")
+    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold:.2f}): {len(within_20pct)} rows, {quantity_within_20pct} units")
     
     return {
         'total_listings': len(listings),
+        'total_quantity': total_quantity,
         'floor_price': floor_price,
-        'listings_within_20pct': len(within_20pct),
+        'listings_within_20pct': quantity_within_20pct,  # total units within 20% (not row count)
+        'quantity_within_20pct': quantity_within_20pct,
         'filters_applied': {
             'japanese_removed': jp_removed,
             'suspicious_removed': suspicious_removed,
@@ -355,10 +364,25 @@ async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
                         const sellerEl = el.querySelector('[class*="seller"], [class*="Seller"]');
                         const seller = sellerEl ? sellerEl.innerText.trim() : '';
                         
+                        // Parse quantity listed (e.g. "Qty: 3", "3 available", "x3")
+                        let quantity = 1;
+                        const qtyMatch = fullText.match(/(?:qty|quantity|available)[\s:]*?(\d+)|(?:^|[\s\xd7x])(\d+)\s*(?:available|left|in stock)/i)
+                            || fullText.match(/^(\d+)\s*$/m);
+                        if (qtyMatch) {
+                            const n = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
+                            if (n >= 1 && n <= 9999) quantity = n;
+                        }
+                        const numInText = fullText.match(/\b(\d+)\s*(?:available|units|boxes|in stock)/i);
+                        if (numInText && quantity === 1) {
+                            const n = parseInt(numInText[1], 10);
+                            if (n >= 1 && n <= 9999) quantity = n;
+                        }
+                        
                         // Only include if price is valid
                         if (price > 0) {
                             listings.push({
                                 price: price,
+                                quantity: quantity,
                                 condition: condition,
                                 seller: seller,
                                 title: fullText.substring(0, 200),
@@ -813,13 +837,14 @@ def save_results(results: List[Dict]):
         if box_id not in hist:
             hist[box_id] = []
 
-        # Create entry
+        # Create entry (active_listings_count = total quantity within 20%, total_listings = row count, total_quantity = sum of qty)
         entry = {
             'date': today,
             'source': 'tcgplayer_scraper',
             'floor_price_usd': result.get('floor_price'),
-            'active_listings_count': result.get('listings_within_20pct'),
-            'total_listings': result.get('total_listings'),
+            'active_listings_count': result.get('listings_within_20pct'),  # total units within 20%
+            'total_listings': result.get('total_listings'),  # number of listing rows
+            'total_quantity': result.get('total_quantity'),  # sum of quantity across all rows
             'scrape_timestamp': result.get('scrape_timestamp'),
             'pages_scraped': result.get('pages_scraped'),
             'filters_applied': result.get('filters_applied'),
@@ -841,7 +866,7 @@ def save_results(results: List[Dict]):
             else:
                 logger.warning(f"DB upsert failed for {box_id} (e.g. missing FK)")
 
-        logger.info(f"Saved {box_id}: {result.get('listings_within_20pct')} listings @ ${result.get('floor_price', 0):.2f}")
+        logger.info(f"Saved {box_id}: {result.get('listings_within_20pct')} units (within 20%), {result.get('total_listings')} rows, {result.get('total_quantity')} total qty @ ${result.get('floor_price', 0):.2f}")
     
     # Backup and save
     backup_path = Path(f'data/historical_entries_backup_{today}.json')
