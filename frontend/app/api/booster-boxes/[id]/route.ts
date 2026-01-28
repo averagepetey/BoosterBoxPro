@@ -14,18 +14,20 @@ export async function GET(
   try {
     const { id } = await params;
     const url = `${BACKEND_URL}/booster-boxes/${id}`;
-    
+    const authHeader = request.headers.get('authorization');
+
     console.log('[API Proxy] Fetching box detail from backend:', url);
     
     // Use AbortController for 15 second timeout (backend can be slow)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (authHeader) headers['Authorization'] = authHeader;
     
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       cache: 'no-store',
       signal: controller.signal,
     });

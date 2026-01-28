@@ -64,14 +64,16 @@ export interface RankHistoryPoint {
 export async function getBoxDetail(id: string): Promise<BoxDetail> {
   // Use Next.js API proxy (avoids CORS, handles timeouts better)
   const url = `/api/booster-boxes/${id}`;
+  const token = getAuthToken();
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   console.log(`Fetching box detail for ID: ${id} via proxy: ${url}`);
   
   try {
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       cache: 'no-store',
     });
     
