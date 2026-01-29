@@ -21,6 +21,9 @@ export interface BoxMetricsSummary {
   unified_volume_usd?: number | null; // 30d volume
   volume_7d?: number | null; // 7d rolling sum
   volume_30d?: number | null; // 30d rolling sum
+  volume_1d_change_pct?: number | null; // day-over-day volume % change
+  volume_7d_change_pct?: number | null; // week-over-week volume % change
+  volume_30d_change_pct?: number | null; // month-over-month volume % change
   boxes_sold_per_day?: number | null;
   units_sold_count?: number | null;
   boxes_sold_30d_avg?: number | null;

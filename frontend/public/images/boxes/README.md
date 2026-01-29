@@ -15,7 +15,7 @@ Images should be named according to the set identifier:
 - `op-06.png` - OP-06 Wings of the Captain
 - `op-07.png` - OP-07 500 Years In The Future
 - `op-08.png` - OP-08 Two Legends
-- `op-09.png` - OP-09 Emperors of the New World
+- `op-09.png` - OP-09 Emperors in the New World
 - `op-10.png` - OP-10 Royal Blood
 - `op-11.png` - OP-11 A Fist of Divine Speed
 - `op-12.png` - OP-12 Legacy of the Master

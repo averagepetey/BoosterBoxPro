@@ -531,7 +531,7 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
     
     all_listings = []
     current_page = 1
-    max_pages = 15  # Increased - boxes might be on later pages
+    max_pages = 10  # Cap so we don't run forever; real last page is detected by ≤2 listings or sharp drop
     
     # Filter: Don't count listings 19% or more below market price
     # Keep listings that are at least 81% of market price
@@ -568,6 +568,7 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
         
         box_start = time.time()
         BOX_TIMEOUT_SEC = 150  # Per-box max so cron doesn't hang
+        prev_page_count = None  # Listings on previous page; used to detect "past last page" (e.g. EB-02 has 2 pages, page 3+ returns 1 bogus)
         
         while current_page <= max_pages:
             if (time.time() - box_start) > BOX_TIMEOUT_SEC:
@@ -582,27 +583,39 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 logger.info(f"  Page {current_page}: No box listings found (all < ${min_box_price}), stopping pagination.")
                 break
             else:
-                page_units = sum(l.get('quantity', 1) for l in page_listings)
-                logger.info(f"  Page {current_page}: {len(page_listings)} box listings, {page_units} units (≥${min_box_price})")
-                all_listings.extend(page_listings)
-                # Past last real page: many sites return 0 or 1 duplicate/bogus listing for page 3, 4, ...
-                if current_page >= 2 and len(page_listings) <= 1:
-                    logger.info(f"  Stopping pagination: page {current_page} has ≤1 listing (likely past last page).")
-                    break
-                # Check if we've passed the 20% threshold: stop when current page's lowest price is above floor + 20%
-                # We need at least some listings to calculate floor, and we need to apply filters to get "legitimate" floor
-                if len(all_listings) >= 3:  # Need a few listings to establish floor
-                    # Apply basic filters to get legitimate floor (same as process_listings)
+                # Establish floor + 20% threshold from existing all_listings so we can stop when we hit listings above it (e.g. halfway through page 2)
+                threshold = None
+                if len(all_listings) >= 3:
                     filtered = [l for l in all_listings if not is_japanese_listing(l)]
                     filtered = [l for l in filtered if not is_suspicious_listing(l)]
                     if filtered:
                         floor = min(l['price'] for l in filtered)
                         threshold = floor * WITHIN_20PCT_THRESHOLD
-                        page_lowest = min(l['price'] for l in page_listings)
-                        
-                        if page_lowest > threshold:
-                            logger.info(f"  Stopping pagination: page lowest (${page_lowest:.2f}) > 20% threshold (${threshold:.2f}) above floor (${floor:.2f})")
-                            break
+                
+                hit_above_threshold = False
+                added_this_page = 0
+                for l in page_listings:
+                    if threshold is not None and l['price'] > threshold:
+                        logger.info(f"  Stopping pagination: hit listing at ${l['price']:.2f} (above 20% threshold ${threshold:.2f}); stopping halfway through page {current_page}.")
+                        hit_above_threshold = True
+                        break
+                    all_listings.append(l)
+                    added_this_page += 1
+                
+                if hit_above_threshold:
+                    break
+                
+                page_units = sum(l.get('quantity', 1) for l in page_listings[:added_this_page])
+                logger.info(f"  Page {current_page}: {added_this_page} box listings, {page_units} units (≥${min_box_price}, within 20% of floor)")
+                # Past last real page: many sites (e.g. EB-02) only have 2 pages; page 3+ returns 1–2 bogus/duplicate listings
+                if current_page >= 2 and len(page_listings) <= 2:
+                    logger.info(f"  Stopping pagination: page {current_page} has ≤2 listings (likely past last page).")
+                    break
+                # Sharp drop: previous page had many listings, this page has very few = we're past the end (e.g. EB-02: page 2 had 7, page 3 has 1)
+                if current_page >= 2 and prev_page_count is not None and prev_page_count >= 3 and len(page_listings) < prev_page_count and len(page_listings) <= 2:
+                    logger.info(f"  Stopping pagination: sharp drop from {prev_page_count} to {len(page_listings)} listings (past last page).")
+                    break
+                prev_page_count = len(page_listings)
             
             # Try to go to next page - scroll to bottom first so pagination "1, 2, 3" is in view
             next_page_num = current_page + 1

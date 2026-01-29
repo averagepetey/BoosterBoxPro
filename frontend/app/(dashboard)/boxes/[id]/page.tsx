@@ -223,7 +223,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   { label: 'Sold/Day', value: box.metrics.boxes_sold_30d_avg != null ? (Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10).toString() : box.metrics.boxes_sold_per_day != null ? (Math.round(box.metrics.boxes_sold_per_day * 10) / 10).toString() : '--', valueClass: 'text-white' },
                   { label: 'Time to Sale', value: box.metrics.expected_time_to_sale_days != null ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d` : 'N/A', valueClass: 'text-white' },
                   { label: 'Top 10', value: box.metrics.top_10_value_usd != null ? formatCurrency(box.metrics.top_10_value_usd) : '--', valueClass: 'text-white' },
-                  { label: 'Daily Vol', value: (box.metrics as any).daily_volume_usd != null ? formatCurrency((box.metrics as any).daily_volume_usd) : '--', valueClass: 'text-white' },
+                  { label: 'Daily Vol', value: box.metrics.daily_volume_usd != null ? formatCurrency(box.metrics.daily_volume_usd) : '--', valueClass: 'text-white' },
                   { label: '30d Avg', value: box.metrics.boxes_sold_30d_avg != null ? `${(Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10)}/d` : '--', valueClass: 'text-white' },
                   { label: 'Floor', value: formatCurrency(box.metrics.floor_price_usd), valueClass: 'text-green-400' },
                 ].map((cell, i) => (
@@ -491,8 +491,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Daily Volume</div>
                     <div className="text-2xl font-bold text-white">
-                      {(box.metrics as any).daily_volume_usd !== null && (box.metrics as any).daily_volume_usd !== undefined
-                        ? formatCurrency((box.metrics as any).daily_volume_usd)
+                      {box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
+                        ? formatCurrency(box.metrics.daily_volume_usd)
                         : '--'}
                     </div>
                     <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
@@ -693,16 +693,16 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <div>
                   <div className="text-white/70 text-xs mb-1">Daily Volume USD</div>
                   <div className="text-lg font-semibold text-white">
-                    {(box.metrics as any).daily_volume_usd !== null && (box.metrics as any).daily_volume_usd !== undefined
-                      ? formatCurrency((box.metrics as any).daily_volume_usd)
+                    {box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
+                      ? formatCurrency(box.metrics.daily_volume_usd)
                       : '--'}
                   </div>
                 </div>
-                {((box.metrics as any).volume_30d != null || (box.metrics as any).unified_volume_usd != null) && (
+                {(box.metrics.volume_30d != null || box.metrics.unified_volume_usd != null) && (
                   <div>
                     <div className="text-white/70 text-xs mb-1">30d Volume</div>
                     <div className="text-lg font-semibold text-white">
-                      {formatCurrency((box.metrics as any).volume_30d ?? (box.metrics as any).unified_volume_usd)}
+                      {formatCurrency(box.metrics.volume_30d ?? box.metrics.unified_volume_usd)}
                     </div>
                     <div className="text-white/50 text-xs mt-0.5">Rolling total from daily data</div>
                   </div>
@@ -721,6 +721,29 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                     </div>
                   </div>
                 )}
+                {/* Volume & floor changes day/week/month */}
+                {(box.metrics.volume_1d_change_pct != null || box.metrics.volume_7d_change_pct != null || box.metrics.volume_30d_change_pct != null) && (
+                  <div className="pt-2 border-t border-white/10">
+                    <div className="text-white/70 text-xs mb-2">Volume change</div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      {box.metrics.volume_1d_change_pct != null && (
+                        <span className={box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          DoD: {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
+                        </span>
+                      )}
+                      {box.metrics.volume_7d_change_pct != null && (
+                        <span className={box.metrics.volume_7d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          WoW: {box.metrics.volume_7d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_7d_change_pct).toFixed(1)}%
+                        </span>
+                      )}
+                      {box.metrics.volume_30d_change_pct != null && (
+                        <span className={box.metrics.volume_30d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          MoM: {box.metrics.volume_30d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_30d_change_pct).toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Supply Metrics Column */}
@@ -733,35 +756,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                       ? box.metrics.active_listings_count.toLocaleString()
                       : '--'}
                   </div>
-                </div>
-                <div>
-                  <div className="text-white/70 text-xs mb-1">Volume Change</div>
-                  <div className={`text-lg font-semibold ${
-                    (() => {
-                      // Use monthly data for month-over-month calculation
-                      if (!allHistoricalData || allHistoricalData.length < 2) return 'text-white';
-                      const currentMonth = allHistoricalData[allHistoricalData.length - 1];
-                      const previousMonth = allHistoricalData[allHistoricalData.length - 2];
-                      const currentVolume = currentMonth?.unified_volume_usd || 0;
-                      const previousVolume = previousMonth?.unified_volume_usd || 0;
-                      if (previousVolume === 0) return 'text-white';
-                      const change = ((currentVolume - previousVolume) / previousVolume) * 100;
-                      return change >= 0 ? 'text-green-400' : 'text-red-400';
-                    })()
-                  }`}>
-                    {(() => {
-                      // Use monthly data for month-over-month calculation
-                      if (!allHistoricalData || allHistoricalData.length < 2) return '--';
-                      const currentMonth = allHistoricalData[allHistoricalData.length - 1];
-                      const previousMonth = allHistoricalData[allHistoricalData.length - 2];
-                      const currentVolume = currentMonth?.unified_volume_usd || 0;
-                      const previousVolume = previousMonth?.unified_volume_usd || 0;
-                      if (previousVolume === 0) return '--';
-                      const change = ((currentVolume - previousVolume) / previousVolume) * 100;
-                      return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-                    })()}
-                  </div>
-                  <div className="text-white/50 text-xs mt-1">Month over Month</div>
                 </div>
                 {box.metrics.boxes_added_today !== null && box.metrics.boxes_added_today !== undefined && (
                   <div>

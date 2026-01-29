@@ -520,7 +520,8 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             price_change = round(market_price - prev_price, 2) if prev_price else None
             price_change_pct = round(((market_price - prev_price) / prev_price) * 100, 1) if prev_price and prev_price > 0 else None
             
-            daily_vol = round(avg_daily * market_price, 2)
+            # Daily volume = floor price × avg daily sold; 7d/30d are running sums of these (when we have multiple days)
+            daily_vol = round(avg_daily * floor, 2) if floor else 0
             volume_7d = round(daily_vol * 7, 2)
             volume_30d = round(daily_vol * 30, 2)
             

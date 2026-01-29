@@ -252,10 +252,10 @@ const MOCK_DATA: LeaderboardResponse = {
       rank: 10,
       rank_change_direction: 'down',
       rank_change_amount: 1,
-      product_name: 'One Piece - OP-09 Emperors of the New World Booster Box',
-      set_name: 'Emperors of the New World',
+      product_name: 'One Piece - OP-09 Emperors in the New World Booster Box',
+      set_name: 'Emperors in the New World',
       game_type: 'One Piece',
-      image_url: getBoxImageUrl('One Piece - OP-09 Emperors of the New World Booster Box'),
+      image_url: getBoxImageUrl('One Piece - OP-09 Emperors in the New World Booster Box'),
       metrics: {
         floor_price_usd: 115.00,
         floor_price_1d_change_pct: -1.2,
