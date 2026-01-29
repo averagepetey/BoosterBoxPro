@@ -419,9 +419,8 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                 prev_ema = result[-1].get('unified_volume_7d_ema') if result else None
                 
                 if prev_ema:
-                    # Calculate EMA with smoothing factor for 7-day period
-                    # Alpha = 2/(N+1) where N=7 for 7-day EMA
-                    alpha = 2 / (7 + 1)  # Smoothing factor = 0.25
+                    # Calculate EMA with smoothing factor for 7-day period (per CALCULATION_SPECIFICATION: alpha=0.3)
+                    alpha = 0.3
                     calculated_ema = (daily_volume_usd * alpha) + (prev_ema * (1 - alpha))
                     # Ensure EMA is at least equal to current daily volume
                     # This ensures the metric reflects current activity level
@@ -439,16 +438,29 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                 else:
                     prev_ema = result[-1].get('unified_volume_7d_ema') if result else None
                     if prev_ema:
-                        alpha = 2 / (7 + 1)
+                        alpha = 0.3  # per CALCULATION_SPECIFICATION
                         unified_volume_7d_ema = (daily_proxy * alpha) + (prev_ema * (1 - alpha))
                     else:
                         unified_volume_7d_ema = daily_proxy
+        
+        # Listings within 10% of floor (for expected time to sale): from raw_listings if present, else from scraper-saved scalar
+        listings_within_10pct_floor = entry.get('listings_within_10pct_floor')
+        raw_listings = entry.get('raw_listings')
+        if floor_price and floor_price > 0 and raw_listings:
+            cap_10pct = floor_price * 1.10
+            total = 0
+            for l in raw_listings:
+                p = (l.get('price') or 0) + (l.get('shipping') or 0)
+                if p <= cap_10pct:
+                    total += l.get('quantity', 1)
+            listings_within_10pct_floor = total if total > 0 else None
         
         result.append({
             'date': date_str,
             'floor_price_usd': floor_price,
             'floor_price_1d_change_pct': floor_price_1d_change_pct,
             'active_listings_count': entry.get('active_listings_count'),
+            'listings_within_10pct_floor': listings_within_10pct_floor,
             'boxes_sold_per_day': boxes_sold_per_day,
             'boxes_added_today': entry.get('boxes_added_today'),
             'daily_volume_usd': daily_volume_usd,
@@ -510,11 +522,11 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                     if prev_price > 0:
                         result[i]['floor_price_1d_change_pct'] = ((curr_price - prev_price) / prev_price) * 100
                 
-                # Recalculate EMA
+                # Recalculate EMA (per CALCULATION_SPECIFICATION: alpha=0.3)
                 prev_ema = prev_entry.get('unified_volume_7d_ema')
                 curr_volume = current_entry.get('unified_volume_usd')
                 if prev_ema and curr_volume:
-                    alpha = 2 / (7 + 1)
+                    alpha = 0.3
                     result[i]['unified_volume_7d_ema'] = (curr_volume * alpha) + (prev_ema * (1 - alpha))
     
     return result

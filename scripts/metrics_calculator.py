@@ -150,12 +150,16 @@ class MetricsCalculator:
             avg_boxes_added_per_day=metrics.get("avg_boxes_added_per_day")
         )
         
-        # Expected days to sell
-        if metrics.get("active_listings_count") and metrics.get("boxes_sold_per_day"):
-            if metrics["boxes_sold_per_day"] > 0:
-                metrics["expected_days_to_sell"] = metrics["active_listings_count"] / metrics["boxes_sold_per_day"]
-            else:
-                metrics["expected_days_to_sell"] = None
+        # Expected days to sell: (listings within 10% of floor) / (sales per day - listings added per day)
+        # Fallback to active_listings_count when price ladder not available
+        metrics["expected_days_to_sell"] = self._calculate_expected_days_to_sell(
+            floor_price_usd=metrics.get("floor_price_usd"),
+            price_ladder_data=today_data.get("price_ladder"),
+            active_listings_count=metrics.get("active_listings_count"),
+            boxes_sold_per_day=metrics.get("boxes_sold_per_day"),
+            boxes_sold_30d_avg=metrics.get("boxes_sold_30d_avg"),
+            avg_boxes_added_per_day=metrics.get("avg_boxes_added_per_day")
+        )
         
         return metrics
     
@@ -286,6 +290,63 @@ class MetricsCalculator:
         
         return existing != new
     
+    def _listings_within_10pct_of_floor(
+        self,
+        floor_price_usd: Optional[float],
+        price_ladder_data: Optional[List[Dict[str, Any]]]
+    ) -> Optional[float]:
+        """
+        Sum of listing quantities where (price + shipping) <= floor * 1.10.
+        Returns None if price ladder or floor not available.
+        """
+        if not floor_price_usd or floor_price_usd <= 0:
+            return None
+        if not price_ladder_data or not isinstance(price_ladder_data, list):
+            return None
+        cap_price = floor_price_usd * 1.10
+        total = 0
+        for listing in price_ladder_data:
+            price = float(listing.get("price", 0))
+            shipping = float(listing.get("shipping", 0))
+            if (price + shipping) <= cap_price:
+                total += int(listing.get("quantity", 1))
+        return total if total > 0 else None
+
+    def _calculate_expected_days_to_sell(
+        self,
+        floor_price_usd: Optional[float],
+        price_ladder_data: Optional[List[Dict[str, Any]]],
+        active_listings_count: Optional[int],
+        boxes_sold_per_day: Optional[float],
+        boxes_sold_30d_avg: Optional[float],
+        avg_boxes_added_per_day: Optional[float]
+    ) -> Optional[float]:
+        """
+        Expected time to sale = (listings within 10% of floor) / (sales per day - listings added per day).
+        When price ladder is unavailable, uses active_listings_count as fallback.
+        Bounded: min 1 day, max 365 days.
+        """
+        # Competitive supply: listings within 10% of floor, or fallback to total active listings
+        listings_10pct = self._listings_within_10pct_of_floor(floor_price_usd, price_ladder_data)
+        supply = listings_10pct if listings_10pct is not None else (active_listings_count if active_listings_count else None)
+        if supply is None or supply <= 0:
+            return None
+
+        # Sales rate: prefer boxes_sold_per_day, fallback to boxes_sold_30d_avg
+        sales_per_day = boxes_sold_per_day if (boxes_sold_per_day is not None and boxes_sold_per_day > 0) else boxes_sold_30d_avg
+        if sales_per_day is None or sales_per_day <= 0:
+            return None
+
+        # Net burn = sales per day - listings added per day
+        listings_added_per_day = avg_boxes_added_per_day if avg_boxes_added_per_day is not None else 0.0
+        net_burn = sales_per_day - listings_added_per_day
+        if net_burn <= 0.05:  # Too slow or negative
+            return None
+
+        days = supply / net_burn
+        days = max(1.0, min(365.0, round(days, 2)))
+        return days
+
     def _calculate_days_to_20pct_increase(
         self,
         floor_price_usd: Optional[float],
