@@ -9,6 +9,7 @@
       "set_name": "Carrying on His Will",
       "game_type": "One Piece",
       "image_url": null,
+      "reprint_risk": "HIGH",
       "metrics": {
         "floor_price_usd": 570.58,
         "floor_price_1d_change_pct": 0.0,
@@ -18,7 +19,7 @@
         "active_listings_count": 49,
         "listed_percentage": 10.0,
         "estimated_total_supply": 220,
-        "liquidity_score": 1.0,
+        "liquidity_score": 90,
         "days_to_20pct_increase": 1.14,
         "expected_days_to_sell": 1.14,
         "boxes_sold_per_day": 12,

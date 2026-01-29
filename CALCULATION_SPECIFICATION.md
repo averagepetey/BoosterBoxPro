@@ -310,23 +310,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -889,23 +886,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -1468,23 +1462,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -2047,23 +2038,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -2626,23 +2614,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -3205,23 +3190,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -3784,23 +3766,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -4363,23 +4342,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 
@@ -4942,23 +4918,20 @@ Store as `visible_market_cap_usd` (Decimal, 2 decimal places, nullable)
 
 ### 10. Expected Days to Sell (Expected Time to Sale)
 
-**Purpose**: Calculate how long it will take to sell all current listings at the current sales rate
+**Purpose**: Estimate how long it will take to sell the competitive supply (listings within 10% of floor) at the current net sales rate.
 
-**Formula**: `active_listings_count / boxes_sold_per_day`
+**Formula**: `(listings within 10% of floor) / (boxes_sold_per_day - avg_boxes_added_per_day)`
 
 **Components**:
-- `active_listings_count`: Total active listings from eBay + TCGPlayer
-- `boxes_sold_per_day`: Current day's boxes sold (or use `boxes_sold_30d_avg` for smoother estimate)
+- **Listings within 10% of floor**: Sum of quantities of listings where `(price + shipping) <= floor_price_usd × 1.10`. Requires price ladder data. When unavailable, fallback to `active_listings_count`.
+- **Net burn rate**: `boxes_sold_per_day - avg_boxes_added_per_day`. Use `boxes_sold_30d_avg` if daily not available. Use 0 for avg_boxes_added_per_day if missing.
 
 **Calculation Method**:
-- Use `boxes_sold_per_day` if available for current day
-- Fallback to `boxes_sold_30d_avg` if daily value not available
-- Only calculate if `boxes_sold_per_day > 0` or `boxes_sold_30d_avg > 0`
+- Compute competitive supply from price ladder when available; otherwise use total active listings.
+- Net burn must be > 0.05. Bound result: min 1 day, max 365 days.
 
 **Example**:
-- Active listings: 100
-- Boxes sold per day: 5
-- **Expected days to sell = 100 / 5 = 20 days**
+- Listings within 10% of floor: 40; Boxes sold per day: 5; Listings added per day: 1 → Net burn = 4 → **Expected days to sell = 40 / 4 = 10 days**
 
 Store as `expected_days_to_sell` (Decimal, 2 decimal places, nullable)
 

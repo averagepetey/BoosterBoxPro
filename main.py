@@ -558,6 +558,11 @@ async def get_booster_boxes(
                 if hist.get("active_listings_count") is not None:
                     box_data["metrics"]["active_listings_count"] = hist["active_listings_count"]
             
+            # OP-13 manual overrides: reprint risk High, liquidity High (90)
+            if "OP-13" in (box_data.get("product_name") or ""):
+                box_data["reprint_risk"] = "HIGH"
+                box_data["metrics"]["liquidity_score"] = 90
+            
             result_boxes.append(box_data)
     
     # Sort by the requested field (default: unified_volume_7d_ema)
@@ -816,6 +821,17 @@ async def get_box_detail(
                         ema = (alpha * vol) + ((1 - alpha) * ema)
                     unified_volume_7d_ema = round(ema, 2)
             
+            # Expected time to sale: (listings within 10% of floor) / (sales per day - listings added per day)
+            supply_10pct = latest.get("listings_within_10pct_floor")
+            supply = supply_10pct if supply_10pct is not None and supply_10pct > 0 else active_listings
+            sales_per_day = boxes_sold_per_day or avg_sales_30d
+            listings_added_per_day = avg_boxes_added_per_day or 0.0
+            expected_days_to_sell = None
+            if supply and supply > 0 and sales_per_day and sales_per_day > 0:
+                net_burn = sales_per_day - listings_added_per_day
+                if net_burn > 0.05:
+                    expected_days_to_sell = round(max(1.0, min(365.0, supply / net_burn)), 2)
+            
             box_metrics = {
                 "floor_price_usd": latest.get("floor_price_usd"),
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
@@ -829,6 +845,8 @@ async def get_box_detail(
                 "days_to_20pct_increase": days_to_20pct,
                 "liquidity_score": liquidity_score,
                 "boxes_sold_30d_avg": avg_sales_30d,
+                "expected_days_to_sell": expected_days_to_sell,
+                "expected_time_to_sale_days": expected_days_to_sell,  # alias for box detail UI
             }
         
         # Add 30d price change
@@ -852,6 +870,12 @@ async def get_box_detail(
                 except Exception as e:
                     print(f"⚠️  Error getting avg sales: {e}")
         
+        # OP-13 manual overrides for box detail: liquidity High, reprint risk High, community score 90
+        is_op13 = "OP-13" in (db_box.product_name or "")
+        if is_op13:
+            box_metrics["liquidity_score"] = 90
+            box_metrics["community_sentiment"] = 90
+        
         return {
             "data": {
                 "id": str(db_box.id),
@@ -862,7 +886,7 @@ async def get_box_detail(
                 "release_date": None,
                 "external_product_id": None,
                 "estimated_total_supply": box_metrics.get("estimated_total_supply"),
-                "reprint_risk": db_box.reprint_risk or "UNKNOWN",
+                "reprint_risk": "HIGH" if is_op13 else (db_box.reprint_risk or "UNKNOWN"),
                 "current_rank_by_volume": None,
                 "current_rank_by_market_cap": None,
                 "rank_change_direction": "same",

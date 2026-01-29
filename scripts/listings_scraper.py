@@ -127,6 +127,7 @@ SUSPICIOUS_KEYWORDS = [
 OUTLIER_THRESHOLD_PCT = 0.75  # 75% of market price
 MIN_CLUSTER_SIZE = 5  # Need 5+ clean low-priced to confirm pullback
 WITHIN_20PCT_THRESHOLD = 1.20  # Floor × 1.20
+WITHIN_10PCT_THRESHOLD = 1.10  # Floor × 1.10 (for expected time to sale)
 
 # Timing
 DELAY_MIN = 5
@@ -319,6 +320,7 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
         return {
             'floor_price': None,
             'listings_within_20pct': 0,
+            'listings_within_10pct_floor': 0,
             'filters_applied': {
                 'japanese_removed': jp_removed,
                 'suspicious_removed': suspicious_removed,
@@ -331,17 +333,20 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
             l['quantity'] = 1
     floor_price = min(l['price'] for l in listings)
     
-    # Step 5: The only metric we care about = total boxes on the market within 20% above lowest legitimate
-    threshold = floor_price * WITHIN_20PCT_THRESHOLD
-    within_20pct = [l for l in listings if l['price'] <= threshold]
+    # Step 5: Boxes within 20% above floor (primary listings metric) and within 10% (for expected time to sale)
+    threshold_20pct = floor_price * WITHIN_20PCT_THRESHOLD
+    threshold_10pct = floor_price * WITHIN_10PCT_THRESHOLD
+    within_20pct = [l for l in listings if l['price'] <= threshold_20pct]
+    within_10pct = [l for l in listings if l['price'] <= threshold_10pct]
     boxes_within_20pct = sum(l.get('quantity', 1) for l in within_20pct)
+    boxes_within_10pct = sum(l.get('quantity', 1) for l in within_10pct)
     
-    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold:.2f}): {boxes_within_20pct} boxes (listings metric)")
+    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold_20pct:.2f}): {boxes_within_20pct} boxes; Within 10% (to ${threshold_10pct:.2f}): {boxes_within_10pct} boxes")
     
     return {
         'floor_price': floor_price,
-        # The only metric that matters: total boxes within 20% of floor. Stored as active_listings_count ("listings").
         'listings_within_20pct': boxes_within_20pct,
+        'listings_within_10pct_floor': boxes_within_10pct,
         'filters_applied': {
             'japanese_removed': jp_removed,
             'suspicious_removed': suspicious_removed,
@@ -955,12 +960,13 @@ def save_results(results: List[Dict]):
         if box_id not in hist:
             hist[box_id] = []
 
-        # Listings = only metric we care about: total boxes within 20% of lowest legitimate. Stored as active_listings_count.
+        # active_listings_count = boxes within 20% of floor; listings_within_10pct_floor = boxes within 10% (for expected time to sale)
         entry = {
             'date': today,
             'source': 'tcgplayer_scraper',
             'floor_price_usd': result.get('floor_price'),
             'active_listings_count': boxes_within_20pct,
+            'listings_within_10pct_floor': result.get('listings_within_10pct_floor'),
             'scrape_timestamp': result.get('scrape_timestamp'),
             'pages_scraped': result.get('pages_scraped'),
             'filters_applied': result.get('filters_applied'),
