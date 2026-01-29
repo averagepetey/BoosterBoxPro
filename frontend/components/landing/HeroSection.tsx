@@ -39,12 +39,15 @@ export function HeroSection() {
 
         {/* Value Proposition */}
         <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-2 sm:mb-3 lg:mb-4 font-medium">
-          Stop Guessing. Start Investing. Track One Piece booster box prices, sales, and market trends in real-time.
+          Stop guessing. Know exactly which One Piece boxes are going to pop next—right before they do.
         </p>
 
         {/* Detailed Explanation */}
-        <p className="text-xs sm:text-sm lg:text-base text-white/70 mb-4 sm:mb-5 lg:mb-6 leading-relaxed">
-          We've built the most comprehensive tracking tool for One Piece sealed booster boxes. Our platform monitors marketplaces, tracks sales data, calculates metrics 24/7, and gives you the insights you need to make informed decisions.
+        <p className="text-xs sm:text-sm lg:text-base text-white/70 mb-2 sm:mb-3 leading-relaxed">
+          We've built the most comprehensive tracking tool for One Piece sealed booster boxes. Our software gives you insights you can't get anywhere else so you can make informed decisions.
+        </p>
+        <p className="text-xs sm:text-sm text-white/50 mb-4 sm:mb-5 lg:mb-6 leading-relaxed">
+          Tracked on marketplaces across the internet selling One Piece TCG.
         </p>
 
         {/* Call-to-Action Buttons */}
@@ -153,7 +156,7 @@ export function HeroSection() {
             <div className="border-r border-white/10 px-1 sm:px-2">
               <div className="text-white/50 text-[9px] sm:text-[10px] mb-0.5">Volume (7d EMA)</div>
               <div className="text-sm sm:text-base font-bold text-white">
-                $13.5K
+                $94.5K
               </div>
             </div>
             {/* Days to +20% */}
@@ -171,7 +174,7 @@ export function HeroSection() {
             <div className="border-r border-white/10">
               <div className="text-white/50 text-[9px] sm:text-[10px]">Liquidity</div>
               <div className="text-xs sm:text-sm font-bold text-white/70">
-                N/A
+                High
               </div>
             </div>
             <div className="border-r border-white/10">
@@ -189,7 +192,7 @@ export function HeroSection() {
             <div>
               <div className="text-white/50 text-[9px] sm:text-[10px]">Time to Sale</div>
               <div className="text-xs sm:text-sm font-bold text-white">
-                N/A
+                1 day
               </div>
             </div>
           </div>
@@ -197,15 +200,15 @@ export function HeroSection() {
           {/* Secondary Metrics Grid */}
           <div className="grid grid-cols-4 text-center pb-1.5 mb-2 border-b border-white/10">
             <div className="border-r border-white/10">
-              <div className="text-white/50 text-[9px] sm:text-[10px]">Market Cap</div>
+              <div className="text-white/50 text-[9px] sm:text-[10px]">Rank</div>
               <div className="text-xs sm:text-sm font-bold text-white">
-                --
+                #1
               </div>
             </div>
             <div className="border-r border-white/10">
               <div className="text-white/50 text-[9px] sm:text-[10px]">Top 10 Cards</div>
               <div className="text-xs sm:text-sm font-bold text-white">
-                --
+                $30.5K
               </div>
             </div>
             <div className="border-r border-white/10">
