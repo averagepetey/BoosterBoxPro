@@ -24,6 +24,7 @@
         "expected_days_to_sell": 1.14,
         "boxes_sold_per_day": 12,
         "boxes_sold_30d_avg": 19.32,
+        "top_10_value_usd": 23386.16,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -138,6 +139,7 @@
         "expected_days_to_sell": 6.03,
         "boxes_sold_per_day": 11,
         "boxes_sold_30d_avg": 4.64,
+        "top_10_value_usd": 9478.29,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -195,6 +197,7 @@
         "expected_days_to_sell": 1.61,
         "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 1.86,
+        "top_10_value_usd": 3824.96,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -252,6 +255,7 @@
         "expected_days_to_sell": 14.76,
         "boxes_sold_per_day": 0,
         "boxes_sold_30d_avg": 3.93,
+        "top_10_value_usd": 11547.80,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -309,6 +313,7 @@
         "expected_days_to_sell": 3.52,
         "boxes_sold_per_day": 2,
         "boxes_sold_30d_avg": 4.54,
+        "top_10_value_usd": 6110.98,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -366,6 +371,7 @@
         "expected_days_to_sell": 11.11,
         "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 2.43,
+        "top_10_value_usd": 1802.86,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -423,6 +429,7 @@
         "expected_days_to_sell": 1.69,
         "boxes_sold_per_day": 0,
         "boxes_sold_30d_avg": 1.18,
+        "top_10_value_usd": 1979.89,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -480,6 +487,7 @@
         "expected_days_to_sell": 7.21,
         "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 1.11,
+        "top_10_value_usd": 8164.56,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -537,6 +545,7 @@
         "expected_days_to_sell": 42.68,
         "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 3.14,
+        "top_10_value_usd": 2860.39,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -594,6 +603,7 @@
         "expected_days_to_sell": 0.0,
         "boxes_sold_per_day": 3,
         "boxes_sold_30d_avg": 2.71,
+        "top_10_value_usd": 4019.20,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -651,6 +661,7 @@
         "expected_days_to_sell": 10.07,
         "boxes_sold_per_day": 6,
         "boxes_sold_30d_avg": 4.57,
+        "top_10_value_usd": 3241.99,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -708,6 +719,7 @@
         "expected_days_to_sell": 4.11,
         "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 1.46,
+        "top_10_value_usd": 4894.15,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -765,6 +777,7 @@
         "expected_days_to_sell": 11.69,
         "boxes_sold_per_day": 3,
         "boxes_sold_30d_avg": 3.25,
+        "top_10_value_usd": 2127.59,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -822,6 +835,7 @@
         "expected_days_to_sell": 13.23,
         "boxes_sold_per_day": 4,
         "boxes_sold_30d_avg": 3.25,
+        "top_10_value_usd": 1420.75,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -879,6 +893,7 @@
         "expected_days_to_sell": 4.3,
         "boxes_sold_per_day": 2,
         "boxes_sold_30d_avg": 0.93,
+        "top_10_value_usd": 1897.50,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -936,6 +951,7 @@
         "expected_days_to_sell": 13.54,
         "boxes_sold_per_day": 1,
         "boxes_sold_30d_avg": 0.96,
+        "top_10_value_usd": 1972.72,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",
@@ -993,6 +1009,7 @@
         "expected_days_to_sell": 36.73,
         "boxes_sold_per_day": 3,
         "boxes_sold_30d_avg": 1.96,
+        "top_10_value_usd": 1587.60,
         "price_sparkline_1d": [
           {
             "timestamp": "2024-01-14T00:00:00Z",

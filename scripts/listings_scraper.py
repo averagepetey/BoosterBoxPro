@@ -579,13 +579,16 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
             page_listings = await scrape_listings_page(page, min_price=min_box_price)
             
             if not page_listings:
-                logger.info(f"  Page {current_page}: No box listings found (all < ${min_box_price}), continuing...")
-                # Keep going - boxes might be on later pages
+                logger.info(f"  Page {current_page}: No box listings found (all < ${min_box_price}), stopping pagination.")
+                break
             else:
                 page_units = sum(l.get('quantity', 1) for l in page_listings)
                 logger.info(f"  Page {current_page}: {len(page_listings)} box listings, {page_units} units (≥${min_box_price})")
                 all_listings.extend(page_listings)
-                
+                # Past last real page: many sites return 0 or 1 duplicate/bogus listing for page 3, 4, ...
+                if current_page >= 2 and len(page_listings) <= 1:
+                    logger.info(f"  Stopping pagination: page {current_page} has ≤1 listing (likely past last page).")
+                    break
                 # Check if we've passed the 20% threshold: stop when current page's lowest price is above floor + 20%
                 # We need at least some listings to calculate floor, and we need to apply filters to get "legitimate" floor
                 if len(all_listings) >= 3:  # Need a few listings to establish floor
