@@ -26,15 +26,15 @@ export function OurStorySection() {
         {/* Body Text */}
         <div className="space-y-6 sm:space-y-8 text-center mb-8 sm:mb-10 lg:mb-12">
           <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed">
-            So, we built BoosterPro for ourselves.
+            We didn't start as a software company.
           </p>
           
           <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed">
-            So you can stop guessing and be quicker to the best opportunities than anyone else in the market.
+            We started as One Piece collectors, spending countless hours manually tracking prices, sales, and market trends across dozens of marketplaces. We knew there had to be a better, faster way to understand the market. So, we built BoosterPro for ourselves.
           </p>
           
           <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed">
-            After seeing its power, we realized we couldn't keep it to ourselves—our mission is to give you the exact insights we created for ourselves.
+            So you can stop guessing and be quicker to the best opportunities than anyone else in the market. After seeing its power, we realized we couldn't keep it to ourselves—our mission is to give you the exact insights we created for ourselves.
           </p>
         </div>
 

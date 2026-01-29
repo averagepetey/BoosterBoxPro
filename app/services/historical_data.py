@@ -106,14 +106,21 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
             boxes_sold = entry.get('boxes_sold_today') or entry.get('boxes_sold_per_day') or 0
             total_boxes_sold += boxes_sold
             
-            # Take the max listings count
-            entry_listings = entry.get('active_listings_count') or 0
+            # Take the max listings count (scraper may use active_listings_count, or legacy listings_count/listings_count_in_range)
+            entry_listings = (
+                entry.get('active_listings_count')
+                or entry.get('listings_count')
+                or entry.get('listings_count_in_range')
+                or 0
+            )
             if entry_listings > total_listings:
                 total_listings = entry_listings
             
             # Take the floor price from entry with listings (current market price)
             # If no listings, use the lowest price available
-            entry_listings_count = entry.get('active_listings_count', 0) or 0
+            entry_listings_count = (
+                entry.get('active_listings_count') or entry.get('listings_count') or entry.get('listings_count_in_range') or 0
+            )
             entry_has_listings = entry_listings_count > 0 or entry.get('raw_listings')
             
             if entry.get('floor_price_usd') and entry['floor_price_usd'] > 0:
