@@ -110,89 +110,56 @@ export function ChromeExtensionSection() {
 
             {/* Small text */}
             <p className="text-xs sm:text-sm text-white/60">
-              Works on TCGplayer and eBay. Free to use.
+              Works on TCGplayer and eBay.
             </p>
           </div>
 
-          {/* Right Side - Browser Mockup */}
+          {/* Right Side - Chrome extension graphic (matches actual extension: left-edge panel) */}
           <div className="w-full lg:w-1/2 lg:pl-8">
-            <div 
-              className="relative rounded-xl lg:rounded-3xl overflow-hidden border border-white/10"
-              style={{
-                boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
-              }}
-            >
-              {/* Browser Chrome */}
-              <div className="bg-white/5 border-b border-white/10 px-4 py-2 flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-white/20" />
-                  <div className="w-3 h-3 rounded-full bg-white/20" />
-                  <div className="w-3 h-3 rounded-full bg-white/20" />
-                </div>
-                <div className="flex-1 bg-black/30 rounded px-3 py-1 text-xs text-white/60">
-                  tcgplayer.com/product/one-piece-op-02...
-                </div>
-              </div>
-
-              {/* Browser Content */}
-              <div className="bg-white/5 p-6 sm:p-8">
-                {/* Product Page Mockup */}
-                <div className="space-y-4">
-                  {/* Product Header */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/10 rounded-lg flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="text-base sm:text-lg font-bold text-white mb-2">
-                        One Piece - OP-02 Paramount War Booster Box
-                      </h3>
-                      <div className="text-xl sm:text-2xl font-bold text-green-400 mb-2">
-                        $285.50
-                      </div>
-                      <div className="text-sm text-white/70">
-                        Seller: TCGPlayer Direct
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Extension Overlay Box */}
-                  <div 
-                    className="bg-green-500/20 border-2 border-green-500/50 rounded-lg p-4 mt-4"
-                    style={{
-                      boxShadow: '0 0 20px rgba(34, 197, 94, 0.3)'
-                    }}
-                  >
+            <div className="relative rounded-xl lg:rounded-3xl overflow-hidden border border-white/10 min-h-[280px] sm:min-h-[360px] bg-[#0a0a0a]" style={{ boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)' }}>
+              {/* Mockup of actual extension: left-edge panel + TCGplayer page (OP-05) */}
+              <div className="flex absolute inset-0 bg-[#0a0a0a]">
+                {/* Left-edge panel (actual extension style) */}
+                  <div className="w-[140px] sm:w-[180px] flex-shrink-0 rounded-r-xl border border-l-0 border-red-500/40 bg-gradient-to-b from-[#0a0a0a] to-black p-3 sm:p-4" style={{ boxShadow: '4px 0 20px rgba(0,0,0,0.4), 0 0 20px rgba(239,68,68,0.1)' }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-5 h-5 rounded bg-green-500 flex items-center justify-center">
-                        <span className="text-xs font-bold text-black">B</span>
+                      <div className="w-6 h-6 rounded bg-red-500 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-white">B</span>
                       </div>
-                      <span className="text-sm font-semibold text-green-400">
-                        BoosterBoxPro Data
-                      </span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-red-400">BoosterBoxPro</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-2 text-[10px] sm:text-xs">
                       <div>
-                        <div className="text-white/60 text-xs mb-1">Floor Price</div>
+                        <div className="text-white/50">Floor</div>
                         <div className="text-white font-semibold">$285.50</div>
                       </div>
                       <div>
-                        <div className="text-white/60 text-xs mb-1">24h Change</div>
-                        <div className="text-green-400 font-semibold">▲ +5.2%</div>
+                        <div className="text-white/50">24h</div>
+                        <div className="text-green-400 font-semibold">+5.2%</div>
                       </div>
                       <div>
-                        <div className="text-white/60 text-xs mb-1">Sales/Day</div>
+                        <div className="text-white/50">Sales/day</div>
                         <div className="text-white font-semibold">3.2</div>
                       </div>
                       <div>
-                        <div className="text-white/60 text-xs mb-1">Volume (30d)</div>
+                        <div className="text-white/50">Vol 30d</div>
                         <div className="text-white font-semibold">$850K</div>
                       </div>
+                    </div>
+                </div>
+                {/* Page preview */}
+                <div className="flex-1 p-4 sm:p-6 border-t border-b border-r border-white/10 rounded-r-xl">
+                  <div className="flex gap-3">
+                    <div className="w-14 h-14 sm:w-20 sm:h-20 bg-white/10 rounded-lg flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-xs sm:text-sm font-bold text-white truncate">OP-05 Awakening of the New Era</div>
+                      <div className="text-sm sm:text-base font-bold text-green-400 mt-1">$285.50</div>
+                      <div className="text-[10px] sm:text-xs text-white/50 mt-0.5">TCGplayer • tcgplayer.com/product/one-piece-op-05...</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Caption */}
             <p className="text-center text-xs sm:text-sm text-white/60 mt-4">
               Market data appears automatically as you browse
             </p>
