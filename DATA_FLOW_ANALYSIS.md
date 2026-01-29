@@ -4,8 +4,8 @@
 
 ### 1. Data Collection
 - **Listings Scraper**: Saves `floor_price_usd` and `active_listings_count` (boxes within 20% of floor) → `box_metrics_unified` table ✅
-- **Apify Service**: Saves `boxes_sold_per_day`, `unified_volume_usd`, `floor_price_usd` → `box_metrics_unified` table ✅
-- **ID Mapping**: Fixed - scraper now writes using leaderboard UUID (matches `booster_boxes.id`) ✅
+- **Apify Service**: Saves `boxes_sold_per_day`, `boxes_sold_30d_avg`, `unified_volume_usd`, `floor_price_usd` → `box_metrics_unified` table ✅
+- **ID Mapping**: Scraper and Apify both write using leaderboard UUID (matches `booster_boxes.id`) so the same row gets sales + listings ✅
 
 ### 2. Data Reading
 - **Box Detail Endpoint**: Reads from `get_box_price_history()` → `get_box_historical_data()` → `box_metrics_unified` ✅
@@ -22,9 +22,9 @@
 **Problem**: Some metrics needed for calculations are NOT saved to DB:
 
 - **`boxes_sold_30d_avg`**: 
-  - ❌ Apify doesn't save this (only saves `boxes_sold_per_day`)
-  - ✅ Box detail endpoint calculates on-the-fly using `get_box_30d_avg_sales()` (averages last 30 days of `boxes_sold_per_day`)
-  - **Status**: Should work, but depends on having 30 days of historical data
+  - ✅ Apify now saves this (same as rolling avg) so box detail shows fresh data
+  - ✅ Box detail endpoint still calculates on-the-fly via `get_box_30d_avg_sales()` when missing
+  - **Status**: Updated in daily flow
 
 - **`unified_volume_7d_ema`**:
   - ❌ Apify doesn't save this (only saves `unified_volume_usd` = 30-day volume)
@@ -72,7 +72,7 @@
 | `floor_price_usd` | ✅ | ✅ | - |
 | `active_listings_count` | ✅ | ❌ | - |
 | `boxes_sold_per_day` | ❌ | ✅ | - |
-| `boxes_sold_30d_avg` | ❌ | ❌ | ✅ (`get_box_30d_avg_sales()`) |
+| `boxes_sold_30d_avg` | ❌ | ✅ | ✅ (fallback: `get_box_30d_avg_sales()`) |
 | `unified_volume_usd` | ❌ | ✅ | - |
 | `unified_volume_7d_ema` | ❌ | ❌ | ❌ (not calculated) |
 | `boxes_added_today` | ❌ | ❌ | - |
