@@ -337,6 +337,28 @@ except ImportError as e:
     print(f"⚠️  Extension router not available: {e}")
 
 
+# Manual Top 10 cards value (USD) per set - from spreadsheet; used on leaderboard and box detail
+TOP_10_VALUE_USD = {
+    "One Piece - OP-01 Romance Dawn Booster Box (White)": 3824.96,
+    "One Piece - OP-02 Paramount War Booster Box": 1802.86,
+    "One Piece - OP-03 Pillars of Strength Booster Box": 1897.50,
+    "One Piece - OP-04 Kingdoms of Intrigue Booster Box": 1972.72,
+    "One Piece - OP-05 Awakening of the New Era Booster Box": 9478.29,
+    "One Piece - OP-06 Wings of the Captain Booster Box": 2860.39,
+    "One Piece - EB-01 Memorial Collection Booster Box": 1979.89,
+    "One Piece - OP-07 500 Years in the Future Booster Box": 2127.59,
+    "One Piece - OP-08 Two Legends Booster Box": 1587.60,
+    "One Piece - PRB-01 Premium Booster Booster Box": 8164.56,
+    "One Piece - OP-09 Emperors in the New World Booster Box": 11547.80,
+    "One Piece - OP-10 Royal Blood Booster Box": 1420.75,
+    "One Piece - EB-02 Anime 25th Collection Booster Box": 4894.15,
+    "One Piece - OP-11 A Fist of Divine Speed Booster Box": 6110.98,
+    "One Piece - OP-12 Legacy of the Master Booster Box": 3241.99,
+    "One Piece - PRB-02 Premium Booster Booster Box": 4019.20,
+    "One Piece - OP-13 Carrying on His Will Booster Box": 23386.16,
+}
+
+
 def get_box_image_url(product_name: str | None) -> str | None:
     """
     Generate image URL for a booster box based on its product name.
@@ -562,6 +584,11 @@ async def get_booster_boxes(
             if "OP-13" in (box_data.get("product_name") or ""):
                 box_data["reprint_risk"] = "HIGH"
                 box_data["metrics"]["liquidity_score"] = 90
+            
+            # Top 10 cards value (manual data from spreadsheet)
+            top_10 = TOP_10_VALUE_USD.get(db_box.product_name)
+            if top_10 is not None:
+                box_data["metrics"]["top_10_value_usd"] = top_10
             
             result_boxes.append(box_data)
     
@@ -875,6 +902,11 @@ async def get_box_detail(
         if is_op13:
             box_metrics["liquidity_score"] = 90
             box_metrics["community_sentiment"] = 90
+        
+        # Top 10 cards value (manual data from spreadsheet)
+        top_10 = TOP_10_VALUE_USD.get(db_box.product_name)
+        if top_10 is not None:
+            box_metrics["top_10_value_usd"] = top_10
         
         # OP-13 market notes (manual)
         notes = None

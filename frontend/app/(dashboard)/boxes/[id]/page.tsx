@@ -185,107 +185,56 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   />
                 </div>
               )}
-              {/* 3 Key Metrics - evenly spaced with dividers */}
-              <div className="grid grid-cols-3 text-center mb-3 pb-3 border-b border-white/10">
-                {/* Current Price */}
-                <div className="border-r border-white/10 pr-2">
-                  <div className="text-white/50 text-[10px] mb-0.5">Current Floor</div>
-                  <div className="text-lg font-bold text-green-400">
-                    {formatCurrency(box.metrics.floor_price_usd)}
-                  </div>
-                  {box.metrics.floor_price_1d_change_pct !== null && box.metrics.floor_price_1d_change_pct !== undefined && (
-                    <div className={`text-[10px] font-semibold ${
-                      box.metrics.floor_price_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {box.metrics.floor_price_1d_change_pct >= 0 ? '▲' : '▼'}
-                      {formatPercentage(box.metrics.floor_price_1d_change_pct)}
-                    </div>
-                  )}
-                </div>
-                {/* Volume EMA */}
-                <div className="border-r border-white/10 px-2">
-                  <div className="text-white/50 text-[10px] mb-0.5">Volume (7d EMA)</div>
-                  <div className="text-lg font-bold text-white">
-                    {formatCurrency(box.metrics.unified_volume_7d_ema)}
+              {/* 3 Key Metrics - uniform cells (label, value, sub-line with min-height) */}
+              <div className="grid grid-cols-3 text-center mb-3 pb-3 border-b border-white/10 gap-0">
+                <div className="border-r border-white/10 py-2 flex flex-col min-h-[4rem] justify-center">
+                  <div className="text-white/50 text-[10px] mb-0.5 uppercase tracking-wide">Current Floor</div>
+                  <div className="text-lg font-bold text-green-400">{formatCurrency(box.metrics.floor_price_usd)}</div>
+                  <div className="text-[10px] min-h-[1rem] mt-0.5">
+                    {box.metrics.floor_price_1d_change_pct != null ? (
+                      <span className={box.metrics.floor_price_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
+                        {box.metrics.floor_price_1d_change_pct >= 0 ? '▲' : '▼'}
+                        {formatPercentage(box.metrics.floor_price_1d_change_pct)}
+                      </span>
+                    ) : '\u00A0'}
                   </div>
                 </div>
-                {/* Days to +20% */}
-                <div className="pl-2">
-                  <div className="text-white/50 text-[10px] mb-0.5">Days to +20%</div>
+                <div className="border-r border-white/10 py-2 flex flex-col min-h-[4rem] justify-center">
+                  <div className="text-white/50 text-[10px] mb-0.5 uppercase tracking-wide">Volume (7d EMA)</div>
+                  <div className="text-lg font-bold text-white">{formatCurrency(box.metrics.unified_volume_7d_ema)}</div>
+                  <div className="text-[10px] min-h-[1rem] mt-0.5">&nbsp;</div>
+                </div>
+                <div className="py-2 flex flex-col min-h-[4rem] justify-center">
+                  <div className="text-white/50 text-[10px] mb-0.5 uppercase tracking-wide">Days to +20%</div>
                   <div className="text-lg font-bold text-white">
-                    {box.metrics.days_to_20pct_increase !== null && box.metrics.days_to_20pct_increase !== undefined
-                      ? Math.round(box.metrics.days_to_20pct_increase)
-                      : 'N/A'}
+                    {box.metrics.days_to_20pct_increase != null ? Math.round(box.metrics.days_to_20pct_increase) : 'N/A'}
                   </div>
-                  <div className="text-white/50 text-[10px]">Estimated</div>
+                  <div className="text-white/50 text-[10px] min-h-[1rem] mt-0.5">Estimated</div>
                 </div>
               </div>
             </div>
 
-            {/* Mobile: Compact metrics grid - 2 rows only, chart follows immediately */}
+            {/* Mobile: Compact metrics grid - uniform cells (label + value, same height) */}
             <div className="lg:hidden">
-              {/* Row 1: Key metrics */}
-              <div className="grid grid-cols-4 text-center pb-2 mb-2 border-b border-white/10">
-                <div className="border-r border-white/10">
-                  <div className="text-white/50 text-[10px]">Liquidity</div>
-                  <div className={`text-sm font-bold ${getLiquidityScoreColor(box.metrics.liquidity_score)}`}>
-                    {getLiquidityScoreLabel(box.metrics.liquidity_score)}
+              <div className="grid grid-cols-4 gap-0 text-center">
+                {[
+                  { label: 'Liquidity', value: getLiquidityScoreLabel(box.metrics.liquidity_score), valueClass: getLiquidityScoreColor(box.metrics.liquidity_score) },
+                  { label: 'Listed', value: box.metrics.active_listings_count != null ? box.metrics.active_listings_count.toLocaleString() : '--', valueClass: 'text-white' },
+                  { label: 'Sold/Day', value: box.metrics.boxes_sold_30d_avg != null ? (Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10).toString() : box.metrics.boxes_sold_per_day != null ? (Math.round(box.metrics.boxes_sold_per_day * 10) / 10).toString() : '--', valueClass: 'text-white' },
+                  { label: 'Time to Sale', value: box.metrics.expected_time_to_sale_days != null ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d` : 'N/A', valueClass: 'text-white' },
+                  { label: 'Top 10', value: box.metrics.top_10_value_usd != null ? formatCurrency(box.metrics.top_10_value_usd) : '--', valueClass: 'text-white' },
+                  { label: 'Daily Vol', value: (box.metrics as any).daily_volume_usd != null ? formatCurrency((box.metrics as any).daily_volume_usd) : '--', valueClass: 'text-white' },
+                  { label: '30d Avg', value: box.metrics.boxes_sold_30d_avg != null ? `${(Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10)}/d` : '--', valueClass: 'text-white' },
+                  { label: 'Floor', value: formatCurrency(box.metrics.floor_price_usd), valueClass: 'text-green-400' },
+                ].map((cell, i) => (
+                  <div
+                    key={i}
+                    className={`py-2.5 px-1 min-h-[3.25rem] flex flex-col justify-center border-b border-white/10 ${i % 4 !== 3 ? 'border-r border-white/10' : ''}`}
+                  >
+                    <div className="text-white/50 text-[10px] uppercase tracking-wide mb-0.5">{cell.label}</div>
+                    <div className={`text-sm font-bold truncate ${cell.valueClass}`}>{cell.value}</div>
                   </div>
-                </div>
-                <div className="border-r border-white/10">
-                  <div className="text-white/50 text-[10px]">Listed</div>
-                  <div className="text-sm font-bold text-white">
-                    {box.metrics.active_listings_count !== null && box.metrics.active_listings_count !== undefined
-                      ? box.metrics.active_listings_count.toLocaleString()
-                      : '--'}
-                  </div>
-                </div>
-                <div className="border-r border-white/10">
-                  <div className="text-white/50 text-[10px]">Sold/Day</div>
-                  <div className="text-sm font-bold text-white">
-                    {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
-                      ? Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10
-                      : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                      ? Math.round(box.metrics.boxes_sold_per_day * 10) / 10
-                      : '--'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-white/50 text-[10px]">Time to Sale</div>
-                  <div className="text-sm font-bold text-white">
-                    {box.metrics.expected_time_to_sale_days !== null && box.metrics.expected_time_to_sale_days !== undefined
-                      ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d`
-                      : 'N/A'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Secondary metrics */}
-              <div className="grid grid-cols-3 text-center pb-2 mb-2 border-b border-white/10">
-                <div className="border-r border-white/10">
-                  <div className="text-white/50 text-[10px]">Top 10 Cards</div>
-                  <div className="text-sm font-bold text-white">
-                    {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
-                      ? formatCurrency(box.metrics.top_10_value_usd)
-                      : '--'}
-                  </div>
-                </div>
-                <div className="border-r border-white/10">
-                  <div className="text-white/50 text-[10px]">Daily Vol</div>
-                  <div className="text-sm font-bold text-white">
-                    {(box.metrics as any).daily_volume_usd !== null && (box.metrics as any).daily_volume_usd !== undefined
-                      ? formatCurrency((box.metrics as any).daily_volume_usd)
-                      : '--'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-white/50 text-[10px]">30d Avg Sold</div>
-                  <div className="text-sm font-bold text-white">
-                    {box.metrics.boxes_sold_30d_avg
-                      ? `${Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10}/d`
-                      : '--'}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Liquidity Warning - compact */}
@@ -467,111 +416,105 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Primary Price Metrics */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                  {/* Floor Price */}
-                  <div>
+                {/* Unified metrics grid: same structure for every cell (label, value, sub-line) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-6 mb-6">
+                  {/* Row 1 */}
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Current Floor Price</div>
-                    <div className="text-4xl font-bold text-green-400 mb-1">
+                    <div className="text-2xl font-bold text-green-400">
                       {formatCurrency(box.metrics.floor_price_usd)}
                     </div>
-                    {/* 24h Change */}
-                    {box.metrics.floor_price_1d_change_pct !== null && box.metrics.floor_price_1d_change_pct !== undefined && (
-                      <div className={`text-base font-semibold flex items-center gap-1 ${
-                        box.metrics.floor_price_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {box.metrics.floor_price_1d_change_pct >= 0 ? '▲' : '▼'}
-                        {formatPercentage(box.metrics.floor_price_1d_change_pct)}
-                        <span className="text-white/70 text-sm font-normal">24h</span>
-                      </div>
-                    )}
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">
+                      {box.metrics.floor_price_1d_change_pct !== null && box.metrics.floor_price_1d_change_pct !== undefined ? (
+                        <span className={box.metrics.floor_price_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {box.metrics.floor_price_1d_change_pct >= 0 ? '▲' : '▼'}
+                          {formatPercentage(box.metrics.floor_price_1d_change_pct)} 24h
+                        </span>
+                      ) : '\u00A0'}
+                    </div>
                   </div>
-
-                  {/* Days to +20% */}
-                  <div>
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Days to +20%</div>
-                    <div className="text-3xl font-bold text-white mb-1">
+                    <div className="text-2xl font-bold text-white">
                       {box.metrics.days_to_20pct_increase !== null && box.metrics.days_to_20pct_increase !== undefined
-                        ? `${Math.round(box.metrics.days_to_20pct_increase)}`
+                        ? Math.round(box.metrics.days_to_20pct_increase)
                         : 'N/A'}
                     </div>
-                    <div className="text-white/60 text-sm">
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">
                       Estimated time to price increase
                     </div>
                   </div>
-
-                  {/* Expected Time to Sale */}
-                  <div>
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Expected Time to Sale</div>
-                    <div className="text-3xl font-bold text-white mb-1">
+                    <div className="text-2xl font-bold text-white">
                       {box.metrics.expected_time_to_sale_days !== null && box.metrics.expected_time_to_sale_days !== undefined
                         ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)} days`
                         : 'N/A'}
                     </div>
-                    <div className="text-white/60 text-sm">
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">
                       Estimated time until sale
                     </div>
                   </div>
-                </div>
-
-                {/* Avg Added / Boxes Listed - Compact Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 mt-6">
-                  <div>
+                  {/* Row 2 */}
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Avg Added/Day</div>
-                    <div className="text-lg font-semibold text-white">
+                    <div className="text-2xl font-bold text-white">
                       {box.metrics.boxes_added_7d_ema !== null && box.metrics.boxes_added_7d_ema !== undefined
-                        ? `${Math.round(box.metrics.boxes_added_7d_ema * 10) / 10}`
+                        ? (Math.round(box.metrics.boxes_added_7d_ema * 10) / 10).toString()
                         : box.metrics.boxes_added_30d_ema !== null && box.metrics.boxes_added_30d_ema !== undefined
-                        ? `${Math.round(box.metrics.boxes_added_30d_ema * 10) / 10}`
+                        ? (Math.round(box.metrics.boxes_added_30d_ema * 10) / 10).toString()
                         : '--'}
                     </div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
                   </div>
-                  <div>
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Boxes Listed</div>
-                    <div className="text-lg font-semibold text-white">
+                    <div className="text-2xl font-bold text-white">
                       {box.metrics.active_listings_count !== null && box.metrics.active_listings_count !== undefined
                         ? box.metrics.active_listings_count.toLocaleString()
                         : '--'}
                     </div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
                   </div>
-                </div>
-
-                {/* Supply & Demand Metrics - Compact Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                  <div>
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Sold/Day</div>
-                    <div className="text-lg font-semibold text-white">
+                    <div className="text-2xl font-bold text-white">
                       {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
-                        ? Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10
+                        ? (Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10).toString()
                         : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                        ? Math.round(box.metrics.boxes_sold_per_day * 10) / 10
+                        ? (Math.round(box.metrics.boxes_sold_per_day * 10) / 10).toString()
                         : '--'}
                     </div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
                   </div>
-                  <div>
+                  {/* Row 3 */}
+                  <div className="flex flex-col min-h-[5rem]">
+                    <div className="text-white/70 text-sm mb-1">Daily Volume</div>
+                    <div className="text-2xl font-bold text-white">
+                      {(box.metrics as any).daily_volume_usd !== null && (box.metrics as any).daily_volume_usd !== undefined
+                        ? formatCurrency((box.metrics as any).daily_volume_usd)
+                        : '--'}
+                    </div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
+                  </div>
+                  <div className="flex flex-col min-h-[5rem]">
+                    <div className="text-white/70 text-sm mb-1">30d Avg Sold</div>
+                    <div className="text-2xl font-bold text-white">
+                      {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
+                        ? `${(Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10)}/day`
+                        : '--'}
+                    </div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
+                  </div>
+                  <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Top 10 Cards Value</div>
-                    <div className="text-lg font-semibold text-white">
+                    <div className="text-2xl font-bold text-white">
                       {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
                         ? formatCurrency(box.metrics.top_10_value_usd)
                         : '--'}
                     </div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
                   </div>
-                  {(box.metrics as any).daily_volume_usd !== null && (box.metrics as any).daily_volume_usd !== undefined && (
-                    <div>
-                      <div className="text-white/70 text-sm mb-1">Daily Volume</div>
-                      <div className="text-lg font-semibold text-white">
-                        {formatCurrency((box.metrics as any).daily_volume_usd)}
-                      </div>
-                    </div>
-                  )}
-                  {box.metrics.boxes_sold_30d_avg && (
-                    <div>
-                      <div className="text-white/70 text-sm mb-1">30d Avg Sold</div>
-                      <div className="text-lg font-semibold text-white">
-                        {Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10}/day
-                      </div>
-                    </div>
-                  )}
                 </div>
 
 
