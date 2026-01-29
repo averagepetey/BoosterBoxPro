@@ -18,9 +18,9 @@ export async function GET(
 
     console.log('[API Proxy] Fetching box detail from backend:', url);
     
-    // Use AbortController for 15 second timeout (backend can be slow)
+    // Use AbortController for 45 second timeout (backend does heavy historical + DB work)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
     if (authHeader) headers['Authorization'] = authHeader;

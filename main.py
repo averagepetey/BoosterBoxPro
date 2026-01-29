@@ -795,31 +795,32 @@ async def get_box_detail(
         except (ValueError, TypeError):
             db_box = None
         
-        # If not found and box_id is numeric, find by rank from leaderboard
+        # If not found and box_id is numeric, find by rank from leaderboard (single batch to avoid N×get_box_price_history)
         if not db_box and box_id.isdigit():
-            # Get all boxes sorted by volume to find by rank
             all_boxes_stmt = select(BoosterBox)
             all_result = await db.execute(all_boxes_stmt)
             all_boxes = all_result.scalars().all()
-            
-            # Filter test boxes and sort by historical volume
-            valid_boxes = []
-            for b in all_boxes:
-                if "(Test)" in b.product_name or "Test Box" in b.product_name:
-                    continue
-                hist = None
-                if get_box_price_history:
-                    try:
-                        hist = get_box_price_history(str(b.id), days=90)
-                    except Exception as e:
-                        hist = None
-                vol = hist[-1].get("unified_volume_7d_ema", 0) if hist else 0
-                valid_boxes.append((b, vol or 0))
-            
-            valid_boxes.sort(key=lambda x: x[1], reverse=True)
-            rank = int(box_id)
-            if 1 <= rank <= len(valid_boxes):
-                db_box = valid_boxes[rank - 1][0]
+            valid = [b for b in all_boxes if "(Test)" not in (b.product_name or "") and "Test Box" not in (b.product_name or "")]
+            if not valid:
+                db_box = None
+            else:
+                try:
+                    from app.services.historical_data import get_all_boxes_latest_for_leaderboard
+                    box_ids = [str(b.id) for b in valid]
+                    hist_by_box = get_all_boxes_latest_for_leaderboard(box_ids)
+                    # Sort by volume (7d EMA or 30d), then pick by rank
+                    def vol_key(b):
+                        h = hist_by_box.get(str(b.id), {})
+                        return float(h.get("unified_volume_7d_ema") or h.get("volume_30d") or h.get("unified_volume_usd") or 0)
+                    valid.sort(key=vol_key, reverse=True)
+                    rank = int(box_id)
+                    if 1 <= rank <= len(valid):
+                        db_box = valid[rank - 1]
+                    else:
+                        db_box = None
+                except Exception:
+                    # Fallback: no historical batch, use first box (avoid N calls)
+                    db_box = valid[0] if int(box_id) == 1 else None
         
         if not db_box:
             return JSONResponse(
