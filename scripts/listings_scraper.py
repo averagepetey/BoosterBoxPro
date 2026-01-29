@@ -434,25 +434,53 @@ async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
                         const sellerEl = el.querySelector('[class*="seller"], [class*="Seller"]');
                         const seller = sellerEl ? sellerEl.innerText.trim() : '';
                         
-                        // Parse quantity listed (e.g. "1 of 3" = 3, "Qty: 3", "3 available")
+                        // Parse quantity listed - try all common TCGplayer formats
                         let quantity = 1;
-                        const ofMatch = fullText.match(/(\d+)\s*of\s*(\d+)/i);  // TCGPlayer "1 of 3" = 3 available
+                        // "1 of 4" or "1 of 4 available" → 4 units
+                        const ofMatch = fullText.match(/(\d+)\s*of\s*(\d+)/i);
                         if (ofMatch) {
-                            const n = parseInt(ofMatch[2], 10);  // second number is total
+                            const n = parseInt(ofMatch[2], 10);
                             if (n >= 1 && n <= 9999) quantity = n;
                         }
+                        // "1 / 4" or "1/4" (slash format) → 4 units
                         if (quantity === 1) {
-                            const qtyMatch = fullText.match(/(?:qty|quantity|available)[\s:]*?(\d+)|(?:^|[\s\xd7x])(\d+)\s*(?:available|left|in stock)/i)
-                                || fullText.match(/^(\d+)\s*$/m);
+                            const slashMatch = fullText.match(/(\d+)\s*\/\s*(\d+)/);
+                            if (slashMatch) {
+                                const n = parseInt(slashMatch[2], 10);
+                                if (n >= 1 && n <= 9999) quantity = n;
+                            }
+                        }
+                        // "× 4" or "x 4" or "4 available" or "Qty: 4"
+                        if (quantity === 1) {
+                            const qtyMatch = fullText.match(/(?:qty|quantity|available)[\s:]*?(\d+)|(?:^|[\s\xd7x×])\s*(\d+)\s*(?:available|left|in stock)?/i)
+                                || fullText.match(/\b(\d+)\s*(?:available|units|boxes|in stock)/i)
+                                || fullText.match(/(\d+)\s*\/\s*\d+/);  // "4 / 4" take first number as available qty
                             if (qtyMatch) {
                                 const n = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
                                 if (n >= 1 && n <= 9999) quantity = n;
                             }
                         }
+                        // "4 in stock" or "in stock: 4"
                         if (quantity === 1) {
-                            const numInText = fullText.match(/\b(\d+)\s*(?:available|units|boxes|in stock)/i);
-                            if (numInText) {
-                                const n = parseInt(numInText[1], 10);
+                            const inStockMatch = fullText.match(/(?:in stock|in stock:)\s*(\d+)|(\d+)\s*in stock/i);
+                            if (inStockMatch) {
+                                const n = parseInt(inStockMatch[1] || inStockMatch[2], 10);
+                                if (n >= 1 && n <= 9999) quantity = n;
+                            }
+                        }
+                        // Fallback: (4) or — 4 or "4" near quantity-like context
+                        if (quantity === 1) {
+                            const parenMatch = fullText.match(/\((\d+)\)\s*(?:available|in stock|left)?/i);
+                            if (parenMatch) {
+                                const n = parseInt(parenMatch[1], 10);
+                                if (n >= 2 && n <= 9999) quantity = n;
+                            }
+                        }
+                        // Data attributes (some sites use data-quantity, data-qty)
+                        if (quantity === 1) {
+                            const qtyAttr = el.getAttribute('data-quantity') || el.getAttribute('data-qty') || el.querySelector('[data-quantity]')?.getAttribute('data-quantity');
+                            if (qtyAttr) {
+                                const n = parseInt(qtyAttr, 10);
                                 if (n >= 1 && n <= 9999) quantity = n;
                             }
                         }
