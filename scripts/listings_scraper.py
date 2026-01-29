@@ -949,9 +949,10 @@ def save_results(results: List[Dict]):
     except ImportError:
         upsert_daily_metrics = None
     try:
-        from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP
+        from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP, get_box_30d_avg_sales
     except ImportError:
         DB_TO_LEADERBOARD_UUID_MAP = {}
+        get_box_30d_avg_sales = None
 
     for result in results:
         box_id = result['box_id']
@@ -976,6 +977,9 @@ def save_results(results: List[Dict]):
         hist[box_id] = [e for e in hist[box_id] if e.get('date') != today]
         hist[box_id].append(entry)
 
+        # Running 30d avg from historical data so DB stays up to date when we only write floor/listings
+        boxes_sold_30d_avg = get_box_30d_avg_sales(DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)) if get_box_30d_avg_sales else None
+
         # Write to DB using the ID that exists in booster_boxes (leaderboard UUID).
         # TCGPLAYER_URLS use TCGPlayer/DB UUIDs; booster_boxes.id may be leaderboard UUIDs.
         booster_box_id_for_db = DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)
@@ -985,6 +989,7 @@ def save_results(results: List[Dict]):
                 metric_date=today,
                 floor_price_usd=result.get('floor_price'),
                 active_listings_count=boxes_within_20pct,
+                boxes_sold_30d_avg=boxes_sold_30d_avg,
             )
             if ok:
                 logger.debug(f"DB upsert ok for {box_id}")

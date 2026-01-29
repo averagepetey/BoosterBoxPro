@@ -22,6 +22,7 @@ export interface BoxDetail {
   rank_change_direction?: 'up' | 'down' | 'same' | null;
   rank_change_amount?: number | null;
   is_favorited?: boolean;
+  notes?: string[] | null;
   metrics: BoxMetricsSummary & {
     boxes_sold_per_day?: number | null;
     boxes_sold_30d_avg?: number | null;

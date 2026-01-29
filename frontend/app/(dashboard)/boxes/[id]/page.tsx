@@ -254,22 +254,14 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="text-white/50 text-[10px]">Time to Sale</div>
                   <div className="text-sm font-bold text-white">
                     {box.metrics.expected_time_to_sale_days !== null && box.metrics.expected_time_to_sale_days !== undefined
-                      ? `${Math.round(box.metrics.expected_time_to_sale_days)}d`
+                      ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d`
                       : 'N/A'}
                   </div>
                 </div>
               </div>
 
               {/* Row 2: Secondary metrics */}
-              <div className="grid grid-cols-4 text-center pb-2 mb-2 border-b border-white/10">
-                <div className="border-r border-white/10">
-                  <div className="text-white/50 text-[10px]">Market Cap</div>
-                  <div className="text-sm font-bold text-white">
-                    {((box.metrics as any).visible_market_cap_usd !== null && (box.metrics as any).visible_market_cap_usd !== undefined)
-                      ? formatCurrency((box.metrics as any).visible_market_cap_usd)
-                      : '--'}
-                  </div>
-                </div>
+              <div className="grid grid-cols-3 text-center pb-2 mb-2 border-b border-white/10">
                 <div className="border-r border-white/10">
                   <div className="text-white/50 text-[10px]">Top 10 Cards</div>
                   <div className="text-sm font-bold text-white">
@@ -513,7 +505,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                     <div className="text-white/70 text-sm mb-1">Expected Time to Sale</div>
                     <div className="text-3xl font-bold text-white mb-1">
                       {box.metrics.expected_time_to_sale_days !== null && box.metrics.expected_time_to_sale_days !== undefined
-                        ? `${Math.round(box.metrics.expected_time_to_sale_days)} days`
+                        ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)} days`
                         : 'N/A'}
                     </div>
                     <div className="text-white/60 text-sm">
@@ -522,16 +514,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Market Cap and Liquidity - Compact Grid */}
+                {/* Avg Added / Boxes Listed - Compact Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4 mt-6">
-                  <div>
-                    <div className="text-white/70 text-sm mb-1">Market Cap</div>
-                    <div className="text-lg font-semibold text-white">
-                      {((box.metrics as any).visible_market_cap_usd !== null && (box.metrics as any).visible_market_cap_usd !== undefined)
-                        ? formatCurrency((box.metrics as any).visible_market_cap_usd)
-                        : '--'}
-                    </div>
-                  </div>
                   <div>
                     <div className="text-white/70 text-sm mb-1">Avg Added/Day</div>
                     <div className="text-lg font-semibold text-white">
@@ -740,7 +724,11 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           >
             <h2 className="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4">Notes</h2>
             <div className="space-y-2">
-              <div className="text-white/70 text-sm">• No notes yet</div>
+              {box.notes && box.notes.length > 0
+                ? box.notes.map((note, i) => (
+                    <div key={i} className="text-white/70 text-sm">• {note}</div>
+                  ))
+                : <div className="text-white/70 text-sm">• No notes yet</div>}
             </div>
           </div>
 

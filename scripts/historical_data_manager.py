@@ -5,9 +5,24 @@ Manages historical data entries for each box, tracking what has been entered and
 
 import json
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+
+
+def _compute_30d_avg_sold(entries: List[Dict[str, Any]]) -> Optional[float]:
+    """Compute running 30-day average of boxes_sold_per_day from entries (last 30 days)."""
+    if not entries:
+        return None
+    cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    recent = [e for e in entries if (e.get("date") or "") >= cutoff]
+    if not recent:
+        return None
+    vals = []
+    for e in recent:
+        v = e.get("boxes_sold_per_day") or e.get("boxes_sold_today")
+        vals.append(float(v) if v is not None else 0.0)
+    return round(sum(vals) / len(vals), 2) if vals else None
 
 
 class HistoricalDataManager:
@@ -89,6 +104,7 @@ class HistoricalDataManager:
 
         # Write to DB so live site updates without commits
         entry_date = entry_data.get("date") or date.today().isoformat()
+        boxes_sold_30d_avg = _compute_30d_avg_sold(all_data[box_id])
         _root = Path(__file__).resolve().parent.parent
         if str(_root) not in sys.path:
             sys.path.insert(0, str(_root))
@@ -103,6 +119,8 @@ class HistoricalDataManager:
                 boxes_sold_per_day=entry_data.get("boxes_sold_per_day") or entry_data.get("boxes_sold_today"),
                 active_listings_count=entry_data.get("active_listings_count"),
                 unified_volume_usd=entry_data.get("unified_volume_usd") or entry_data.get("daily_volume_usd"),
+                unified_volume_7d_ema=entry_data.get("unified_volume_7d_ema"),
+                boxes_sold_30d_avg=boxes_sold_30d_avg,
                 boxes_added_today=entry_data.get("boxes_added_today"),
             )
         except Exception:

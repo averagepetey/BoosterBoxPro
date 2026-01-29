@@ -876,6 +876,13 @@ async def get_box_detail(
             box_metrics["liquidity_score"] = 90
             box_metrics["community_sentiment"] = 90
         
+        # OP-13 market notes (manual)
+        notes = None
+        if is_op13:
+            notes = [
+                "Official Bandai stores have removed seals on all booster boxes making supply of sealed OP-13 very rare which isn't affecting sealed pricing on secondary even with reprints.",
+            ]
+        
         return {
             "data": {
                 "id": str(db_box.id),
@@ -892,6 +899,7 @@ async def get_box_detail(
                 "rank_change_direction": "same",
                 "rank_change_amount": 0,
                 "is_favorited": False,
+                "notes": notes,
                 "metrics": box_metrics,
             }
         }
