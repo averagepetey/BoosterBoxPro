@@ -559,6 +559,15 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             historical[box_id] = [e for e in historical[box_id] if e.get("date") != today]
             historical[box_id].append(new_entry)
 
+            # Running 30d avg from last 30 days of daily sold (so DB updates as data shifts)
+            entries_30d = sorted(historical[box_id], key=lambda e: e.get("date", ""))
+            cutoff_30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            recent_30 = [e for e in entries_30d if (e.get("date") or "") >= cutoff_30]
+            boxes_sold_30d_avg = None
+            if recent_30:
+                vals = [(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0) for e in recent_30]
+                boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
+
             # Write to DB so live site updates without commits.
             # Use leaderboard UUID (same as booster_boxes.id and listings scraper) so FK passes
             # and the same row gets both Apify sales and scraper listings for today.
@@ -572,7 +581,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                     floor_price_usd=floor,
                     boxes_sold_per_day=avg_daily,
                     unified_volume_usd=volume_30d,
-                    boxes_sold_30d_avg=avg_daily,
+                    boxes_sold_30d_avg=boxes_sold_30d_avg,
                 )
             except Exception as e:
                 logger.warning(f"DB upsert skipped for {name}: {e}")
