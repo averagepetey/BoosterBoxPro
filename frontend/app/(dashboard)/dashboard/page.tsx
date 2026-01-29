@@ -422,8 +422,14 @@ function DashboardContent() {
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>
-              <div className="col-span-1 text-center font-medium px-3">
-                1d
+              <div 
+                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors px-2"
+                onClick={() => handleSort('days_to_20pct_increase')}
+              >
+                Days to 20%
+                {sortBy === 'days_to_20pct_increase' && (
+                  <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
+                )}
               </div>
             </div>
 
