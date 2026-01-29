@@ -71,7 +71,7 @@ export function MarketEdgeSection() {
             Gain an Edge Over the <span className="text-transparent bg-clip-text bg-[linear-gradient(180deg,#22c55e,#16a34a)]">One Piece Market</span>
           </h2>
           <p className="text-base sm:text-lg lg:text-xl text-white/80 font-medium">
-            Know when buyouts are happening, and volume is shifting from one box to another.
+            See when listings disappear or appear fast, or when liquidity is going from one box to the next.
           </p>
         </div>
 
@@ -144,15 +144,17 @@ export function MarketEdgeSection() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <button
               onClick={openSignup}
-              className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,var(--gold, #F6C35A),var(--gold-2, #F4B942))] hover:opacity-90 text-[#1b1b1b] font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(246,195,90,0.35)] hover:shadow-[0_0_20px_rgba(246,195,90,0.8),0_0_40px_rgba(246,195,90,0.6),0_0_60px_rgba(246,195,90,0.4)]"
+              className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)] relative overflow-hidden lb-anim"
             >
-              View Live Data
+              <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
+              <span className="relative z-10">View Live Data</span>
             </button>
             <Link
               href="#market-edge"
-              className="text-sm sm:text-base text-white/80 hover:text-white underline transition-colors min-h-[44px] flex items-center"
+              className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)] relative overflow-hidden lb-anim"
             >
-              See Examples
+              <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
+              <span className="relative z-10">See Examples</span>
             </Link>
           </div>
         </div>

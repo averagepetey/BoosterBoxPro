@@ -164,7 +164,7 @@ export function TestimonialsSection() {
             Reviews from the <span className="text-transparent bg-clip-text bg-[linear-gradient(180deg,#22c55e,#16a34a)]">Community</span>
           </h2>
           <p className="text-sm sm:text-base lg:text-lg text-white/80 font-medium">
-            Trusted by Collectors Who Invest Consistently
+            Join our community of collectors making data-driven decisions.
           </p>
         </div>
 
@@ -247,9 +247,10 @@ export function TestimonialsSection() {
           <div className="flex justify-center mt-3 sm:mt-4">
             <button
               onClick={openSignup}
-              className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-yellow-400 hover:bg-yellow-300 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(234,179,8,0.35)] hover:shadow-[0_0_20px_rgba(234,179,8,0.8),0_0_40px_rgba(234,179,8,0.6),0_0_60px_rgba(234,179,8,0.4)]"
+              className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)] relative overflow-hidden lb-anim"
             >
-              Join Now
+              <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
+              <span className="relative z-10">Join Now</span>
             </button>
           </div>
         </div>
@@ -257,7 +258,7 @@ export function TestimonialsSection() {
         {/* CTA Section */}
         <div className="text-center mt-4 sm:mt-6 mb-8 sm:mb-12 lg:mb-16">
           <p className="text-sm sm:text-base lg:text-lg text-white/80 mb-3 sm:mb-4">
-            Join thousands of collectors making data-driven decisions.
+            Join our community of collectors making data-driven decisions.
           </p>
         </div>
 
