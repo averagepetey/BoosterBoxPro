@@ -724,7 +724,14 @@ async def get_box_detail(
             latest = historical_data[-1]
             
             # Get values for calculations
+            # Use latest active_listings; if missing (e.g. Apify-only row), use most recent entry that has it (scraper data)
             active_listings = latest.get("active_listings_count") or 0
+            if not active_listings and len(historical_data) > 1:
+                for entry in reversed(historical_data[:-1]):
+                    alc = entry.get("active_listings_count")
+                    if alc is not None and alc > 0:
+                        active_listings = int(alc)
+                        break
             boxes_sold_per_day = latest.get("boxes_sold_per_day") or 0
             
             # Get 30d average sales FIRST (needed for days_to_20pct calculation)

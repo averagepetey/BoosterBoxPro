@@ -140,3 +140,35 @@ After scraper runs, verify:
 2. **Add missing calculations**: Implement `unified_volume_7d_ema` and `avg_boxes_added_per_day` calculations
 3. **Verify frontend**: Ensure all calculated metrics are displayed correctly
 4. **Optimize later**: Consider saving calculated metrics to DB for better performance
+
+---
+
+## Scraper → Box Detail flow (as soon as updated)
+
+**Goal**: Scraped data (listings, floor price) appears on the box detail page as soon as the daily refresh runs.
+
+### 1. Scraper run (`scripts/listings_scraper.py`)
+
+- For each box (TCGPlayer UUID), scrapes TCGplayer and gets `listings_within_20pct` and `floor_price`.
+- **`save_results()`**:
+  - **JSON**: Appends/updates an entry for **today** under `hist[box_id]` (TCG UUID) with `date`, `source: 'tcgplayer_scraper'`, `floor_price_usd`, `active_listings_count` (= listings within 20%).
+  - **DB**: Calls `upsert_daily_metrics(booster_box_id=leaderboard_uuid, metric_date=today, floor_price_usd=..., active_listings_count=...)`. Uses `DB_TO_LEADERBOARD_UUID_MAP` so the row is written under the **leaderboard UUID** (same as `booster_boxes.id`).
+
+### 2. Box detail read path
+
+- **Endpoint**: `GET /booster-boxes/{box_id}` uses `db_box.id` (leaderboard UUID).
+- **Data**: `get_box_price_history(str(db_box.id), days=90)`:
+  - Calls `get_box_historical_data(box_id)` with `prefer_db=True`.
+- **`get_box_historical_data(leaderboard_uuid)`**:
+  - **DB**: Loads rows from `box_metrics_unified` for **leaderboard UUID** and for **TCG UUID** (via `LEADERBOARD_TO_DB_UUID_MAP`), then **merges same-date entries** so one calendar day can combine scraper (listings, floor) and Apify (sales, volume).
+  - **JSON fallback**: Loads `historical_entries.json` for both leaderboard and TCG keys, merges same-date entries. Merge treats `active_listings_count`, `listings_count`, and `listings_count_in_range` so scraper data is used.
+- **Box detail logic**:
+  - Uses `historical_data[-1]` as “latest”.
+  - **Active listings**: If latest has no `active_listings_count`, uses the **most recent prior entry** that has it (so scraper-only or merged scraper data still shows).
+  - **30d avg sold**: `get_box_30d_avg_sales(box_id)` uses the same merged history (DB or JSON).
+  - **Days to 20%**: `active_listings / (boxes_sold_30d_avg - avg_boxes_added_per_day)`.
+
+### 3. When data shows up
+
+- **DB path**: Scraper writes to `box_metrics_unified`; the next request to box detail reads from the DB (no JSON cache). So **scraped data is visible on the next box detail request** after the run.
+- **JSON path**: Scraper overwrites/append for today in `historical_entries.json`; the JSON cache TTL is 60s, so within about a minute the next request will see the new data.
