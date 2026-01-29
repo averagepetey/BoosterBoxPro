@@ -60,7 +60,7 @@ export function LeaderboardSkeleton() {
             <div className="col-span-2 flex justify-center px-3">
               <SkeletonBar className="h-4 w-14" />
             </div>
-            {/* 1d */}
+            {/* Days to 20% */}
             <div className="col-span-1 flex justify-center px-3">
               <SkeletonBar className="h-4 w-10" />
             </div>

@@ -6,6 +6,7 @@
 'use client';
 
 import { LeaderboardBox } from '../../lib/api/leaderboard';
+import { getBoxImageUrl } from '../../lib/utils/boxImages';
 import { useState } from 'react';
 
 interface LeaderboardTableProps {
@@ -136,18 +137,21 @@ export function LeaderboardTable({
               {/* Collection */}
               <div className="col-span-3 flex items-center gap-3 max-[430px]:gap-2 xl:gap-4 min-h-[64px] max-[430px]:min-h-[48px] xl:min-h-[80px] px-3 py-1 max-[430px]:py-0.5">
                 <div className="flex-shrink-0 w-16 h-16 max-[430px]:w-12 max-[430px]:h-12 xl:w-20 xl:h-20 flex items-center justify-center">
-                  {box.image_url ? (
-                    <img
-                      src={box.image_url}
-                      alt={box.product_name}
-                      className="w-full h-full object-contain rounded-lg"
-                      style={{ maxWidth: '100%', maxHeight: '100%' }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-surface flex items-center justify-center rounded-lg">
-                      <span className="text-xs text-foreground-muted">📦</span>
-                    </div>
-                  )}
+                  {(() => {
+                    const imageUrl = box.image_url || getBoxImageUrl(box.product_name);
+                    return imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={box.product_name}
+                        className="w-full h-full object-contain rounded-lg"
+                        style={{ maxWidth: '100%', maxHeight: '100%' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-surface flex items-center justify-center rounded-lg">
+                        <span className="text-xs text-foreground-muted">📦</span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div 
                   className="flex-1 min-w-0 flex flex-col justify-center"
@@ -294,20 +298,12 @@ export function LeaderboardTable({
                 </div>
               </div>
 
-              {/* Last 1d Sparkline */}
-              <div className="col-span-1 flex justify-center items-center px-3 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0">
-                <div className={`marketplace-sparkline ${isPositive ? 'marketplace-sparkline-positive' : isNegative ? 'marketplace-sparkline-negative' : ''}`}>
-                  <svg width="100" height="32" viewBox="0 0 100 32" className="w-full h-full">
-                    {/* Placeholder sparkline - will be replaced with actual chart data */}
-                    <polyline
-                      points="0,24 20,20 40,16 60,12 80,8 100,4"
-                      fill="none"
-                      stroke={isPositive ? '#10b981' : isNegative ? '#ef4444' : '#64748b'}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+              {/* Days to 20% - same data as box detail */}
+              <div className="col-span-1 text-center px-2 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-center">
+                <div className="text-sm max-[430px]:text-xs text-foreground financial-number">
+                  {box.metrics.days_to_20pct_increase != null && box.metrics.days_to_20pct_increase !== undefined
+                    ? Math.round(box.metrics.days_to_20pct_increase)
+                    : '--'}
                 </div>
               </div>
               </div>

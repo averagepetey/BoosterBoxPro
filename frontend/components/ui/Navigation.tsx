@@ -9,9 +9,10 @@
 import { Logo } from './Logo';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { SignupModal } from '@/components/auth/SignupModal';
+import { WelcomeHelpModal, getWelcomeSeen, setWelcomeSeen } from './WelcomeHelpModal';
 
 interface NavigationProps {
   sticky?: boolean;
@@ -22,6 +23,29 @@ export function Navigation({ sticky = true }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const hasCheckedWelcome = useRef(false);
+  const wasFirstTimeWelcome = useRef(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || hasCheckedWelcome.current) return;
+    hasCheckedWelcome.current = true;
+    if (!getWelcomeSeen()) {
+      wasFirstTimeWelcome.current = true;
+      setIsHelpModalOpen(true);
+    }
+  }, [isAuthenticated]);
+
+  const closeHelpModal = () => {
+    if (wasFirstTimeWelcome.current) setWelcomeSeen();
+    wasFirstTimeWelcome.current = false;
+    setIsHelpModalOpen(false);
+  };
+
+  const openHelpModal = () => {
+    wasFirstTimeWelcome.current = false;
+    setIsHelpModalOpen(true);
+  };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -63,6 +87,14 @@ export function Navigation({ sticky = true }: NavigationProps) {
                 >
                   Dashboard
                 </Link>
+                <button
+                  type="button"
+                  onClick={openHelpModal}
+                  className="text-white/85 hover:text-white transition-colors flex items-center h-full"
+                  aria-label="Help / How to use"
+                >
+                  Help
+                </button>
                 {/* Admin-only: Screenshot Tool */}
                 {isAdmin && (
                   <Link
@@ -154,6 +186,13 @@ export function Navigation({ sticky = true }: NavigationProps) {
                   >
                     Dashboard
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => { closeMobileMenu(); openHelpModal(); }}
+                    className="text-white/85 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center text-left w-full"
+                  >
+                    Help
+                  </button>
                   {/* Admin-only: Screenshot Tool (Mobile) */}
                   {isAdmin && (
                     <Link
@@ -232,6 +271,12 @@ export function Navigation({ sticky = true }: NavigationProps) {
           setIsSignupModalOpen(false);
           setIsLoginModalOpen(true);
         }}
+      />
+
+      {/* Welcome / Help Modal */}
+      <WelcomeHelpModal
+        isOpen={isHelpModalOpen}
+        onClose={closeHelpModal}
       />
     </nav>
   );
