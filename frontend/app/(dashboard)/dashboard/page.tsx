@@ -372,7 +372,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors px-2"
+                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors pl-2 pr-0"
                 onClick={() => {
                   const priceChangeSort = timeRange === '24h' ? 'floor_price_1d_change_pct'
                     : timeRange === '7d' ? 'floor_price_1d_change_pct' // Use 1d for 7d view (we don't have 7d price change)
@@ -386,7 +386,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors px-2"
+                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors pl-0 pr-2 -ml-1"
                 onClick={() => {
                   const volumeSort = timeRange === '24h' ? 'daily_volume_usd' 
                     : timeRange === '7d' ? 'volume_7d' 

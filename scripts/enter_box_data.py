@@ -39,7 +39,7 @@ BOX_NAME_MAP = {
     "op-06": "One Piece - OP-06 Wings of the Captain Booster Box",
     "op-07": "One Piece - OP-07 500 Years In The Future Booster Box",
     "op-08": "One Piece - OP-08 Two Legends Booster Box",
-    "op-09": "One Piece - OP-09 Emperors of the New World Booster Box",
+    "op-09": "One Piece - OP-09 Emperors in the New World Booster Box",
     "op-10": "One Piece - OP-10 Royal Blood Booster Box",
     "op-11": "One Piece - OP-11 A Fist of Divine Speed Booster Box",
     "op-12": "One Piece - OP-12 Legacy of the Master Booster Box",

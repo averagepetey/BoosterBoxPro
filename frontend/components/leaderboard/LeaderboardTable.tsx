@@ -193,8 +193,8 @@ export function LeaderboardTable({
                 </div>
               </div>
 
-              {/* Price Change % - Dynamic based on timeRange */}
-              <div className="col-span-1 text-center relative px-2 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-center">
+              {/* Price Change % - Dynamic based on timeRange (tight right padding to sit next to Volume) */}
+              <div className="col-span-1 text-center relative pl-2 pr-0 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-center">
                 <div 
                   className={`text-base max-[430px]:text-sm xl:text-lg financial-number ${getPriceChangeColor(
                     timeRange === '24h' || timeRange === '7d' 
@@ -225,8 +225,8 @@ export function LeaderboardTable({
                 </div>
               </div>
 
-              {/* Volume - Dynamic based on timeRange */}
-              <div className="col-span-2 text-right px-2 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-end">
+              {/* Volume - Dynamic based on timeRange (tight left padding next to 1D %) */}
+              <div className="col-span-2 text-right pl-0 pr-2 -ml-1 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex flex-col items-end justify-center">
                 <div className="text-base max-[430px]:text-sm xl:text-lg font-semibold text-foreground financial-number">
                   {(() => {
                     if (timeRange === '24h') {
@@ -234,17 +234,13 @@ export function LeaderboardTable({
                         ? formatCurrency(box.metrics.daily_volume_usd)
                         : '--';
                     } else if (timeRange === '7d') {
-                      // Prefer volume_7d (actual rolling sum of 7 days)
-                      // Fallback to daily_volume_usd * 7 (NOT unified_volume_7d_ema, which is an EMA, not a sum)
                       const volume7d = (box.metrics as any).volume_7d !== null && (box.metrics as any).volume_7d !== undefined
                         ? (box.metrics as any).volume_7d
                         : (box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
                           ? box.metrics.daily_volume_usd * 7
                           : null);
                       return volume7d !== null ? formatCurrency(volume7d) : '--';
-                    } else { // 30d
-                      // Prefer volume_30d (actual rolling sum of 30 days)
-                      // Fallback to unified_volume_usd or daily_volume_usd * 30
+                    } else {
                       const volume30d = (box.metrics as any).volume_30d !== null && (box.metrics as any).volume_30d !== undefined
                         ? (box.metrics as any).volume_30d
                         : (box.metrics.unified_volume_usd !== null && box.metrics.unified_volume_usd !== undefined
@@ -256,6 +252,22 @@ export function LeaderboardTable({
                     }
                   })()}
                 </div>
+                {(() => {
+                  const volChange = timeRange === '24h'
+                    ? (box.metrics as any).volume_1d_change_pct
+                    : timeRange === '7d'
+                      ? (box.metrics as any).volume_7d_change_pct
+                      : (box.metrics as any).volume_30d_change_pct;
+                  if (volChange == null || volChange === undefined) return null;
+                  const n = typeof volChange === 'number' ? volChange : Number(volChange);
+                  if (isNaN(n)) return null;
+                  const label = timeRange === '24h' ? 'vs yesterday' : timeRange === '7d' ? 'vs last 7d' : 'vs last 30d';
+                  return (
+                    <div className={`text-xs mt-0.5 ${n >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {n >= 0 ? '▲' : '▼'} {Math.abs(n).toFixed(1)}% {label}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Sales - Dynamic based on timeRange */}

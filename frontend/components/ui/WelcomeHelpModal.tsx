@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 const WELCOME_STORAGE_KEY = 'boosterboxpro_welcome_seen';
@@ -26,12 +26,49 @@ interface WelcomeHelpModalProps {
 }
 
 export function WelcomeHelpModal({ isOpen, onClose }: WelcomeHelpModalProps) {
-  const handleClose = () => onClose();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleClose = useCallback(() => onClose(), [onClose]);
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = 'unset';
     return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, handleClose]);
+
+  useEffect(() => {
+    if (!isOpen || !panelRef.current) return;
+    const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    first?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    panelRef.current.addEventListener('keydown', onKeyDown);
+    return () => panelRef.current?.removeEventListener('keydown', onKeyDown);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -49,9 +86,11 @@ export function WelcomeHelpModal({ isOpen, onClose }: WelcomeHelpModalProps) {
         aria-hidden="true"
       />
       <div
+        ref={panelRef}
         className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-white/15 shadow-2xl"
         style={{ background: 'linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%)' }}
         onClick={(e) => e.stopPropagation()}
+        role="document"
       >
         <div className="p-6 sm:p-8">
           <div className="flex items-center justify-between mb-6">

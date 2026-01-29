@@ -358,6 +358,39 @@ TOP_10_VALUE_USD = {
     "One Piece - OP-13 Carrying on His Will Booster Box": 23386.16,
 }
 
+# Manual liquidity_score (0-100: High >= 70, Moderate 40-69, Low < 40) and reprint_risk per set
+# Used on leaderboard and box detail pages. Set code -> (liquidity_score, reprint_risk).
+MANUAL_LIQUIDITY_REPRINT: dict[str, tuple[int, str]] = {
+    "OP-01": (50, "LOW"),   # White & Blue: medium liquidity, lowest reprint risk
+    "OP-02": (25, "LOW"),   # low liq, low reprint
+    "OP-03": (25, "LOW"),   # low liq, low reprint
+    "OP-04": (25, "LOW"),   # low liq, low reprint
+    "OP-05": (65, "MEDIUM"),  # medium-high liq, low to medium reprint
+    "OP-06": (35, "MEDIUM"),  # low-medium liq, low-medium reprint
+    "OP-07": (35, "MEDIUM"),  # medium-low liq, medium-low reprint
+    "OP-08": (25, "MEDIUM"),  # low liq, medium reprint
+    "OP-09": (75, "MEDIUM"),  # high liq, low to medium reprint
+    "OP-10": (50, "HIGH"),   # medium liq, high reprint
+    "OP-11": (65, "HIGH"),   # medium-high liq, high medium to high reprint
+    "OP-12": (75, "HIGH"),   # high liq, high reprint
+    "OP-13": (90, "HIGH"),   # high liq, high reprint (kept consistent with existing override)
+    "EB-01": (50, "LOW"),   # not in user list; default medium/low
+    "EB-02": (50, "LOW"),   # medium liq, reprint low
+    "PRB-01": (65, "LOW"),  # medium-high liq, reprint low
+    "PRB-02": (65, "MEDIUM"),  # medium-high liq, reprint medium
+}
+
+
+def _get_manual_liquidity_reprint(product_name: str | None) -> tuple[int | None, str | None]:
+    """Return (liquidity_score, reprint_risk) from manual map by set code, or (None, None)."""
+    set_code = _set_code_from_product_name(product_name)
+    if not set_code:
+        return None, None
+    pair = MANUAL_LIQUIDITY_REPRINT.get(set_code)
+    if not pair:
+        return None, None
+    return pair[0], pair[1]
+
 
 def _get_top_10_value_usd(product_name: str | None) -> float | None:
     """Look up Top 10 value by exact product_name, then by set code (OP-07, PRB-01, etc.)."""
@@ -589,8 +622,16 @@ async def get_booster_boxes(
             
             # Overlay batch historical snapshot (floor_price, volumes, 30d change, etc.)
             if hist:
+                if hist.get("floor_price_1d_change_pct") is not None:
+                    box_data["metrics"]["floor_price_1d_change_pct"] = float(hist["floor_price_1d_change_pct"])
                 if hist.get("floor_price_30d_change_pct") is not None:
                     box_data["metrics"]["floor_price_30d_change_pct"] = hist["floor_price_30d_change_pct"]
+                if hist.get("volume_1d_change_pct") is not None:
+                    box_data["metrics"]["volume_1d_change_pct"] = float(hist["volume_1d_change_pct"])
+                if hist.get("volume_7d_change_pct") is not None:
+                    box_data["metrics"]["volume_7d_change_pct"] = float(hist["volume_7d_change_pct"])
+                if hist.get("volume_30d_change_pct") is not None:
+                    box_data["metrics"]["volume_30d_change_pct"] = float(hist["volume_30d_change_pct"])
                 if hist.get("boxes_sold_30d_avg") is not None:
                     box_data["metrics"]["boxes_sold_30d_avg"] = hist["boxes_sold_30d_avg"]
                 if hist.get("volume_7d") is not None:
@@ -620,6 +661,13 @@ async def get_booster_boxes(
             if "OP-13" in (box_data.get("product_name") or ""):
                 box_data["reprint_risk"] = "HIGH"
                 box_data["metrics"]["liquidity_score"] = 90
+            
+            # Manual liquidity and reprint risk by set (overrides DB/calculated values)
+            manual_liq, manual_reprint = _get_manual_liquidity_reprint(db_box.product_name)
+            if manual_liq is not None:
+                box_data["metrics"]["liquidity_score"] = manual_liq
+            if manual_reprint is not None:
+                box_data["reprint_risk"] = manual_reprint
             
             # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
             top_10 = _get_top_10_value_usd(db_box.product_name)
@@ -781,10 +829,15 @@ async def get_box_detail(
         
         # Get accurate metrics from historical data service
         try:
-            from app.services.historical_data import get_box_30d_avg_sales, get_box_30d_volume_or_ramp
+            from app.services.historical_data import (
+                get_box_30d_avg_sales,
+                get_box_30d_volume_or_ramp,
+                get_box_volume_change_pcts,
+            )
         except ImportError:
             get_box_30d_avg_sales = None
             get_box_30d_volume_or_ramp = None
+            get_box_volume_change_pcts = None
         
         # Load latest DB metric for this box so we can use current floor (e.g. 701) in ramp estimate
         from app.models.unified_box_metrics import UnifiedBoxMetrics
@@ -940,6 +993,17 @@ async def get_box_detail(
                 "expected_days_to_sell": expected_days_to_sell,
                 "expected_time_to_sale_days": expected_days_to_sell,  # alias for box detail UI
             }
+            if get_box_volume_change_pcts:
+                try:
+                    changes = get_box_volume_change_pcts(str(db_box.id))
+                    if changes.get("volume_1d_change_pct") is not None:
+                        box_metrics["volume_1d_change_pct"] = changes["volume_1d_change_pct"]
+                    if changes.get("volume_7d_change_pct") is not None:
+                        box_metrics["volume_7d_change_pct"] = changes["volume_7d_change_pct"]
+                    if changes.get("volume_30d_change_pct") is not None:
+                        box_metrics["volume_30d_change_pct"] = changes["volume_30d_change_pct"]
+                except Exception:
+                    pass
         
         # Add 30d price change
         price_change_30d = None
@@ -968,6 +1032,15 @@ async def get_box_detail(
             box_metrics["liquidity_score"] = 90
             box_metrics["community_sentiment"] = 90
         
+        # Manual liquidity and reprint risk by set (overrides DB/calculated values)
+        manual_liq, manual_reprint = _get_manual_liquidity_reprint(db_box.product_name)
+        if manual_liq is not None:
+            box_metrics["liquidity_score"] = manual_liq
+        if manual_reprint is not None:
+            reprint_risk_for_response = manual_reprint
+        else:
+            reprint_risk_for_response = "HIGH" if is_op13 else (db_box.reprint_risk or "UNKNOWN")
+        
         # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
         top_10 = _get_top_10_value_usd(db_box.product_name)
         if top_10 is not None:
@@ -990,7 +1063,7 @@ async def get_box_detail(
                 "release_date": None,
                 "external_product_id": None,
                 "estimated_total_supply": box_metrics.get("estimated_total_supply"),
-                "reprint_risk": "HIGH" if is_op13 else (db_box.reprint_risk or "UNKNOWN"),
+                "reprint_risk": reprint_risk_for_response,
                 "current_rank_by_volume": None,
                 "current_rank_by_market_cap": None,
                 "rank_change_direction": "same",
