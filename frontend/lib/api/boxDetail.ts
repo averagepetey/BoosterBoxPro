@@ -24,6 +24,7 @@ export interface BoxDetail {
   is_favorited?: boolean;
   notes?: string[] | null;
   metrics: BoxMetricsSummary & {
+    volume_30d?: number | null; // rolling 30d total from daily data (or ramp in first month)
     boxes_sold_per_day?: number | null;
     boxes_sold_30d_avg?: number | null;
     boxes_added_today?: number | null;

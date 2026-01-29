@@ -359,6 +359,32 @@ TOP_10_VALUE_USD = {
 }
 
 
+def _get_top_10_value_usd(product_name: str | None) -> float | None:
+    """Look up Top 10 value by exact product_name, then by set code (OP-07, PRB-01, etc.)."""
+    if not product_name:
+        return None
+    if product_name in TOP_10_VALUE_USD:
+        return TOP_10_VALUE_USD[product_name]
+    import re
+    m = re.search(r"(OP|EB|PRB)-\d+", product_name, re.IGNORECASE)
+    if not m:
+        return None
+    set_code = m.group(0).upper()
+    for key, val in TOP_10_VALUE_USD.items():
+        if set_code in key.upper():
+            return val
+    return None
+
+
+def _set_code_from_product_name(product_name: str | None) -> str | None:
+    """Extract set code (e.g. OP-07, PRB-01) from product name."""
+    if not product_name:
+        return None
+    import re
+    m = re.search(r"(OP|EB|PRB)-\d+", product_name, re.IGNORECASE)
+    return m.group(0).upper() if m else None
+
+
 def get_box_image_url(product_name: str | None) -> str | None:
     """
     Generate image URL for a booster box based on its product name.
@@ -497,8 +523,15 @@ async def get_booster_boxes(
             latest_metrics = metrics_by_box.get(str(db_box.id))
             hist = hist_by_box.get(str(db_box.id), {})
             
-            # Start with JSON data if available, otherwise build from DB
+            # Start with JSON data if available (exact product_name), else match by set code (OP-07, PRB-01, etc.)
             json_box = json_boxes_by_name.get(db_box.product_name, {})
+            if not json_box and boxes:
+                set_code = _set_code_from_product_name(db_box.product_name)
+                if set_code:
+                    for b in boxes:
+                        if b.get("product_name") and set_code in b.get("product_name", "").upper():
+                            json_box = b
+                            break
             
             box_data = {
                 "id": str(db_box.id),
@@ -580,15 +613,24 @@ async def get_booster_boxes(
                 if hist.get("active_listings_count") is not None:
                     box_data["metrics"]["active_listings_count"] = hist["active_listings_count"]
             
+            # volume_30d from hist is the rolling total (sum of daily floor×sold over last 30d); use as-is.
+            # Ramp formula was for sparse data; with daily refreshes we use rolling totals only.
+            
             # OP-13 manual overrides: reprint risk High, liquidity High (90)
             if "OP-13" in (box_data.get("product_name") or ""):
                 box_data["reprint_risk"] = "HIGH"
                 box_data["metrics"]["liquidity_score"] = 90
             
-            # Top 10 cards value (manual data from spreadsheet)
-            top_10 = TOP_10_VALUE_USD.get(db_box.product_name)
+            # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
+            top_10 = _get_top_10_value_usd(db_box.product_name)
             if top_10 is not None:
                 box_data["metrics"]["top_10_value_usd"] = top_10
+            # If still missing and we have json_box metrics, use JSON top_10
+            if top_10 is None and json_box.get("metrics", {}).get("top_10_value_usd") is not None:
+                box_data["metrics"]["top_10_value_usd"] = float(json_box["metrics"]["top_10_value_usd"])
+            # If still missing, ensure days_to_20pct from JSON is used when DB didn't provide it
+            if json_box.get("metrics", {}).get("days_to_20pct_increase") is not None and box_data["metrics"].get("days_to_20pct_increase") is None:
+                box_data["metrics"]["days_to_20pct_increase"] = float(json_box["metrics"]["days_to_20pct_increase"])
             
             result_boxes.append(box_data)
     
@@ -739,9 +781,22 @@ async def get_box_detail(
         
         # Get accurate metrics from historical data service
         try:
-            from app.services.historical_data import get_box_30d_avg_sales
+            from app.services.historical_data import get_box_30d_avg_sales, get_box_30d_volume_or_ramp
         except ImportError:
             get_box_30d_avg_sales = None
+            get_box_30d_volume_or_ramp = None
+        
+        # Load latest DB metric for this box so we can use current floor (e.g. 701) in ramp estimate
+        from app.models.unified_box_metrics import UnifiedBoxMetrics
+        latest_metric_stmt = (
+            select(UnifiedBoxMetrics)
+            .where(UnifiedBoxMetrics.booster_box_id == db_box.id)
+            .order_by(UnifiedBoxMetrics.metric_date.desc())
+            .limit(1)
+        )
+        latest_metric_result = await db.execute(latest_metric_stmt)
+        latest_db_metric = latest_metric_result.scalar_one_or_none()
+        current_floor_override = float(latest_db_metric.floor_price_usd) if (latest_db_metric and latest_db_metric.floor_price_usd) else None
         
         historical_data = None
         if get_box_price_history:
@@ -819,10 +874,19 @@ async def get_box_detail(
                 else:
                     liquidity_score = 5.0  # Default mid-range if no listing data
             
-            # Calculate volumes from daily if not already set
+            # Calculate volumes: prefer ramp-aware 30d guesstimate (first-day + current price, 30d avg sales)
             daily_vol = latest.get("daily_volume_usd") or 0
             volume_7d = latest.get("volume_7d") or (daily_vol * 7 if daily_vol else 0)
-            volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
+            volume_30d = None
+            if get_box_30d_volume_or_ramp:
+                try:
+                    volume_30d = get_box_30d_volume_or_ramp(
+                        str(db_box.id), current_floor_override=current_floor_override
+                    )
+                except Exception:
+                    volume_30d = None
+            if volume_30d is None:
+                volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
             
             # Calculate unified_volume_7d_ema if not present (7-day EMA of volumes)
             unified_volume_7d_ema = latest.get("unified_volume_7d_ema")
@@ -860,11 +924,12 @@ async def get_box_detail(
                     expected_days_to_sell = round(max(1.0, min(365.0, supply / net_burn)), 2)
             
             box_metrics = {
-                "floor_price_usd": latest.get("floor_price_usd"),
+                "floor_price_usd": float(current_floor_override) if current_floor_override is not None else latest.get("floor_price_usd"),
                 "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
                 "active_listings_count": active_listings,
                 "daily_volume_usd": daily_vol,
                 "volume_7d": volume_7d,
+                "volume_30d": volume_30d,
                 "unified_volume_usd": volume_30d,
                 "unified_volume_7d_ema": unified_volume_7d_ema,
                 "boxes_sold_per_day": boxes_sold_per_day,
@@ -903,8 +968,8 @@ async def get_box_detail(
             box_metrics["liquidity_score"] = 90
             box_metrics["community_sentiment"] = 90
         
-        # Top 10 cards value (manual data from spreadsheet)
-        top_10 = TOP_10_VALUE_USD.get(db_box.product_name)
+        # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
+        top_10 = _get_top_10_value_usd(db_box.product_name)
         if top_10 is not None:
             box_metrics["top_10_value_usd"] = top_10
         

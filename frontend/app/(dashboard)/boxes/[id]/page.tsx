@@ -416,12 +416,12 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Unified metrics grid: same structure for every cell (label, value, sub-line) */}
+                {/* Unified metrics grid: top 3 as header row, then rest */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-6 mb-6">
-                  {/* Row 1 */}
-                  <div className="flex flex-col min-h-[5rem]">
-                    <div className="text-white/70 text-sm mb-1">Current Floor Price</div>
-                    <div className="text-2xl font-bold text-green-400">
+                  {/* Row 1: Top 3 metrics - header size */}
+                  <div className="flex flex-col min-h-[6rem] pb-4 border-b border-white/15">
+                    <div className="text-white/70 text-base font-medium mb-1">Current Floor Price</div>
+                    <div className="text-3xl lg:text-4xl font-bold text-green-400">
                       {formatCurrency(box.metrics.floor_price_usd)}
                     </div>
                     <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">
@@ -433,9 +433,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                       ) : '\u00A0'}
                     </div>
                   </div>
-                  <div className="flex flex-col min-h-[5rem]">
-                    <div className="text-white/70 text-sm mb-1">Days to +20%</div>
-                    <div className="text-2xl font-bold text-white">
+                  <div className="flex flex-col min-h-[6rem] pb-4 border-b border-white/15">
+                    <div className="text-white/70 text-base font-medium mb-1">Days to +20%</div>
+                    <div className="text-3xl lg:text-4xl font-bold text-white">
                       {box.metrics.days_to_20pct_increase !== null && box.metrics.days_to_20pct_increase !== undefined
                         ? Math.round(box.metrics.days_to_20pct_increase)
                         : 'N/A'}
@@ -444,9 +444,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                       Estimated time to price increase
                     </div>
                   </div>
-                  <div className="flex flex-col min-h-[5rem]">
-                    <div className="text-white/70 text-sm mb-1">Expected Time to Sale</div>
-                    <div className="text-2xl font-bold text-white">
+                  <div className="flex flex-col min-h-[6rem] pb-4 border-b border-white/15">
+                    <div className="text-white/70 text-base font-medium mb-1">Expected Time to Sale</div>
+                    <div className="text-3xl lg:text-4xl font-bold text-white">
                       {box.metrics.expected_time_to_sale_days !== null && box.metrics.expected_time_to_sale_days !== undefined
                         ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)} days`
                         : 'N/A'}
@@ -698,12 +698,13 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                       : '--'}
                   </div>
                 </div>
-                {(box.metrics as any).unified_volume_usd && (
+                {((box.metrics as any).volume_30d != null || (box.metrics as any).unified_volume_usd != null) && (
                   <div>
-                    <div className="text-white/70 text-xs mb-1">30-Day Volume Estimate</div>
+                    <div className="text-white/70 text-xs mb-1">30d Volume</div>
                     <div className="text-lg font-semibold text-white">
-                      {formatCurrency((box.metrics as any).unified_volume_usd)}
+                      {formatCurrency((box.metrics as any).volume_30d ?? (box.metrics as any).unified_volume_usd)}
                     </div>
+                    <div className="text-white/50 text-xs mt-0.5">Rolling total from daily data</div>
                   </div>
                 )}
                 <div>
