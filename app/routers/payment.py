@@ -219,6 +219,12 @@ async def create_checkout_session(
         )
 
 
+@router.get("/webhook")
+async def stripe_webhook_get():
+    """Stripe webhook only accepts POST. GET returns 405."""
+    raise HTTPException(status_code=405, detail="Method Not Allowed. Use POST for Stripe webhooks.")
+
+
 @router.post("/webhook")
 async def stripe_webhook(
     request: Request,

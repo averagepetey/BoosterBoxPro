@@ -14,7 +14,7 @@
 - [x] Health check returns `{"status":"healthy"}` (or root `{"message":"BoosterBoxPro API","status":"running"}`)
 - [x] DB-backed historical: reader + `prefer_db=True`; backfill run; writers wired to `box_metrics_unified` (listings scraper, Apify, historical_data_manager) so new scraped/imported data appears without commits — see `DATA_SOURCE_SWITCH.md`
 - [x] Push latest commits — Render deploys DB-backed historical + leaderboard batch/skeleton (confirmed pushed)
-- [x] Cron: daily refresh (Apify + listings scraper) running in production — `boosterboxpro-daily-refresh` cron job, user confirmed it runs
+- [x] Cron: daily refresh (Apify + listings scraper) running in production — `boosterboxpro-daily-refresh`; Docker Command = `python scripts/daily_refresh.py`, `scripts/` included in image; user confirmed it runs
 - [x] Auth & payments **implemented in code**: users table migrations (`004`, `007`), `app/models/user.py`, `app/utils/password.py`, `app/utils/jwt.py`, `app/repositories/user_repository.py`, `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `get_current_user`, `require_active_subscription` (paywall), `app/services/stripe_service.py`, `app/services/subscription_service.py`, `app/routers/payment.py` (incl. `POST /api/v1/payment/webhook`), `GET /api/v1/users/me`, subscription endpoints; leaderboard/box/time-series use paywall when auth is loaded
 - [x] Chrome extension **structure in repo**: Manifest V3, `background.js`, `content/tcgplayer.js`, `content/panel.css`, popup (html/js/css), icons 16/48/128 — not yet in store
 - [x] Leaderboard speed: batch DB queries, skeleton, two-phase load (fast 25 → full 100)
@@ -35,7 +35,7 @@
 - [x] Set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in Vercel (if using Stripe) — **done**
 - [x] In Render env, set `CORS_ORIGINS` to your Vercel URL — **done**
 - [x] Redeploy backend after changing CORS — **done**
-- [ ] Smoke-test: sign up, login, dashboard, leaderboard, box detail
+- [x] Smoke-test: sign up, login, dashboard, leaderboard, box detail — **done**
 
 ---
 

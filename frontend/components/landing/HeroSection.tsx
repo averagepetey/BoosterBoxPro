@@ -44,7 +44,7 @@ export function HeroSection() {
 
         {/* Detailed Explanation */}
         <p className="text-xs sm:text-sm lg:text-base text-white/70 mb-2 sm:mb-3 leading-relaxed">
-          We've built the most comprehensive tracking tool for One Piece sealed booster boxes. Our software gives you insights you can't get anywhere else so you can make informed decisions.
+          We've built the most comprehensive tracking tool for One Piece sealed booster boxes. Our software gives you insights you can't get anywhere else so you can make informed decisions. Find the best booster boxes to invest in at the right time.
         </p>
         <p className="text-xs sm:text-sm text-white/50 mb-4 sm:mb-5 lg:mb-6 leading-relaxed">
           Tracked on marketplaces across the internet selling One Piece TCG.
@@ -163,7 +163,7 @@ export function HeroSection() {
             <div className="pl-1 sm:pl-2">
               <div className="text-white/50 text-[9px] sm:text-[10px] mb-0.5">Days to +20%</div>
               <div className="text-sm sm:text-base font-bold text-white">
-                N/A
+                1.4
               </div>
               <div className="text-white/50 text-[9px] sm:text-[10px]">Estimated</div>
             </div>
@@ -173,7 +173,7 @@ export function HeroSection() {
           <div className="grid grid-cols-4 text-center pb-1.5 mb-1.5 border-b border-white/10">
             <div className="border-r border-white/10">
               <div className="text-white/50 text-[9px] sm:text-[10px]">Liquidity</div>
-              <div className="text-xs sm:text-sm font-bold text-white/70">
+              <div className="text-xs sm:text-sm font-bold text-red-400">
                 High
               </div>
             </div>
@@ -354,7 +354,7 @@ export function HeroSection() {
           <div className="mt-2 pt-2 border-t border-white/10 text-center">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[10px] sm:text-xs font-medium transition-all"
+              className="inline-flex items-center justify-center px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white text-[10px] sm:text-xs font-semibold transition-all shadow-[0_4px_12px_rgba(239,68,68,0.3)]"
             >
               Get Started to View Full Analytics →
             </Link>

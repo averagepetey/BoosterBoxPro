@@ -162,13 +162,19 @@ export function PricingSection() {
               {/* CTA Button */}
               <button
                 onClick={openSignup}
-                className={`block w-full text-center px-4 py-2.5 sm:py-3 rounded-full font-semibold transition-all text-sm sm:text-base min-h-[44px] flex items-center justify-center ${
+                className={`block w-full text-center px-4 py-2.5 sm:py-3 rounded-full font-semibold transition-all text-sm sm:text-base min-h-[44px] flex items-center justify-center relative overflow-hidden ${
                   tier.highlighted
-                    ? 'bg-[linear-gradient(180deg,var(--gold, #F6C35A),var(--gold-2, #F4B942))] text-[#1b1b1b] shadow-[0_10px_24px_rgba(246,195,90,0.35)] hover:shadow-[0_0_20px_rgba(246,195,90,0.8),0_0_40px_rgba(246,195,90,0.6),0_0_60px_rgba(246,195,90,0.4)]'
+                    ? 'bg-[linear-gradient(180deg,#ef4444,#dc2626)] text-white shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:opacity-90 hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)]'
                     : 'bg-white/12 border border-white/15 backdrop-blur-md hover:bg-white/20 text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]'
                 }`}
               >
-                {tier.ctaText}
+                {tier.highlighted && (
+                  <>
+                    <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
+                    <span className="relative z-10">{tier.ctaText}</span>
+                  </>
+                )}
+                {!tier.highlighted && tier.ctaText}
               </button>
             </div>
           ))}

@@ -6,12 +6,12 @@
 
 'use client';
 
-import Link from 'next/link';
+import Image from 'next/image';
 import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
 interface DataPoint {
   id: number;
-  icon: string;
+  image: string;
   title: string;
   description: string;
   keyMetric: string;
@@ -20,42 +20,42 @@ interface DataPoint {
 const dataPoints: DataPoint[] = [
   {
     id: 1,
-    icon: '⚡',
+    image: '/images/boxes/op-01blue.png',
     title: 'Faster Market Updates Than Anything Else on the Market',
     description: 'Get market updates faster than any other platform. Our advanced tracking system ensures you see the latest data before anyone else.',
     keyMetric: 'Faster than competitors'
   },
   {
     id: 2,
-    icon: '⚡',
+    image: '/images/boxes/op-05.png',
     title: 'Sales Per Day',
     description: 'Know how fast boxes are selling with our 30-day average sales velocity. Spot hot boxes before they spike.',
     keyMetric: '30-day rolling average'
   },
   {
     id: 3,
-    icon: '📊',
+    image: '/images/boxes/op-10.png',
     title: 'Volume Movement',
     description: 'Track when volume shifts from one box to another. Identify emerging trends before they become mainstream.',
     keyMetric: '7-day EMA tracking'
   },
   {
     id: 4,
-    icon: '⚡',
+    image: '/images/boxes/op-13.png',
     title: 'Buyout Alerts',
     description: 'Know when buyouts are happening in real-time. See when listings disappear rapidly, indicating market interest.',
     keyMetric: 'Real-time monitoring'
   },
   {
     id: 5,
-    icon: '📈',
+    image: '/images/boxes/op-02.png',
     title: 'Price History & Patterns',
     description: '30-day, 90-day, and year-over-year price trends. Understand market cycles and patterns.',
     keyMetric: 'Complete historical data'
   },
   {
     id: 6,
-    icon: '📦',
+    image: '/images/boxes/op-08.png',
     title: 'Active Listings & Supply',
     description: 'Track how many boxes are currently listed, giving you insight into market supply and competition.',
     keyMetric: 'Live marketplace data'
@@ -91,9 +91,15 @@ export function UniqueDataSection() {
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
               }}
             >
-              {/* Icon */}
-              <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6">
-                {dataPoint.icon}
+              {/* Card image from app (booster box) */}
+              <div className="relative w-full aspect-[4/3] max-h-32 sm:max-h-40 rounded-lg overflow-hidden mb-4 sm:mb-6 bg-white/5">
+                <Image
+                  src={dataPoint.image}
+                  alt=""
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
               </div>
 
               {/* Title */}
@@ -121,20 +127,13 @@ export function UniqueDataSection() {
           <p className="text-base sm:text-lg lg:text-xl text-white/80 mb-6 sm:mb-8">
             Get access to all these unique metrics and more.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-            <button
-              onClick={openSignup}
-              className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,var(--gold, #F6C35A),var(--gold-2, #F4B942))] hover:opacity-90 text-[#1b1b1b] font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(246,195,90,0.35)] hover:shadow-[0_0_20px_rgba(246,195,90,0.8),0_0_40px_rgba(246,195,90,0.6),0_0_60px_rgba(246,195,90,0.4)]"
-            >
-              View Dashboard
-            </button>
-            <Link
-              href="#unique-data"
-              className="text-sm sm:text-base text-white/80 hover:text-white underline transition-colors min-h-[44px] flex items-center"
-            >
-              See Sample Data
-            </Link>
-          </div>
+          <button
+            onClick={openSignup}
+            className="inline-flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 rounded-full bg-[linear-gradient(180deg,#ef4444,#dc2626)] hover:opacity-90 text-white font-semibold transition-all text-base sm:text-lg min-h-[44px] shadow-[0_10px_24px_rgba(239,68,68,0.35)] hover:shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.6),0_0_60px_rgba(239,68,68,0.4)] relative overflow-hidden lb-anim"
+          >
+            <span className="pointer-events-none absolute inset-x-1 top-1 h-1/2 rounded-full bg-white/30 blur-[0.2px]" />
+            <span className="relative z-10">View Dashboard</span>
+          </button>
         </div>
       </div>
     </section>
