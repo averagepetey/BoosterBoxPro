@@ -559,15 +559,20 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             historical[box_id] = [e for e in historical[box_id] if e.get("date") != today]
             historical[box_id].append(new_entry)
 
-            # Write to DB so live site updates without commits
+            # Write to DB so live site updates without commits.
+            # Use leaderboard UUID (same as booster_boxes.id and listings scraper) so FK passes
+            # and the same row gets both Apify sales and scraper listings for today.
             try:
                 from app.services.box_metrics_writer import upsert_daily_metrics
+                from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP
+                booster_box_id_for_db = DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)
                 upsert_daily_metrics(
-                    booster_box_id=box_id,
+                    booster_box_id=booster_box_id_for_db,
                     metric_date=today,
                     floor_price_usd=floor,
                     boxes_sold_per_day=avg_daily,
                     unified_volume_usd=volume_30d,
+                    boxes_sold_30d_avg=avg_daily,
                 )
             except Exception as e:
                 logger.warning(f"DB upsert skipped for {name}: {e}")
