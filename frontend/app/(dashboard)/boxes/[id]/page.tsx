@@ -213,35 +213,15 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               </div>
 
-              {/* Mobile: Volume Change - major metric */}
-              {(box.metrics.volume_1d_change_pct != null || box.metrics.volume_7d_change_pct != null || box.metrics.volume_30d_change_pct != null) && (
+              {/* Mobile: Volume Change - DoD only for now; WoW/MoM tracked in backend, show after a week of daily refreshes */}
+              {box.metrics.volume_1d_change_pct != null && (
                 <div className="mb-3 pb-3 border-b border-white/10 px-1">
                   <div className="text-white/70 text-[10px] uppercase tracking-wide mb-2">Volume Change</div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {box.metrics.volume_1d_change_pct != null && (
-                      <div>
-                        <div className="text-white/50 text-[9px]">Day-over-Day</div>
-                        <div className={`text-sm font-bold ${box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
-                        </div>
-                      </div>
-                    )}
-                    {box.metrics.volume_7d_change_pct != null && (
-                      <div>
-                        <div className="text-white/50 text-[9px]">Week-over-Week</div>
-                        <div className={`text-sm font-bold ${box.metrics.volume_7d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {box.metrics.volume_7d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_7d_change_pct).toFixed(1)}%
-                        </div>
-                      </div>
-                    )}
-                    {box.metrics.volume_30d_change_pct != null && (
-                      <div>
-                        <div className="text-white/50 text-[9px]">Month-over-Month</div>
-                        <div className={`text-sm font-bold ${box.metrics.volume_30d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {box.metrics.volume_30d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_30d_change_pct).toFixed(1)}%
-                        </div>
-                      </div>
-                    )}
+                  <div className="text-center">
+                    <div className="text-white/50 text-[9px]">Day-over-Day</div>
+                    <div className={`text-sm font-bold ${box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
+                    </div>
                   </div>
                 </div>
               )}
@@ -252,7 +232,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               <div className="grid grid-cols-4 gap-0 text-center">
                 {[
                   { label: 'Liquidity', value: getLiquidityScoreLabel(box.metrics.liquidity_score), valueClass: getLiquidityScoreColor(box.metrics.liquidity_score) },
-                  { label: 'Listed', value: box.metrics.active_listings_count != null ? box.metrics.active_listings_count.toLocaleString() : '--', valueClass: 'text-white' },
+                  { label: 'Listed to 20%', value: box.metrics.active_listings_count != null ? box.metrics.active_listings_count.toLocaleString() : '--', valueClass: 'text-white' },
                   { label: 'Sold/Day', value: box.metrics.boxes_sold_30d_avg != null ? (Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10).toString() : box.metrics.boxes_sold_per_day != null ? (Math.round(box.metrics.boxes_sold_per_day * 10) / 10).toString() : '--', valueClass: 'text-white' },
                   { label: 'Time to Sale', value: box.metrics.expected_time_to_sale_days != null ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d` : 'N/A', valueClass: 'text-white' },
                   { label: 'Top 10', value: box.metrics.top_10_value_usd != null ? formatCurrency(box.metrics.top_10_value_usd) : '--', valueClass: 'text-white' },
@@ -413,38 +393,18 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Volume Change - major metric (Day-over-Day, Week-over-Week, Month-over-Month) */}
-                {(box.metrics.volume_1d_change_pct != null || box.metrics.volume_7d_change_pct != null || box.metrics.volume_30d_change_pct != null) && (
+                {/* Volume Change - DoD only for now; WoW/MoM tracked in backend, show after a week of daily refreshes */}
+                {box.metrics.volume_1d_change_pct != null && (
                   <div 
                     className="mb-4 p-4 rounded-xl border border-white/15"
                     style={{ background: 'rgba(255,255,255,0.04)' }}
                   >
                     <h3 className="text-white font-semibold text-base mb-3">Volume Change</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {box.metrics.volume_1d_change_pct != null && (
-                        <div>
-                          <div className="text-white/60 text-xs mb-0.5">Day-over-Day</div>
-                          <div className={`text-xl font-bold ${box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
-                          </div>
-                        </div>
-                      )}
-                      {box.metrics.volume_7d_change_pct != null && (
-                        <div>
-                          <div className="text-white/60 text-xs mb-0.5">Week-over-Week</div>
-                          <div className={`text-xl font-bold ${box.metrics.volume_7d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {box.metrics.volume_7d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_7d_change_pct).toFixed(1)}%
-                          </div>
-                        </div>
-                      )}
-                      {box.metrics.volume_30d_change_pct != null && (
-                        <div>
-                          <div className="text-white/60 text-xs mb-0.5">Month-over-Month</div>
-                          <div className={`text-xl font-bold ${box.metrics.volume_30d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {box.metrics.volume_30d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_30d_change_pct).toFixed(1)}%
-                          </div>
-                        </div>
-                      )}
+                    <div>
+                      <div className="text-white/60 text-xs mb-0.5">Day-over-Day</div>
+                      <div className={`text-xl font-bold ${box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
+                      </div>
                     </div>
                   </div>
                 )}
@@ -536,18 +496,30 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                   {/* Row 2 */}
                   <div className="flex flex-col min-h-[5rem]">
-                    <div className="text-white/70 text-sm mb-1">Avg Added/Day</div>
+                    <div className="text-white/70 text-sm mb-1">
+                      {box.metrics.avg_boxes_added_per_day !== null && box.metrics.avg_boxes_added_per_day !== undefined
+                        ? 'Avg Daily Added'
+                        : 'Added Today'}
+                    </div>
                     <div className="text-2xl font-bold text-white">
-                      {box.metrics.boxes_added_7d_ema !== null && box.metrics.boxes_added_7d_ema !== undefined
+                      {box.metrics.avg_boxes_added_per_day !== null && box.metrics.avg_boxes_added_per_day !== undefined
+                        ? (Math.round(box.metrics.avg_boxes_added_per_day * 10) / 10).toString()
+                        : box.metrics.boxes_added_today !== null && box.metrics.boxes_added_today !== undefined
+                        ? box.metrics.boxes_added_today.toString()
+                        : box.metrics.boxes_added_7d_ema !== null && box.metrics.boxes_added_7d_ema !== undefined
                         ? (Math.round(box.metrics.boxes_added_7d_ema * 10) / 10).toString()
                         : box.metrics.boxes_added_30d_ema !== null && box.metrics.boxes_added_30d_ema !== undefined
                         ? (Math.round(box.metrics.boxes_added_30d_ema * 10) / 10).toString()
                         : '--'}
                     </div>
-                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
+                    <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">
+                      {box.metrics.avg_boxes_added_per_day !== null && box.metrics.avg_boxes_added_per_day !== undefined
+                        ? '30-day average'
+                        : 'Daily count'}
+                    </div>
                   </div>
                   <div className="flex flex-col min-h-[5rem]">
-                    <div className="text-white/70 text-sm mb-1">Boxes Listed</div>
+                    <div className="text-white/70 text-sm mb-1">Boxes Listed to 20%</div>
                     <div className="text-2xl font-bold text-white">
                       {box.metrics.active_listings_count !== null && box.metrics.active_listings_count !== undefined
                         ? box.metrics.active_listings_count.toLocaleString()

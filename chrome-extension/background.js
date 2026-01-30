@@ -3,17 +3,42 @@
  * Handles API communication and caching
  */
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:8000'; // Change to production URL for release
+const DEFAULT_API_BASE_URL = 'http://localhost:8000';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 // In-memory cache for box data
 const boxCache = new Map();
 
 /**
+ * Get API base URL from storage (user-configurable in extension options)
+ */
+async function getApiBaseUrl() {
+  try {
+    const { apiBaseUrl } = await chrome.storage.local.get('apiBaseUrl');
+    const url = (apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
+    return url || DEFAULT_API_BASE_URL;
+  } catch {
+    return DEFAULT_API_BASE_URL;
+  }
+}
+
+/**
+ * User-friendly message for network/connection failures
+ */
+function connectionErrorMessage(baseUrl, err) {
+  const url = baseUrl || DEFAULT_API_BASE_URL;
+  if (!err || /failed to fetch|network|connection refused|load failed/i.test(String(err.message || ''))) {
+    return `Can't reach the API at ${url}. Make sure the BoosterBoxPro backend is running, then click Retry.`;
+  }
+  return err.message || 'Connection error';
+}
+
+/**
  * Fetch box data from BoosterBoxPro API
  */
 async function fetchBoxData(setCode) {
+  const API_BASE_URL = await getApiBaseUrl();
+
   // Check cache first
   const cached = boxCache.get(setCode);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -21,14 +46,20 @@ async function fetchBoxData(setCode) {
     return cached.data;
   }
 
-  console.log(`[BBP] Fetching data for ${setCode}`);
+  console.log(`[BBP] Fetching data for ${setCode} from ${API_BASE_URL}`);
   
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   try {
-    const response = await fetch(`${API_BASE_URL}/extension/box/${setCode}`);
-    
+    const response = await fetch(`${API_BASE_URL}/extension/box/${setCode}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       if (response.status === 404) {
-        return { matched: false, error: 'Box not found' };
+        return { matched: false, error: 'Box not found', apiBaseUrl: API_BASE_URL };
       }
       throw new Error(`API error: ${response.status}`);
     }
@@ -43,8 +74,16 @@ async function fetchBoxData(setCode) {
     
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
     console.error(`[BBP] Error fetching box data:`, error);
-    return { matched: false, error: error.message };
+    const message = error.name === 'AbortError'
+      ? `Request timed out. Is the backend running at ${API_BASE_URL}? Start it (e.g. python main.py), then click Retry.`
+      : connectionErrorMessage(API_BASE_URL, error);
+    return {
+      matched: false,
+      error: message,
+      apiBaseUrl: API_BASE_URL
+    };
   }
 }
 
@@ -52,6 +91,7 @@ async function fetchBoxData(setCode) {
  * Compare two boxes
  */
 async function compareBoxes(box1, box2) {
+  const API_BASE_URL = await getApiBaseUrl();
   try {
     const response = await fetch(`${API_BASE_URL}/extension/compare?box1=${box1}&box2=${box2}`);
     
@@ -62,7 +102,7 @@ async function compareBoxes(box1, box2) {
     return await response.json();
   } catch (error) {
     console.error(`[BBP] Error comparing boxes:`, error);
-    return { error: error.message };
+    return { error: connectionErrorMessage(API_BASE_URL, error) };
   }
 }
 
@@ -70,6 +110,7 @@ async function compareBoxes(box1, box2) {
  * Search boxes for compare dropdown
  */
 async function searchBoxes(query) {
+  const API_BASE_URL = await getApiBaseUrl();
   try {
     const response = await fetch(`${API_BASE_URL}/extension/search?q=${encodeURIComponent(query)}`);
     
@@ -88,6 +129,7 @@ async function searchBoxes(query) {
  * Get top movers for popup
  */
 async function getTopMovers() {
+  const API_BASE_URL = await getApiBaseUrl();
   try {
     const response = await fetch(`${API_BASE_URL}/extension/top-movers`);
     
@@ -131,7 +173,13 @@ async function injectContentScript(tabId) {
       target: { tabId: tabId },
       files: ['content/tcgplayer.js']
     });
-    
+    // Tell the newly injected script to show the panel (it starts hidden)
+    await new Promise(r => setTimeout(r, 100));
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: 'showPanel' });
+    } catch (e) {
+      console.log('[BBP] showPanel after inject:', e.message);
+    }
     return { success: true };
   } catch (error) {
     console.error('[BBP] Injection error:', error);

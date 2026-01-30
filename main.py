@@ -364,129 +364,14 @@ try:
 except ImportError as e:
     print(f"⚠️  Extension router not available: {e}")
 
-
-# Manual Top 10 cards value (USD) per set - from spreadsheet; used on leaderboard and box detail
-TOP_10_VALUE_USD = {
-    "One Piece - OP-01 Romance Dawn Booster Box (White)": 3824.96,
-    "One Piece - OP-02 Paramount War Booster Box": 1802.86,
-    "One Piece - OP-03 Pillars of Strength Booster Box": 1897.50,
-    "One Piece - OP-04 Kingdoms of Intrigue Booster Box": 1972.72,
-    "One Piece - OP-05 Awakening of the New Era Booster Box": 9478.29,
-    "One Piece - OP-06 Wings of the Captain Booster Box": 2860.39,
-    "One Piece - EB-01 Memorial Collection Booster Box": 1979.89,
-    "One Piece - OP-07 500 Years in the Future Booster Box": 2127.59,
-    "One Piece - OP-08 Two Legends Booster Box": 1587.60,
-    "One Piece - PRB-01 Premium Booster Booster Box": 8164.56,
-    "One Piece - OP-09 Emperors in the New World Booster Box": 11547.80,
-    "One Piece - OP-10 Royal Blood Booster Box": 1420.75,
-    "One Piece - EB-02 Anime 25th Collection Booster Box": 4894.15,
-    "One Piece - OP-11 A Fist of Divine Speed Booster Box": 6110.98,
-    "One Piece - OP-12 Legacy of the Master Booster Box": 3241.99,
-    "One Piece - PRB-02 Premium Booster Booster Box": 4019.20,
-    "One Piece - OP-13 Carrying on His Will Booster Box": 23386.16,
-}
-
-# Manual liquidity_score (0-100: High >= 70, Moderate 40-69, Low < 40) and reprint_risk per set
-# Used on leaderboard and box detail pages. Set code -> (liquidity_score, reprint_risk).
-MANUAL_LIQUIDITY_REPRINT: dict[str, tuple[int, str]] = {
-    "OP-01": (50, "LOW"),   # White & Blue: medium liquidity, lowest reprint risk
-    "OP-02": (25, "LOW"),   # low liq, low reprint
-    "OP-03": (25, "LOW"),   # low liq, low reprint
-    "OP-04": (25, "LOW"),   # low liq, low reprint
-    "OP-05": (65, "MEDIUM"),  # medium-high liq, low to medium reprint
-    "OP-06": (35, "MEDIUM"),  # low-medium liq, low-medium reprint
-    "OP-07": (35, "MEDIUM"),  # medium-low liq, medium-low reprint
-    "OP-08": (25, "MEDIUM"),  # low liq, medium reprint
-    "OP-09": (75, "MEDIUM"),  # high liq, low to medium reprint
-    "OP-10": (50, "HIGH"),   # medium liq, high reprint
-    "OP-11": (65, "HIGH"),   # medium-high liq, high medium to high reprint
-    "OP-12": (75, "HIGH"),   # high liq, high reprint
-    "OP-13": (90, "HIGH"),   # high liq, high reprint (kept consistent with existing override)
-    "EB-01": (50, "LOW"),   # not in user list; default medium/low
-    "EB-02": (50, "LOW"),   # medium liq, reprint low
-    "PRB-01": (65, "LOW"),  # medium-high liq, reprint low
-    "PRB-02": (65, "MEDIUM"),  # medium-high liq, reprint medium
-}
-
-
-def _get_manual_liquidity_reprint(product_name: str | None) -> tuple[int | None, str | None]:
-    """Return (liquidity_score, reprint_risk) from manual map by set code, or (None, None)."""
-    set_code = _set_code_from_product_name(product_name)
-    if not set_code:
-        return None, None
-    pair = MANUAL_LIQUIDITY_REPRINT.get(set_code)
-    if not pair:
-        return None, None
-    return pair[0], pair[1]
-
-
-def _get_top_10_value_usd(product_name: str | None) -> float | None:
-    """Look up Top 10 value by exact product_name, then by set code (OP-07, PRB-01, etc.)."""
-    if not product_name:
-        return None
-    if product_name in TOP_10_VALUE_USD:
-        return TOP_10_VALUE_USD[product_name]
-    import re
-    m = re.search(r"(OP|EB|PRB)-\d+", product_name, re.IGNORECASE)
-    if not m:
-        return None
-    set_code = m.group(0).upper()
-    for key, val in TOP_10_VALUE_USD.items():
-        if set_code in key.upper():
-            return val
-    return None
-
-
-def _set_code_from_product_name(product_name: str | None) -> str | None:
-    """Extract set code (e.g. OP-07, PRB-01) from product name."""
-    if not product_name:
-        return None
-    import re
-    m = re.search(r"(OP|EB|PRB)-\d+", product_name, re.IGNORECASE)
-    return m.group(0).upper() if m else None
-
-
-def get_box_image_url(product_name: str | None) -> str | None:
-    """
-    Generate image URL for a booster box based on its product name.
-    Matches the frontend getBoxImageUrl function logic.
-    """
-    if not product_name:
-        return None
-    
-    import re
-    
-    # Extract set identifier (e.g., OP-01, OP-02, EB-01, PRB-01)
-    set_match = re.search(r'(OP|EB|PRB)-\d+', product_name, re.IGNORECASE)
-    if not set_match:
-        return None
-    
-    set_code = set_match.group(0).upper()
-    
-    # Check if it's a variant (Blue/White)
-    variant = ''
-    if '(Blue)' in product_name:
-        if set_code == 'OP-01':
-            # OP-01 Blue uses op-01blue.png
-            filename = f"{set_code.lower()}blue.png"
-        else:
-            variant = '-blue'
-            filename = f"{set_code.lower()}{variant}.png"
-    elif '(White)' in product_name:
-        if set_code == 'OP-01':
-            # OP-01 White uses op-01white.png
-            filename = f"{set_code.lower()}white.png"
-        else:
-            variant = '-white'
-            filename = f"{set_code.lower()}{variant}.png"
-    else:
-        # No variant - use base filename
-        filename = f"{set_code.lower()}.png"
-    
-    # Return path - frontend will handle case sensitivity
-    # Most files seem to be lowercase, but some are uppercase
-    return f"/images/boxes/{filename}"
-
+from app.services.box_detail_service import (
+    build_box_detail_data,
+    get_box_image_url,
+    get_manual_liquidity_reprint,
+    get_manual_community_sentiment,
+    get_top_10_value_usd,
+    set_code_from_product_name,
+)
 
 # In-memory response cache for leaderboard (repeat requests return instantly)
 _leaderboard_cache: dict = {}
@@ -577,6 +462,9 @@ async def get_booster_boxes(
         for db_box in db_boxes:
             if "(Test)" in db_box.product_name or "Test Box" in db_box.product_name:
                 continue
+            # Exclude legacy generic OP-01 Romance Dawn (we track Blue and White separately)
+            if db_box.product_name == "One Piece - OP-01 Romance Dawn Booster Box":
+                continue
             if db_box.product_name in seen_product_names:
                 continue
             seen_product_names.add(db_box.product_name)
@@ -587,7 +475,7 @@ async def get_booster_boxes(
             # Start with JSON data if available (exact product_name), else match by set code (OP-07, PRB-01, etc.)
             json_box = json_boxes_by_name.get(db_box.product_name, {})
             if not json_box and boxes:
-                set_code = _set_code_from_product_name(db_box.product_name)
+                set_code = set_code_from_product_name(db_box.product_name)
                 if set_code:
                     for b in boxes:
                         if b.get("product_name") and set_code in b.get("product_name", "").upper():
@@ -691,14 +579,18 @@ async def get_booster_boxes(
                 box_data["metrics"]["liquidity_score"] = 90
             
             # Manual liquidity and reprint risk by set (overrides DB/calculated values)
-            manual_liq, manual_reprint = _get_manual_liquidity_reprint(db_box.product_name)
+            manual_liq, manual_reprint = get_manual_liquidity_reprint(db_box.product_name)
             if manual_liq is not None:
                 box_data["metrics"]["liquidity_score"] = manual_liq
             if manual_reprint is not None:
                 box_data["reprint_risk"] = manual_reprint
-            
+            # Manual community sentiment by set
+            manual_sentiment = get_manual_community_sentiment(db_box.product_name)
+            if manual_sentiment is not None:
+                box_data["metrics"]["community_sentiment"] = manual_sentiment
+
             # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
-            top_10 = _get_top_10_value_usd(db_box.product_name)
+            top_10 = get_top_10_value_usd(db_box.product_name)
             if top_10 is not None:
                 box_data["metrics"]["top_10_value_usd"] = top_10
             # If still missing and we have json_box metrics, use JSON top_10
@@ -856,252 +748,8 @@ async def get_box_detail(
                 content={"detail": f"Box with ID {box_id} not found"}
             )
         
-        # Get accurate metrics from historical data service
-        try:
-            from app.services.historical_data import (
-                get_box_30d_avg_sales,
-                get_box_30d_volume_or_ramp,
-                get_box_volume_change_pcts,
-            )
-        except ImportError:
-            get_box_30d_avg_sales = None
-            get_box_30d_volume_or_ramp = None
-            get_box_volume_change_pcts = None
-        
-        # Load latest DB metric for this box so we can use current floor (e.g. 701) in ramp estimate
-        from app.models.unified_box_metrics import UnifiedBoxMetrics
-        latest_metric_stmt = (
-            select(UnifiedBoxMetrics)
-            .where(UnifiedBoxMetrics.booster_box_id == db_box.id)
-            .order_by(UnifiedBoxMetrics.metric_date.desc())
-            .limit(1)
-        )
-        latest_metric_result = await db.execute(latest_metric_stmt)
-        latest_db_metric = latest_metric_result.scalar_one_or_none()
-        current_floor_override = float(latest_db_metric.floor_price_usd) if (latest_db_metric and latest_db_metric.floor_price_usd) else None
-        
-        historical_data = None
-        if get_box_price_history:
-            try:
-                historical_data = get_box_price_history(str(db_box.id), days=90)
-            except Exception as e:
-                print(f"⚠️  Error getting price history: {e}")
-                historical_data = None
-        
-        box_metrics = {}
-        if historical_data:
-            latest = historical_data[-1]
-            
-            # Get values for calculations
-            # Use latest active_listings; if missing (e.g. Apify-only row), use most recent entry that has it (scraper data)
-            active_listings = latest.get("active_listings_count") or 0
-            if not active_listings and len(historical_data) > 1:
-                for entry in reversed(historical_data[:-1]):
-                    alc = entry.get("active_listings_count")
-                    if alc is not None and alc > 0:
-                        active_listings = int(alc)
-                        break
-            boxes_sold_per_day = latest.get("boxes_sold_per_day") or 0
-            
-            # Get 30d average sales FIRST (needed for days_to_20pct calculation)
-            avg_sales_30d = latest.get("boxes_sold_30d_avg")
-            if avg_sales_30d is None and get_box_30d_avg_sales:
-                try:
-                    avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
-                except Exception as e:
-                    print(f"⚠️  Error getting avg sales: {e}")
-                    avg_sales_30d = None
-            
-            # Get avg boxes added per day - calculate from historical if not present
-            avg_boxes_added_per_day = latest.get("avg_boxes_added_per_day")
-            if avg_boxes_added_per_day is None and len(historical_data) > 0:
-                # Calculate 30-day average from historical entries
-                recent_entries = historical_data[-30:] if len(historical_data) >= 30 else historical_data
-                boxes_added_values = [e.get("boxes_added_today", 0) for e in recent_entries 
-                                     if e.get("boxes_added_today") is not None]
-                if boxes_added_values:
-                    avg_boxes_added_per_day = sum(boxes_added_values) / len(boxes_added_values)
-                else:
-                    avg_boxes_added_per_day = 0
-            else:
-                avg_boxes_added_per_day = avg_boxes_added_per_day or 0
-            
-            # Calculate days_to_20pct_increase using full formula:
-            # T₊ = inventory below +20% tier (active_listings_count)
-            # net_burn_rate = boxes_sold_30d_avg - avg_boxes_added_per_day
-            # days_to_20pct = T₊ / net_burn_rate
-            days_to_20pct = None
-            if avg_sales_30d and avg_sales_30d > 0 and active_listings:
-                net_burn_rate = avg_sales_30d - avg_boxes_added_per_day
-                
-                if net_burn_rate > 0.05:  # Meaningful burn rate
-                    days_to_20pct = round(active_listings / net_burn_rate, 2)
-                    # Cap at 180 days max
-                    if days_to_20pct > 180:
-                        days_to_20pct = 180.0
-                elif net_burn_rate <= 0:
-                    # More boxes being added than sold - price won't rise
-                    days_to_20pct = None  # Display as N/A
-                else:
-                    # Too slow to be meaningful (< 0.05 net burn)
-                    days_to_20pct = 180.0  # Show as max
-            
-            # Calculate liquidity_score: higher = more liquid
-            # Based on sell rate vs listings - quick sellers get higher scores
-            liquidity_score = latest.get("liquidity_score")
-            if liquidity_score is None and avg_sales_30d and avg_sales_30d > 0:
-                if active_listings and active_listings > 0:
-                    raw_score = (avg_sales_30d / active_listings) * 100
-                    liquidity_score = round(min(raw_score, 10), 1)  # Cap at 10
-                else:
-                    liquidity_score = 5.0  # Default mid-range if no listing data
-            
-            # Calculate volumes: prefer ramp-aware 30d guesstimate (first-day + current price, 30d avg sales)
-            daily_vol = latest.get("daily_volume_usd") or 0
-            volume_7d = latest.get("volume_7d") or (daily_vol * 7 if daily_vol else 0)
-            volume_30d = None
-            if get_box_30d_volume_or_ramp:
-                try:
-                    volume_30d = get_box_30d_volume_or_ramp(
-                        str(db_box.id), current_floor_override=current_floor_override
-                    )
-                except Exception:
-                    volume_30d = None
-            if volume_30d is None:
-                volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
-            
-            # Calculate unified_volume_7d_ema if not present (7-day EMA of volumes)
-            unified_volume_7d_ema = latest.get("unified_volume_7d_ema")
-            if unified_volume_7d_ema is None and len(historical_data) >= 2:
-                # Get volumes from last 7 entries (or all if less than 7)
-                recent_entries = historical_data[-7:] if len(historical_data) >= 7 else historical_data
-                volumes = []
-                for e in recent_entries:
-                    vol = e.get("unified_volume_usd")
-                    if vol is None:
-                        # Fallback: calculate from daily_volume_usd
-                        daily = e.get("daily_volume_usd")
-                        if daily:
-                            vol = daily * 30  # 30-day projection
-                    if vol:
-                        volumes.append(float(vol))
-                
-                if volumes:
-                    # Calculate EMA (alpha = 0.3 for 7-day period)
-                    alpha = 0.3
-                    ema = volumes[0]
-                    for vol in volumes[1:]:
-                        ema = (alpha * vol) + ((1 - alpha) * ema)
-                    unified_volume_7d_ema = round(ema, 2)
-            
-            # Expected time to sale: (listings within 10% of floor) / (sales per day - listings added per day)
-            supply_10pct = latest.get("listings_within_10pct_floor")
-            supply = supply_10pct if supply_10pct is not None and supply_10pct > 0 else active_listings
-            sales_per_day = boxes_sold_per_day or avg_sales_30d
-            listings_added_per_day = avg_boxes_added_per_day or 0.0
-            expected_days_to_sell = None
-            if supply and supply > 0 and sales_per_day and sales_per_day > 0:
-                net_burn = sales_per_day - listings_added_per_day
-                if net_burn > 0.05:
-                    expected_days_to_sell = round(max(1.0, min(365.0, supply / net_burn)), 2)
-            
-            box_metrics = {
-                "floor_price_usd": float(current_floor_override) if current_floor_override is not None else latest.get("floor_price_usd"),
-                "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
-                "active_listings_count": active_listings,
-                "daily_volume_usd": daily_vol,
-                "volume_7d": volume_7d,
-                "volume_30d": volume_30d,
-                "unified_volume_usd": volume_30d,
-                "unified_volume_7d_ema": unified_volume_7d_ema,
-                "boxes_sold_per_day": boxes_sold_per_day,
-                "boxes_added_today": latest.get("boxes_added_today"),
-                "days_to_20pct_increase": days_to_20pct,
-                "liquidity_score": liquidity_score,
-                "boxes_sold_30d_avg": avg_sales_30d,
-                "expected_days_to_sell": expected_days_to_sell,
-                "expected_time_to_sale_days": expected_days_to_sell,  # alias for box detail UI
-            }
-            if get_box_volume_change_pcts:
-                try:
-                    changes = get_box_volume_change_pcts(str(db_box.id))
-                    if changes.get("volume_1d_change_pct") is not None:
-                        box_metrics["volume_1d_change_pct"] = changes["volume_1d_change_pct"]
-                    if changes.get("volume_7d_change_pct") is not None:
-                        box_metrics["volume_7d_change_pct"] = changes["volume_7d_change_pct"]
-                    if changes.get("volume_30d_change_pct") is not None:
-                        box_metrics["volume_30d_change_pct"] = changes["volume_30d_change_pct"]
-                except Exception:
-                    pass
-        
-        # Add 30d price change
-        price_change_30d = None
-        if get_box_month_over_month_price_change:
-            try:
-                price_change_30d = get_box_month_over_month_price_change(str(db_box.id))
-            except Exception as e:
-                print(f"⚠️  Error getting price change: {e}")
-                price_change_30d = None
-        if price_change_30d is not None:
-            box_metrics["floor_price_30d_change_pct"] = price_change_30d
-        
-        # boxes_sold_30d_avg already set above, but keep fallback just in case
-        if "boxes_sold_30d_avg" not in box_metrics or box_metrics["boxes_sold_30d_avg"] is None:
-            if get_box_30d_avg_sales:
-                try:
-                    avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
-                    if avg_sales_30d is not None:
-                        box_metrics["boxes_sold_30d_avg"] = avg_sales_30d
-                except Exception as e:
-                    print(f"⚠️  Error getting avg sales: {e}")
-        
-        # OP-13 manual overrides for box detail: liquidity High, reprint risk High, community score 90
-        is_op13 = "OP-13" in (db_box.product_name or "")
-        if is_op13:
-            box_metrics["liquidity_score"] = 90
-            box_metrics["community_sentiment"] = 90
-        
-        # Manual liquidity and reprint risk by set (overrides DB/calculated values)
-        manual_liq, manual_reprint = _get_manual_liquidity_reprint(db_box.product_name)
-        if manual_liq is not None:
-            box_metrics["liquidity_score"] = manual_liq
-        if manual_reprint is not None:
-            reprint_risk_for_response = manual_reprint
-        else:
-            reprint_risk_for_response = "HIGH" if is_op13 else (db_box.reprint_risk or "UNKNOWN")
-        
-        # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
-        top_10 = _get_top_10_value_usd(db_box.product_name)
-        if top_10 is not None:
-            box_metrics["top_10_value_usd"] = top_10
-        
-        # OP-13 market notes (manual)
-        notes = None
-        if is_op13:
-            notes = [
-                "Official Bandai stores have removed seals on all booster boxes making supply of sealed OP-13 very rare which isn't affecting sealed pricing on secondary even with reprints.",
-            ]
-        
-        return {
-            "data": {
-                "id": str(db_box.id),
-                "product_name": db_box.product_name,
-                "set_name": db_box.set_name,
-                "game_type": db_box.game_type or "One Piece",
-                "image_url": get_box_image_url(db_box.product_name),
-                "release_date": None,
-                "external_product_id": None,
-                "estimated_total_supply": box_metrics.get("estimated_total_supply"),
-                "reprint_risk": reprint_risk_for_response,
-                "current_rank_by_volume": None,
-                "current_rank_by_market_cap": None,
-                "rank_change_direction": "same",
-                "rank_change_amount": 0,
-                "is_favorited": False,
-                "notes": notes,
-                "metrics": box_metrics,
-            }
-        }
+        data = await build_box_detail_data(db, db_box)
+        return {"data": data}
 
 
 # Historical time-series data endpoint - requires authentication and active subscription

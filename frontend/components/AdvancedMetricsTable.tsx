@@ -18,7 +18,6 @@ interface MetricRow {
   units_sold_count?: number | null;
   boxes_sold_per_day?: number | null;
   boxes_added_today?: number | null;
-  days_to_20pct_increase?: number | null;
 }
 
 interface AdvancedMetricsTableProps {
@@ -169,12 +168,6 @@ export function AdvancedMetricsTable({ data, isLoading = false }: AdvancedMetric
             >
               Units Sold <SortIcon column="units_sold_count" />
             </th>
-            <th
-              className="text-right py-3 px-4 text-white/70 font-medium cursor-pointer hover:text-white transition-colors"
-              onClick={() => handleSort('days_to_20pct_increase')}
-            >
-              Days to +20% <SortIcon column="days_to_20pct_increase" />
-            </th>
           </tr>
         </thead>
         <tbody>
@@ -198,9 +191,6 @@ export function AdvancedMetricsTable({ data, isLoading = false }: AdvancedMetric
               <td className="py-3 px-4 text-right text-white/90">{formatCurrency(row.unified_volume_usd)}</td>
               <td className="py-3 px-4 text-right text-white/90">{formatNumber(row.active_listings_count)}</td>
               <td className="py-3 px-4 text-right text-white/90">{formatNumber(row.units_sold_count)}</td>
-              <td className="py-3 px-4 text-right text-white/90">
-                {row.days_to_20pct_increase != null ? formatDecimal(row.days_to_20pct_increase) : 'N/A'}
-              </td>
             </tr>
           ))}
         </tbody>

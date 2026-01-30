@@ -122,21 +122,21 @@ export function LeaderboardTable({
         return (
           <div key={box.id} className="leaderboard-row-wrapper">
             <div
-              className={`marketplace-row ${isRankOne ? 'rank-1' : ''} p-4 max-[430px]:p-3 xl:p-6 cursor-pointer transition-all duration-200 min-h-[72px] xl:min-h-[88px]`}
+              className={`marketplace-row ${isRankOne ? 'rank-1' : ''} p-3 max-[430px]:p-2 xl:p-6 cursor-pointer transition-all duration-200`}
               style={{ borderBottom: index < boxes.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none' }}
               onClick={() => (window.location.href = `/boxes/${box.id}`)}
             >
-              <div className="grid grid-cols-12 gap-3 max-[430px]:gap-2 xl:gap-4 items-center">
-              {/* Rank - smaller only at iPhone Max (≤430px) */}
-              <div className="col-span-1 text-left px-3 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center" style={{ fontFamily: 'Helvetica' }}>
-                <span className="text-base max-[430px]:text-sm xl:text-lg text-foreground-muted font-mono" style={{ color: 'rgba(255, 255, 255, 1)' }}>
+              <div className="grid grid-cols-12 gap-2 max-[430px]:gap-1 xl:gap-4 items-center">
+              {/* Rank - congruent size with other data cells */}
+              <div className="col-span-1 text-left px-3 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center" style={{ fontFamily: 'Helvetica' }}>
+                <span className="text-sm max-[430px]:text-xs xl:text-lg font-bold font-mono text-foreground-muted" style={{ color: 'rgba(255, 255, 255, 1)' }}>
                   #{box.rank}
                 </span>
               </div>
 
-              {/* Collection */}
-              <div className="col-span-3 flex items-center gap-4 max-[430px]:gap-3 xl:gap-5 min-h-[80px] max-[430px]:min-h-[64px] xl:min-h-[96px] px-3 py-2 max-[430px]:py-1">
-                <div className="flex-shrink-0 w-20 h-20 max-[430px]:w-16 max-[430px]:h-16 xl:w-24 xl:h-24 flex items-center justify-center">
+              {/* Collection - smaller rows and text on mobile */}
+              <div className="col-span-3 flex items-center gap-3 max-[430px]:gap-2 xl:gap-5 min-h-[64px] max-[430px]:min-h-[48px] xl:min-h-[96px] px-3 py-1 max-[430px]:py-0.5">
+                <div className="flex-shrink-0 w-16 h-16 max-[430px]:w-12 max-[430px]:h-12 xl:w-24 xl:h-24 flex items-center justify-center">
                   {(() => {
                     const imageUrl = box.image_url || getBoxImageUrl(box.product_name);
                     return imageUrl ? (
@@ -157,17 +157,17 @@ export function LeaderboardTable({
                   className="flex-1 min-w-0 flex flex-col justify-center"
                   title={cleanProductName(box.product_name)}
                 >
-                  <div className="text-base max-[430px]:text-sm xl:text-lg font-semibold text-white" style={{ 
+                  <div className="text-sm max-[430px]:text-xs xl:text-lg font-bold text-white" style={{ 
                     color: 'rgba(255, 255, 255, 0.95)',
                     lineHeight: '1.5',
-                    marginBottom: '6px'
+                    marginBottom: '4px'
                   }}>
                     {cleanProductName(box.product_name)}
                   </div>
                   {box.set_name && (
                     <div 
-                      className="text-sm max-[430px]:text-xs text-white/60"
-                      style={{ marginTop: '4px' }}
+                      className="text-xs max-[430px]:text-[10px] text-white/60"
+                      style={{ marginTop: '2px' }}
                       title={box.set_name}
                     >
                       {box.set_name}
@@ -176,7 +176,7 @@ export function LeaderboardTable({
                 </div>
                 {box.rank_change_direction && (
                   <span
-                    className={`text-sm max-[430px]:text-xs font-mono flex-shrink-0 ${
+                    className={`text-xs max-[430px]:text-[10px] font-mono flex-shrink-0 ${
                       box.rank_change_direction === 'up' ? 'marketplace-positive' : 'marketplace-negative'
                     }`}
                     title={`Rank ${box.rank_change_direction} ${box.rank_change_amount || 0}`}
@@ -187,16 +187,16 @@ export function LeaderboardTable({
               </div>
 
               {/* Floor */}
-              <div className="col-span-1 text-right px-2 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-end">
-                <div className="text-base max-[430px]:text-sm xl:text-lg text-foreground financial-number">
+              <div className="col-span-1 text-right px-2 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-end">
+                <div className="text-sm max-[430px]:text-xs xl:text-lg font-bold text-foreground financial-number">
                   {formatCurrency(box.metrics.floor_price_usd)}
                 </div>
               </div>
 
-              {/* Price Change % - Dynamic based on timeRange (tight right padding to sit next to Volume) */}
-              <div className="col-span-1 text-center relative pl-2 pr-0 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-center">
+              {/* Price Change % - Dynamic based on timeRange */}
+              <div className="col-span-1 text-center relative pl-[33px] pr-0 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-center">
                 <div 
-                  className={`text-base max-[430px]:text-sm xl:text-lg financial-number ${getPriceChangeColor(
+                  className={`text-sm max-[430px]:text-xs xl:text-lg font-bold financial-number ${getPriceChangeColor(
                     timeRange === '24h' || timeRange === '7d' 
                       ? box.metrics.floor_price_1d_change_pct 
                       : box.metrics.floor_price_30d_change_pct
@@ -225,9 +225,9 @@ export function LeaderboardTable({
                 </div>
               </div>
 
-              {/* Volume - Dynamic based on timeRange (tight left padding next to 1D %) */}
-              <div className="col-span-2 text-right pl-0 pr-2 -ml-1 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex flex-col items-end justify-center">
-                <div className="text-base max-[430px]:text-sm xl:text-lg font-semibold text-foreground financial-number">
+              {/* Volume - Dynamic based on timeRange */}
+              <div className="col-span-2 text-right pl-0 pr-2 -ml-1 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex flex-col items-end justify-center">
+                <div className="text-sm max-[430px]:text-xs xl:text-lg font-bold text-foreground financial-number">
                   {(() => {
                     if (timeRange === '24h') {
                       return box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
@@ -253,26 +253,23 @@ export function LeaderboardTable({
                   })()}
                 </div>
                 {(() => {
-                  const volChange = timeRange === '24h'
-                    ? (box.metrics as any).volume_1d_change_pct
-                    : timeRange === '7d'
-                      ? (box.metrics as any).volume_7d_change_pct
-                      : (box.metrics as any).volume_30d_change_pct;
+                  // Only show DoD (vs yesterday) for now; WoW and MoM tracked in backend, will show once we have a week of daily refreshes
+                  if (timeRange !== '24h') return null;
+                  const volChange = (box.metrics as any).volume_1d_change_pct;
                   if (volChange == null || volChange === undefined) return null;
                   const n = typeof volChange === 'number' ? volChange : Number(volChange);
                   if (isNaN(n)) return null;
-                  const label = timeRange === '24h' ? 'vs yesterday' : timeRange === '7d' ? 'vs last 7d' : 'vs last 30d';
                   return (
                     <div className={`text-xs mt-0.5 ${n >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {n >= 0 ? '▲' : '▼'} {Math.abs(n).toFixed(1)}% {label}
+                      {n >= 0 ? '▲' : '▼'} {Math.abs(n).toFixed(1)}% vs yesterday
                     </div>
                   );
                 })()}
               </div>
 
               {/* Sales - Dynamic based on timeRange */}
-              <div className="col-span-1 text-right px-3 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-end">
-                <div className="text-base max-[430px]:text-sm xl:text-lg text-foreground financial-number">
+              <div className="col-span-1 text-right px-3 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-end">
+                <div className="text-sm max-[430px]:text-xs xl:text-lg font-bold text-foreground financial-number">
                   {(() => {
                     if (timeRange === '24h') {
                       // 24h: Show daily sales rate
@@ -302,8 +299,8 @@ export function LeaderboardTable({
               </div>
 
               {/* Top 10 Card Value */}
-              <div className="col-span-2 text-center px-3 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-center">
-                <div className="text-base max-[430px]:text-sm xl:text-lg font-semibold text-foreground financial-number">
+              <div className="col-span-2 text-center px-3 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-center">
+                <div className="text-sm max-[430px]:text-xs xl:text-lg font-bold text-foreground financial-number">
                   {box.metrics.top_10_value_usd !== null && box.metrics.top_10_value_usd !== undefined
                     ? formatCurrency(box.metrics.top_10_value_usd)
                     : '--'}
@@ -311,8 +308,8 @@ export function LeaderboardTable({
               </div>
 
               {/* Days to 20% - same data as box detail */}
-              <div className="col-span-1 text-center px-2 min-h-[56px] max-[430px]:min-h-[48px] xl:min-h-0 flex items-center justify-center">
-                <div className="text-base max-[430px]:text-sm xl:text-lg text-foreground financial-number">
+              <div className="col-span-1 text-center px-2 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-center">
+                <div className="text-sm max-[430px]:text-xs xl:text-lg text-foreground financial-number">
                   {box.metrics.days_to_20pct_increase != null && box.metrics.days_to_20pct_increase !== undefined
                     ? Math.round(box.metrics.days_to_20pct_increase)
                     : '--'}
