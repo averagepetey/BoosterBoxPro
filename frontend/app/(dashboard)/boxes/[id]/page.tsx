@@ -212,6 +212,39 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="text-white/50 text-[10px] min-h-[1rem] mt-0.5">Estimated</div>
                 </div>
               </div>
+
+              {/* Mobile: Volume Change - major metric */}
+              {(box.metrics.volume_1d_change_pct != null || box.metrics.volume_7d_change_pct != null || box.metrics.volume_30d_change_pct != null) && (
+                <div className="mb-3 pb-3 border-b border-white/10 px-1">
+                  <div className="text-white/70 text-[10px] uppercase tracking-wide mb-2">Volume Change</div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {box.metrics.volume_1d_change_pct != null && (
+                      <div>
+                        <div className="text-white/50 text-[9px]">Day-over-Day</div>
+                        <div className={`text-sm font-bold ${box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
+                        </div>
+                      </div>
+                    )}
+                    {box.metrics.volume_7d_change_pct != null && (
+                      <div>
+                        <div className="text-white/50 text-[9px]">Week-over-Week</div>
+                        <div className={`text-sm font-bold ${box.metrics.volume_7d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {box.metrics.volume_7d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_7d_change_pct).toFixed(1)}%
+                        </div>
+                      </div>
+                    )}
+                    {box.metrics.volume_30d_change_pct != null && (
+                      <div>
+                        <div className="text-white/50 text-[9px]">Month-over-Month</div>
+                        <div className={`text-sm font-bold ${box.metrics.volume_30d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {box.metrics.volume_30d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_30d_change_pct).toFixed(1)}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Mobile: Compact metrics grid - uniform cells (label + value, same height) */}
@@ -380,6 +413,42 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
+                {/* Volume Change - major metric (Day-over-Day, Week-over-Week, Month-over-Month) */}
+                {(box.metrics.volume_1d_change_pct != null || box.metrics.volume_7d_change_pct != null || box.metrics.volume_30d_change_pct != null) && (
+                  <div 
+                    className="mb-4 p-4 rounded-xl border border-white/15"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                  >
+                    <h3 className="text-white font-semibold text-base mb-3">Volume Change</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {box.metrics.volume_1d_change_pct != null && (
+                        <div>
+                          <div className="text-white/60 text-xs mb-0.5">Day-over-Day</div>
+                          <div className={`text-xl font-bold ${box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
+                          </div>
+                        </div>
+                      )}
+                      {box.metrics.volume_7d_change_pct != null && (
+                        <div>
+                          <div className="text-white/60 text-xs mb-0.5">Week-over-Week</div>
+                          <div className={`text-xl font-bold ${box.metrics.volume_7d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {box.metrics.volume_7d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_7d_change_pct).toFixed(1)}%
+                          </div>
+                        </div>
+                      )}
+                      {box.metrics.volume_30d_change_pct != null && (
+                        <div>
+                          <div className="text-white/60 text-xs mb-0.5">Month-over-Month</div>
+                          <div className={`text-xl font-bold ${box.metrics.volume_30d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {box.metrics.volume_30d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_30d_change_pct).toFixed(1)}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Community Sentiment Rainbow Bar */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
@@ -390,29 +459,39 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                         : 50}/100
                     </div>
                   </div>
-                  <div className="relative w-full h-6 rounded-full overflow-hidden bg-white/5 border border-white/10">
-                    {/* Rainbow gradient background - full width */}
-                    <div 
-                      className="absolute inset-0"
-                      style={{
-                        background: 'linear-gradient(to right, #ef4444 0%, #f97316 12.5%, #eab308 25%, #84cc16 37.5%, #22c55e 50%, #3b82f6 62.5%, #8b5cf6 75%, #a855f7 87.5%, #ec4899 100%)'
-                      }}
-                    />
-                    {/* Dark overlay for unfilled portion */}
-                    <div 
-                      className="absolute inset-0 bg-black/40"
-                      style={{
-                        clipPath: `inset(0 0 0 ${box.metrics.community_sentiment !== null && box.metrics.community_sentiment !== undefined ? box.metrics.community_sentiment : 50}%)`
-                      }}
-                    />
-                    {/* Current value indicator line */}
-                    <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)] z-10"
+                  {/* Fixed-height row: bar and logo centered, logo can overflow */}
+                  <div className="relative w-full h-16 overflow-visible flex items-center">
+                    {/* Bar - centered in row */}
+                    <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-6 rounded-full overflow-hidden bg-white/5 border border-white/10">
+                      {/* Rainbow gradient background - full width */}
+                      <div 
+                        className="absolute inset-0"
+                        style={{
+                          background: 'linear-gradient(to right, #ef4444 0%, #f97316 12.5%, #eab308 25%, #84cc16 37.5%, #22c55e 50%, #3b82f6 62.5%, #8b5cf6 75%, #a855f7 87.5%, #ec4899 100%)'
+                        }}
+                      />
+                      {/* Dark overlay for unfilled portion */}
+                      <div 
+                        className="absolute inset-0 bg-black/40"
+                        style={{
+                          clipPath: `inset(0 0 0 ${box.metrics.community_sentiment !== null && box.metrics.community_sentiment !== undefined ? box.metrics.community_sentiment : 50}%)`
+                        }}
+                      />
+                    </div>
+                    {/* Boot logo - flipped, tilted right (traveling that way), centered on value */}
+                    <div
+                      className="absolute top-1/2 z-10 flex items-center justify-center pointer-events-none"
                       style={{
                         left: `${box.metrics.community_sentiment !== null && box.metrics.community_sentiment !== undefined ? box.metrics.community_sentiment : 50}%`,
-                        transform: 'translateX(-50%)'
+                        transform: 'translate(-50%, -50%) scaleX(-1) rotate(-28deg)'
                       }}
-                    />
+                    >
+                      <img
+                        src="/images/logo.png"
+                        alt=""
+                        className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-lg"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -557,7 +636,19 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
 
-            {/* Recent Trends / Price Chart - Mobile compact, Desktop full */}
+            {/* Notes - above Price Trends */}
+            <div className="mt-3 lg:mt-6 pt-3 lg:pt-6 border-t border-white/10">
+              <h2 className="text-base lg:text-xl font-bold text-white mb-3 lg:mb-4">Notes</h2>
+              <div className="space-y-2">
+                {box.notes && box.notes.length > 0
+                  ? box.notes.map((note, i) => (
+                      <div key={i} className="text-white/95 text-base lg:text-lg font-medium leading-relaxed">• {note}</div>
+                    ))
+                  : <div className="text-white/60 text-base">• No notes yet</div>}
+              </div>
+            </div>
+
+            {/* Price Trends - Mobile compact, Desktop full */}
             <div className="mt-3 lg:mt-6 pt-3 lg:pt-6 border-t border-white/10">
               <div className="flex items-center justify-between mb-2 lg:mb-4">
                 <h2 className="text-sm lg:text-xl font-bold text-white">Price Trends</h2>
@@ -656,171 +747,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
-          {/* Market Notes & Signals Section */}
-          <div 
-            className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
-            style={{
-              background: '#141414',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
-            }}
-          >
-            <h2 className="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4">Notes</h2>
-            <div className="space-y-2">
-              {box.notes && box.notes.length > 0
-                ? box.notes.map((note, i) => (
-                    <div key={i} className="text-white/70 text-sm">• {note}</div>
-                  ))
-                : <div className="text-white/70 text-sm">• No notes yet</div>}
-            </div>
-          </div>
-
-          {/* Comprehensive Metrics Section */}
-          <div 
-            className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
-            style={{
-              background: '#141414',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
-            }}
-          >
-            <h2 className="text-lg lg:text-xl font-bold text-white mb-4 lg:mb-6">Complete Metrics Overview</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Volume Metrics Column */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-3">Volume Metrics</h3>
-                <div>
-                  <div className="text-white/70 text-xs mb-1">Daily Volume USD</div>
-                  <div className="text-lg font-semibold text-white">
-                    {box.metrics.daily_volume_usd !== null && box.metrics.daily_volume_usd !== undefined
-                      ? formatCurrency(box.metrics.daily_volume_usd)
-                      : '--'}
-                  </div>
-                </div>
-                {(box.metrics.volume_30d != null || box.metrics.unified_volume_usd != null) && (
-                  <div>
-                    <div className="text-white/70 text-xs mb-1">30d Volume</div>
-                    <div className="text-lg font-semibold text-white">
-                      {formatCurrency(box.metrics.volume_30d ?? box.metrics.unified_volume_usd)}
-                    </div>
-                    <div className="text-white/50 text-xs mt-0.5">Rolling total from daily data</div>
-                  </div>
-                )}
-                <div>
-                  <div className="text-white/70 text-xs mb-1">7-Day EMA Volume</div>
-                  <div className="text-lg font-semibold text-white">
-                    {formatCurrency(box.metrics.unified_volume_7d_ema)}
-                  </div>
-                </div>
-                {box.metrics.volume_30d_sma && (
-                  <div>
-                    <div className="text-white/70 text-xs mb-1">30-Day SMA Volume</div>
-                    <div className="text-lg font-semibold text-white">
-                      {formatCurrency(box.metrics.volume_30d_sma)}
-                    </div>
-                  </div>
-                )}
-                {/* Volume & floor changes day/week/month */}
-                {(box.metrics.volume_1d_change_pct != null || box.metrics.volume_7d_change_pct != null || box.metrics.volume_30d_change_pct != null) && (
-                  <div className="pt-2 border-t border-white/10">
-                    <div className="text-white/70 text-xs mb-2">Volume change</div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                      {box.metrics.volume_1d_change_pct != null && (
-                        <span className={box.metrics.volume_1d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
-                          DoD: {box.metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_1d_change_pct).toFixed(1)}%
-                        </span>
-                      )}
-                      {box.metrics.volume_7d_change_pct != null && (
-                        <span className={box.metrics.volume_7d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
-                          WoW: {box.metrics.volume_7d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_7d_change_pct).toFixed(1)}%
-                        </span>
-                      )}
-                      {box.metrics.volume_30d_change_pct != null && (
-                        <span className={box.metrics.volume_30d_change_pct >= 0 ? 'text-green-400' : 'text-red-400'}>
-                          MoM: {box.metrics.volume_30d_change_pct >= 0 ? '▲' : '▼'} {Math.abs(box.metrics.volume_30d_change_pct).toFixed(1)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Supply Metrics Column */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-3">Supply Metrics</h3>
-                <div>
-                  <div className="text-white/70 text-xs mb-1">Active Listings</div>
-                  <div className="text-lg font-semibold text-white">
-                    {box.metrics.active_listings_count !== null && box.metrics.active_listings_count !== undefined
-                      ? box.metrics.active_listings_count.toLocaleString()
-                      : '--'}
-                  </div>
-                </div>
-                {box.metrics.boxes_added_today !== null && box.metrics.boxes_added_today !== undefined && (
-                  <div>
-                    <div className="text-white/70 text-xs mb-1">Boxes Added Today</div>
-                    <div className="text-lg font-semibold text-white">
-                      {box.metrics.boxes_added_today.toLocaleString()}
-                    </div>
-                  </div>
-                )}
-                {box.metrics.boxes_added_7d_ema !== null && box.metrics.boxes_added_7d_ema !== undefined && (
-                  <div>
-                    <div className="text-white/70 text-xs mb-1">7-Day EMA Supply</div>
-                    <div className="text-lg font-semibold text-white">
-                      {Math.round(box.metrics.boxes_added_7d_ema * 10) / 10}/day
-                    </div>
-                  </div>
-                )}
-                {box.metrics.boxes_added_30d_ema !== null && box.metrics.boxes_added_30d_ema !== undefined && (
-                  <div>
-                    <div className="text-white/70 text-xs mb-1">30-Day EMA Supply</div>
-                    <div className="text-lg font-semibold text-white">
-                      {Math.round(box.metrics.boxes_added_30d_ema * 10) / 10}/day
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Demand & Performance Column */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-3">Demand & Performance</h3>
-                <div>
-                  <div className="text-white/70 text-xs mb-1">Boxes Sold/Day</div>
-                  <div className="text-lg font-semibold text-white">
-                    {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
-                      ? Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10
-                      : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                      ? Math.round(box.metrics.boxes_sold_per_day * 10) / 10
-                      : '--'}
-                  </div>
-                  {box.metrics.boxes_sold_per_day && box.metrics.boxes_sold_per_day !== box.metrics.boxes_sold_30d_avg && (
-                    <div className="text-white/50 text-xs mt-1">
-                      All-Time Avg: {Math.round(box.metrics.boxes_sold_per_day * 10) / 10}/day
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-white/70 text-xs mb-1">Days to +20% Increase</div>
-                  <div className="text-lg font-semibold text-white">
-                    {box.metrics.days_to_20pct_increase !== null && box.metrics.days_to_20pct_increase !== undefined
-                      ? `${Math.round(box.metrics.days_to_20pct_increase)} days`
-                      : 'N/A'}
-                  </div>
-                </div>
-                {box.metrics.momentum_score !== null && box.metrics.momentum_score !== undefined && (
-                  <div>
-                    <div className="text-white/70 text-xs mb-1">Momentum Score</div>
-                    <div className="text-lg font-semibold text-white">
-                      {box.metrics.momentum_score.toFixed(2)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Advanced Metrics Table Section */}
           <div 
             className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
@@ -841,38 +767,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 isLoading={isLoadingAllHistorical}
               />
             )}
-          </div>
-
-          {/* Marketplace Attribution & Context */}
-          <div 
-            className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
-            style={{
-              background: '#141414',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
-            }}
-          >
-            <h2 className="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4">Data Sources & Context</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-white/70 text-xs mb-1">Floor Price Source</div>
-                <div className="text-white font-medium">TCGplayer (Authoritative)</div>
-              </div>
-              <div>
-                <div className="text-white/70 text-xs mb-1">Volume Source</div>
-                <div className="text-white font-medium">Unified (TCGplayer 70% + eBay 30%)</div>
-              </div>
-              <div>
-                <div className="text-white/70 text-xs mb-1">Supply Source</div>
-                <div className="text-white font-medium">TCGplayer</div>
-              </div>
-              {box.set_name && (
-                <div>
-                  <div className="text-white/70 text-xs mb-1">Set Name</div>
-                  <div className="text-white font-medium">{box.set_name}</div>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Mobile: Back to Leaderboard button at bottom */}

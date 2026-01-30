@@ -8,8 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // Use NEXT_PUBLIC_ prefix for client-side access, or fallback to localhost
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:8000';
 
-// Export route config to increase timeout
-export const maxDuration = 30; // 30 seconds max for this route
+// Export route config to increase timeout (backend does heavy DB + historical batch)
+export const maxDuration = 45; // 45 seconds max for this route
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
     console.log('[API Proxy] BACKEND_URL:', BACKEND_URL);
     console.log('[API Proxy] Has auth header:', !!authHeader);
     
-    // Add timeout to prevent hanging (30 seconds for slow backend with historical data)
+    // Add timeout to prevent hanging (45 seconds for slow backend with historical data)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.error('[API Proxy] Request timeout after 30 seconds');
+      console.error('[API Proxy] Request timeout after 45 seconds');
       controller.abort();
-    }, 30000); // 30 second timeout
+    }, 45000); // 45 second timeout
     
     // Build headers for backend request
     const headers: HeadersInit = {

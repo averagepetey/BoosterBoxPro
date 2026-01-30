@@ -217,6 +217,34 @@ async def cron_health():
         }
 
 
+@app.post("/admin/invalidate-cache")
+async def admin_invalidate_cache(request: Request):
+    """
+    Invalidate all API caches so leaderboard and box detail serve fresh data.
+    Called by the daily refresh job when it completes. Requires INVALIDATE_CACHE_SECRET.
+    """
+    secret = request.headers.get("X-Invalidate-Secret") or request.query_params.get("secret")
+    if not settings.invalidate_cache_secret or secret != settings.invalidate_cache_secret:
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+    # Clear in-memory leaderboard cache (defined below in this module)
+    _leaderboard_cache.clear()
+    # Clear historical entries JSON cache so next request reads fresh from file/DB
+    try:
+        from app.services.historical_data import invalidate_historical_entries_cache
+        invalidate_historical_entries_cache()
+    except Exception as e:
+        logger.warning(f"invalidate_historical_entries_cache: {e}")
+    # Clear Redis caches (leaderboard, box detail, time-series)
+    redis_deleted = 0
+    try:
+        from app.services.cache_service import cache_service
+        redis_deleted = cache_service.invalidate_all_data_caches()
+    except Exception as e:
+        logger.warning(f"cache_service.invalidate_all_data_caches: {e}")
+    logger.info("Cache invalidated (leaderboard in-memory + historical entries + Redis)")
+    return {"ok": True, "message": "Caches invalidated", "redis_keys_deleted": redis_deleted}
+
+
 # Global exception handler to ensure CORS headers are included in error responses
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

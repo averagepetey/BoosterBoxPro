@@ -9,10 +9,55 @@ The daily refresh (Apify + listings scraper) is set up to run **only on GitHub A
 - Repo → **Settings** → **Secrets and variables** → **Actions**
 - **New repository secret** for each:
 
-  | Name             | Value                                      |
-  |------------------|--------------------------------------------|
-  | `DATABASE_URL`   | Your Supabase/Postgres URL (same as Render) |
-  | `APIFY_API_TOKEN`| Your Apify API token (same as Render)      |
+  | Name                      | Value                                                                 |
+  |---------------------------|-----------------------------------------------------------------------|
+  | `DATABASE_URL`            | Your Supabase/Postgres URL (same as Render)                           |
+  | `APIFY_API_TOKEN`         | Your Apify API token (same as Render)                                 |
+  | `BACKEND_URL`             | Your API base URL (e.g. `https://your-api.onrender.com`)              |
+  | `INVALIDATE_CACHE_SECRET` | A secret string; set the same value as `INVALIDATE_CACHE_SECRET` on Render so the refresh can invalidate API caches and leaderboard/box detail update immediately after the run |
+
+---
+
+## 1b. Cache invalidation setup (step-by-step)
+
+So leaderboard and box detail update right after the daily refresh, you need two places configured.
+
+### Generate the secret (once)
+
+In a terminal, run:
+
+```bash
+openssl rand -hex 32
+```
+
+Copy the output (e.g. `a1b2c3d4e5f6...`). You’ll use this **exact same value** in both GitHub and Render.
+
+### GitHub Actions secrets
+
+1. Open your repo on GitHub.
+2. Click **Settings** (repo top bar).
+3. In the left sidebar, under **Security**, click **Secrets and variables** → **Actions**.
+4. Click **New repository secret**.
+5. **Name:** `BACKEND_URL`  
+   **Value:** Your API base URL, no trailing slash, e.g. `https://boosterboxpro-api.onrender.com`  
+   Click **Add secret**.
+6. Click **New repository secret** again.
+7. **Name:** `INVALIDATE_CACHE_SECRET`  
+   **Value:** paste the string you generated with `openssl rand -hex 32`  
+   Click **Add secret**.
+
+### Render (API service)
+
+1. Go to [Render Dashboard](https://dashboard.render.com).
+2. Open the **service** that runs your API (the web service, not the cron job).
+3. Go to **Environment** (left sidebar).
+4. Click **Add Environment Variable**.
+5. **Key:** `INVALIDATE_CACHE_SECRET`  
+   **Value:** the **same** string you used for the GitHub secret `INVALIDATE_CACHE_SECRET`  
+   Save.
+6. If the service is already running, trigger a **Manual Deploy** (or push a commit) so the new env var is picked up.
+
+After this, when the daily refresh finishes on GitHub, it will call your API’s `POST /admin/invalidate-cache` and caches will clear so the next request gets fresh data.
 
 ---
 
@@ -21,6 +66,8 @@ The daily refresh (Apify + listings scraper) is set up to run **only on GitHub A
 The workflow is in `.github/workflows/daily-refresh.yml`. Push to `main` (or your default branch). After that, GitHub will run it on schedule and you can trigger it manually under **Actions** → **Daily Refresh (Apify + Scraper)** → **Run workflow**.
 
 **Schedule:** 1pm EST (18:00 UTC) daily.
+
+When the refresh completes, the script calls your API’s `POST /admin/invalidate-cache` (using `BACKEND_URL` and `INVALIDATE_CACHE_SECRET`) so leaderboard and box detail serve fresh data immediately.
 
 ---
 
@@ -42,9 +89,10 @@ After this, the daily refresh runs only on GitHub.
 
 | Step              | Action |
 |-------------------|--------|
-| 1. GitHub secrets | Add `DATABASE_URL` and `APIFY_API_TOKEN` in repo Actions secrets. |
-| 2. Workflow       | Already in repo; push to `main` if needed. |
-| 3. Render         | Disable or delete the Render cron job. |
+| 1. GitHub secrets | Add `DATABASE_URL`, `APIFY_API_TOKEN`, `BACKEND_URL`, and `INVALIDATE_CACHE_SECRET` in repo Actions secrets. |
+| 2. Render env     | On your API service (Render), set `INVALIDATE_CACHE_SECRET` to the same value so the refresh can call `POST /admin/invalidate-cache` and clear caches. |
+| 3. Workflow       | Already in repo; push to `main` if needed. |
+| 4. Render         | Disable or delete the Render cron job. |
 
 ---
 

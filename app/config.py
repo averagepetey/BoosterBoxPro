@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     
     # Admin API Key (simple auth for manual entry endpoints)
     admin_api_key: Optional[str] = None
+
+    # Invalidate cache secret: daily refresh calls POST /admin/invalidate-cache with this
+    # so leaderboard and box detail serve fresh data right after refresh (set in GitHub Actions)
+    invalidate_cache_secret: Optional[str] = None
     
     # CORS - Production domains (comma-separated in .env)
     # Example: CORS_ORIGINS=https://boosterboxpro.com,https://www.boosterboxpro.com
@@ -51,7 +55,7 @@ class Settings(BaseSettings):
     redis_url: Optional[str] = None  # Override host/port/password if provided (e.g., redis://localhost:6379/0)
     
     # Cache TTLs (in seconds)
-    cache_ttl_leaderboard: int = 900  # 15 minutes
+    cache_ttl_leaderboard: int = 1800  # 30 minutes (repeat dashboard loads are instant)
     cache_ttl_box_detail: int = 600  # 10 minutes
     cache_ttl_time_series: int = 1800  # 30 minutes
     

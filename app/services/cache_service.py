@@ -4,7 +4,7 @@ Redis-based caching for leaderboard and box detail queries
 """
 
 import json
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, List
 from datetime import date, timedelta
 from uuid import UUID
 
@@ -198,6 +198,24 @@ class CacheService:
         """Invalidate box detail cache for a date"""
         key = self.get_box_detail_cache_key(box_id, metric_date)
         self.delete(key)
+
+    def invalidate_all_data_caches(self) -> int:
+        """
+        Invalidate all leaderboard, box detail, and time-series caches (e.g. after daily refresh).
+        Uses Redis KEYS; returns number of keys deleted.
+        """
+        if not self.enabled or not self.redis_client:
+            return 0
+        deleted = 0
+        try:
+            for pattern in ("leaderboard:*", "box:detail:*", "box:timeseries:*"):
+                keys = self.redis_client.keys(pattern)
+                if keys:
+                    self.redis_client.delete(*keys)
+                    deleted += len(keys)
+        except Exception as e:
+            print(f"Cache invalidate_all_data_caches error: {e}")
+        return deleted
 
 
 # Global instance
