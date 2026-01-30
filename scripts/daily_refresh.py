@@ -239,6 +239,30 @@ def main():
     )
     
     save_completion_status(status)
+
+    # Invalidate API caches so leaderboard and box detail serve fresh data immediately
+    backend_url = os.environ.get("BACKEND_URL", "").rstrip("/")
+    invalidate_secret = os.environ.get("INVALIDATE_CACHE_SECRET", "")
+    if backend_url and invalidate_secret:
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{backend_url}/admin/invalidate-cache",
+                method="POST",
+                headers={"X-Invalidate-Secret": invalidate_secret},
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                if resp.status in (200, 201):
+                    logger.info("✅ API caches invalidated – leaderboard and box detail will serve fresh data")
+                else:
+                    logger.warning(f"Invalidate cache returned status {resp.status}")
+        except Exception as e:
+            logger.warning(f"Could not invalidate API cache: {e}")
+    else:
+        if not backend_url:
+            logger.debug("BACKEND_URL not set – skipping cache invalidation")
+        if not invalidate_secret:
+            logger.debug("INVALIDATE_CACHE_SECRET not set – skipping cache invalidation")
     
     # Optional success alert (only if ALERT_ON_SUCCESS=true)
     if not status["overall_success"]:

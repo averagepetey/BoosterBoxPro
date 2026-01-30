@@ -38,6 +38,13 @@ def load_historical_entries() -> Dict[str, List[Dict[str, Any]]]:
     return _historical_entries_cache
 
 
+def invalidate_historical_entries_cache() -> None:
+    """Clear in-memory historical entries cache so next load reads fresh from file/DB."""
+    global _historical_entries_cache, _historical_entries_cache_time
+    _historical_entries_cache = None
+    _historical_entries_cache_time = 0
+
+
 # Mapping of database UUIDs to old leaderboard UUIDs
 # This allows merging historical data that was saved under different IDs
 DB_TO_LEADERBOARD_UUID_MAP = {

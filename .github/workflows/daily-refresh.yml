@@ -42,4 +42,11 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
-        run: python scripts/daily_refresh.py --no-delay
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          INVALIDATE_CACHE_SECRET: ${{ secrets.INVALIDATE_CACHE_SECRET }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python scripts/daily_refresh.py --no-delay
+          else
+            python scripts/daily_refresh.py
+          fi
