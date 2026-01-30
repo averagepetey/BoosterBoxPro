@@ -104,3 +104,27 @@ After this, the daily refresh runs only on GitHub.
 4. Click the new run to watch logs. It will install deps, Playwright Chromium, then run the script. A green check means it worked.
 
 For more context (memory limits, alternatives), see `CRON_ALTERNATIVES_MEMORY.md`.
+
+---
+
+## Why didn’t the cron run today?
+
+Common reasons the scheduled run doesn’t happen:
+
+1. **Schedule time**  
+   The job runs at **18:00 UTC** (1pm EST / 10am PST). If it’s still before that in your timezone, it hasn’t run yet. GitHub can also delay it by **15–30 minutes**.
+
+2. **Workflow only on default branch**  
+   Scheduled workflows run only from the **default branch** (usually `main`). If `daily-refresh.yml` exists only on another branch, the schedule will never run. Merge it into `main` and push.
+
+3. **Repo treated as inactive**  
+   If the repo has had **no pushes and no workflow runs for 60+ days**, GitHub may **stop running scheduled workflows**. Fix: run the workflow once manually (**Actions** → **Daily Refresh** → **Run workflow**), or push a commit. After that, the schedule usually starts again.
+
+4. **Actions disabled**  
+   In the repo **Settings** → **Actions** → **General**, ensure “Disable actions” is not selected.
+
+5. **Fork**  
+   In **forks**, scheduled workflows do not run by default. Use the upstream repo or run the workflow manually.
+
+6. **Check run history**  
+   In **Actions** → **Daily Refresh (Apify + Scraper)** → open the list of runs. If there’s no run for today at ~18:00 UTC, the schedule didn’t fire. Use **Run workflow** to run it now and confirm secrets/permissions are correct.

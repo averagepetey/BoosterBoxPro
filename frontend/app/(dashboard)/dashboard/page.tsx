@@ -26,6 +26,7 @@ function DashboardContent() {
   const [sortBy, setSortBy] = useState('unified_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isMounted, setIsMounted] = useState(false);
+
   const { data, isLoading, error, isFetchingMore } = useLeaderboard({
     sort: sortBy,
     fastLimit: 25,  // First paint: load 25 rows quickly
@@ -242,11 +243,10 @@ function DashboardContent() {
             <NewReleases />
           </div>
 
-          {/* Controls Bar */}
-          <div className="mb-4 flex items-center justify-between px-3 sm:px-0 gap-1.5 sm:gap-4">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Time Range Buttons */}
-              <div className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1">
+          {/* Controls Bar - one line: pill left, Top Boxes center, Volume pill right */}
+          <div className="mb-4 flex items-center justify-between px-3 sm:px-0 gap-2 sm:gap-4 flex-nowrap">
+            {/* Time Range Pills - left */}
+            <div className="flex-shrink-0 rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1">
                 <button 
                   onClick={() => handleTimeRangeChange('24h')}
                   className={`transition lb-anim px-2.5 sm:px-4 py-1.5 text-xs font-medium rounded-full ${
@@ -287,12 +287,9 @@ function DashboardContent() {
                   <span className={timeRange === '30d' ? 'relative z-10' : ''}>30D</span>
                 </button>
               </div>
-            </div>
-            
-            {/* Top Boxes Title - Center on all screens */}
-            <h2 className="text-sm sm:text-xl font-semibold text-white lb-title whitespace-nowrap flex-shrink-0 mx-1 sm:mx-0">Top Boxes</h2>
-            
-            {/* Sort Dropdown */}
+            {/* Top Boxes - center */}
+            <h2 className="flex-1 text-center text-sm sm:text-xl font-semibold text-white lb-title whitespace-nowrap min-w-0 px-2">Top Boxes</h2>
+            {/* Volume Dropdown - right */}
             <div className="rounded-full bg-white/12 border border-white/15 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.18)] flex items-center gap-0 p-1 relative flex-shrink-0">
               <div className="relative">
                 <select
@@ -326,23 +323,20 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* Leaderboard */}
+          {/* Leaderboard - single responsive table: smaller rows on mobile, scroll right to see all columns */}
           <div className="mb-4">
-
-            {/* Table Container - Scrollable (always show so skeleton/table layout is stable) */}
+            <p className="2xl:hidden text-white/40 text-[10px] sm:text-xs mb-1.5 text-center">
+              Swipe right to see Sales, Top 10 Value, Days to 20%
+            </p>
+            <div className="w-screen relative left-1/2 -translate-x-1/2">
             <div 
-              className="relative rounded-none xl:rounded-3xl overflow-hidden leaderboard-container"
-              style={{
-                background: '#141414 !important',
-                border: '1px solid rgba(255, 255, 255, 0.15) !important'
-              }}
+              className="relative rounded-none overflow-hidden leaderboard-container"
+              style={{ background: '#141414 !important' }}
             >
-            {/* Horizontal Scroll Wrapper for Mobile */}
-            <div className="overflow-x-auto scrollbar-hide">
-              <div className="min-w-[950px] xl:min-w-0 px-3 max-[430px]:px-2 xl:px-6 py-3 max-[430px]:py-2 xl:py-6">
-            {/* Column Headers - Sticky; smaller only at iPhone Max (≤430px) */}
+            <div className="w-full min-w-0 overflow-x-auto scrollbar-hide -webkit-overflow-scrolling-touch">
+              <div className="min-w-[950px] 2xl:min-w-0 px-2 max-[430px]:px-2 sm:px-6 xl:px-6 py-2 max-[430px]:py-2 sm:py-6 xl:py-6">
             <div 
-              className="sticky top-0 z-20 grid grid-cols-12 gap-2 max-[430px]:gap-1 xl:gap-2 mb-3 max-[430px]:mb-2 xl:mb-4 pb-3 max-[430px]:pb-2 xl:pb-3 text-white/70 uppercase tracking-widest text-xs max-[430px]:text-[10px] xl:text-xs rounded-t-3xl"
+              className="sticky top-0 z-20 grid grid-cols-12 gap-1 max-[430px]:gap-1 sm:gap-2 xl:gap-2 mb-2 max-[430px]:mb-2 sm:mb-4 xl:mb-4 pb-2 max-[430px]:pb-2 sm:pb-3 xl:pb-3 text-white/70 uppercase tracking-widest text-[9px] max-[430px]:text-[9px] sm:text-xs xl:text-xs font-bold rounded-t-3xl"
               style={{
                 background: 'transparent',
                 backgroundColor: 'transparent',
@@ -356,14 +350,14 @@ function DashboardContent() {
                 borderTopRightRadius: '1.5rem'
               }}
             >
-              <div className="col-span-1 text-left font-medium px-3">
+              <div className="col-span-1 text-left font-bold px-3">
                 #
               </div>
-              <div className="col-span-3 text-left font-medium px-3">
+              <div className="col-span-3 text-left font-bold px-3">
                 Collection
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors px-2"
+                className="col-span-1 text-right font-bold cursor-pointer hover:text-white transition-colors px-2"
                 onClick={() => handleSort('floor_price_usd')}
               >
                 Floor
@@ -372,7 +366,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors pl-2 pr-0"
+                className="col-span-1 text-center font-bold cursor-pointer hover:text-white transition-colors pl-[33px] pr-0"
                 onClick={() => {
                   const priceChangeSort = timeRange === '24h' ? 'floor_price_1d_change_pct'
                     : timeRange === '7d' ? 'floor_price_1d_change_pct' // Use 1d for 7d view (we don't have 7d price change)
@@ -386,7 +380,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-2 text-right font-medium cursor-pointer hover:text-white transition-colors pl-0 pr-2 -ml-1"
+                className="col-span-2 text-right font-bold cursor-pointer hover:text-white transition-colors pl-0 pr-2 -ml-1"
                 onClick={() => {
                   const volumeSort = timeRange === '24h' ? 'daily_volume_usd' 
                     : timeRange === '7d' ? 'volume_7d' 
@@ -400,7 +394,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-right font-medium cursor-pointer hover:text-white transition-colors px-3"
+                className="col-span-1 text-right font-bold cursor-pointer hover:text-white transition-colors px-3"
                 onClick={() => {
                   const salesSort = timeRange === '24h' ? 'boxes_sold_per_day'
                     : timeRange === '7d' ? 'boxes_sold_per_day'
@@ -414,7 +408,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-2 text-center font-medium cursor-pointer hover:text-white transition-colors px-3"
+                className="col-span-2 text-center font-bold cursor-pointer hover:text-white transition-colors px-3"
                 onClick={() => handleSort('top_10_value_usd')}
               >
                 Top 10 Value
@@ -423,7 +417,7 @@ function DashboardContent() {
                 )}
               </div>
               <div 
-                className="col-span-1 text-center font-medium cursor-pointer hover:text-white transition-colors px-2"
+                className="col-span-1 text-center font-bold cursor-pointer hover:text-white transition-colors px-2"
                 onClick={() => handleSort('days_to_20pct_increase')}
               >
                 Days to 20%
@@ -462,6 +456,7 @@ function DashboardContent() {
               </div>
             )}
               </div>
+            </div>
             </div>
             </div>
           </div>

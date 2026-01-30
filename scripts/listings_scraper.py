@@ -947,8 +947,12 @@ async def run_scraper():
 
 
 def save_results(results: List[Dict]):
-    """Save scraped data to historical_entries.json and to box_metrics_unified (DB)."""
+    """Save scraped data to historical_entries.json and to box_metrics_unified (DB).
+    Computes boxes_added_today = max(0, today_count - yesterday_count) from yesterday's
+    refresh to today's so the daily cron records how many listings were added since last run.
+    """
     today = datetime.now().strftime('%Y-%m-%d')
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     # Ensure project root on path so we can import app.services
     _root = Path(__file__).resolve().parent.parent
     if str(_root) not in sys.path:
@@ -977,6 +981,18 @@ def save_results(results: List[Dict]):
         if box_id not in hist:
             hist[box_id] = []
 
+        # Added/removed from yesterday's refresh to today's (daily cron: yesterday count vs today count)
+        yesterday_alc = None
+        for e in hist[box_id]:
+            if e.get('date') == yesterday:
+                yesterday_alc = e.get('active_listings_count')
+                if yesterday_alc is not None:
+                    yesterday_alc = int(yesterday_alc)
+                break
+        delta = (boxes_within_20pct - yesterday_alc) if yesterday_alc is not None else None
+        boxes_added_today = max(0, delta) if delta is not None else None
+        boxes_removed_today = max(0, -delta) if delta is not None else None
+
         # active_listings_count = boxes within 20% of floor; listings_within_10pct_floor = boxes within 10% (for expected time to sale)
         entry = {
             'date': today,
@@ -987,6 +1003,8 @@ def save_results(results: List[Dict]):
             'scrape_timestamp': result.get('scrape_timestamp'),
             'pages_scraped': result.get('pages_scraped'),
             'filters_applied': result.get('filters_applied'),
+            'boxes_added_today': boxes_added_today,
+            'boxes_removed_today': boxes_removed_today,
         }
 
         # Remove existing entry for today (update mode)
@@ -1006,13 +1024,17 @@ def save_results(results: List[Dict]):
                 floor_price_usd=result.get('floor_price'),
                 active_listings_count=boxes_within_20pct,
                 boxes_sold_30d_avg=boxes_sold_30d_avg,
+                boxes_added_today=boxes_added_today,
             )
             if ok:
                 logger.debug(f"DB upsert ok for {box_id}")
             else:
                 logger.warning(f"DB upsert failed for {box_id} (e.g. missing FK)")
 
-        logger.info(f"Saved {box_id}: listings={boxes_within_20pct} (boxes within 20% of floor) @ ${result.get('floor_price', 0):.2f}")
+        add_remove = ""
+        if boxes_added_today is not None or boxes_removed_today is not None:
+            add_remove = f" | added={boxes_added_today or 0}, removed={boxes_removed_today or 0} (vs yesterday)"
+        logger.info(f"Saved {box_id}: listings={boxes_within_20pct} (boxes within 20% of floor) @ ${result.get('floor_price', 0):.2f}{add_remove}")
     
     # Backup and save
     backup_path = Path(f'data/historical_entries_backup_{today}.json')

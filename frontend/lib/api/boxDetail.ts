@@ -3,7 +3,7 @@
  * Functions for fetching individual box detail data
  */
 
-import { getApiBaseUrl, getAuthToken } from '@/lib/api/client';
+import { getApiBaseUrl, getAuthToken, removeAuthToken } from '@/lib/api/client';
 // Note: getApiBaseUrl used for time-series and rank history endpoints
 import { BoxMetricsSummary } from './leaderboard';
 
@@ -33,6 +33,7 @@ export interface BoxDetail {
     boxes_added_today?: number | null;
     boxes_added_7d_ema?: number | null;
     boxes_added_30d_ema?: number | null;
+    avg_boxes_added_per_day?: number | null;
     volume_30d_sma?: number | null;
     momentum_score?: number | null;
     community_sentiment?: number | null;
@@ -87,7 +88,14 @@ export async function getBoxDetail(id: string): Promise<BoxDetail> {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: response.statusText }));
       console.error('Box detail error:', errorData);
-      
+
+      if (response.status === 401) {
+        removeAuthToken();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/landing';
+        }
+        throw new Error('Authentication required. Please log in to continue.');
+      }
       if (response.status === 404) {
         throw new Error(`Box with ID "${id}" was not found`);
       }
@@ -148,9 +156,14 @@ export async function getBoxTimeSeries(
   );
   
   if (!response.ok) {
+    if (response.status === 401) {
+      removeAuthToken();
+      if (typeof window !== 'undefined') window.location.href = '/landing';
+      throw new Error('Authentication required. Please log in to continue.');
+    }
     throw new Error(`Failed to fetch time-series data: ${response.statusText}`);
   }
-  
+
   const data = await response.json();
   return data.data || data;
 }
@@ -182,11 +195,16 @@ export async function getBoxRankHistory(
   });
   
   if (!response.ok) {
+    if (response.status === 401) {
+      removeAuthToken();
+      if (typeof window !== 'undefined') window.location.href = '/landing';
+      throw new Error('Authentication required. Please log in to continue.');
+    }
     const errorText = await response.text();
     console.error('getBoxRankHistory: Error response:', response.status, errorText);
     throw new Error(`Failed to fetch rank history: ${response.statusText}`);
   }
-  
+
   const data = await response.json();
   console.log('getBoxRankHistory: Response data:', data);
   return data.data || data;

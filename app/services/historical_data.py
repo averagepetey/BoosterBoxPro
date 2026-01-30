@@ -982,6 +982,38 @@ def get_rolling_volume_sum(box_id: str, days: int = 30) -> Optional[float]:
     return round(total_volume, 2) if total_volume > 0 else None
 
 
+def get_previous_calendar_month_volume(box_id: str) -> Optional[float]:
+    """
+    Total volume for the previous full calendar month (e.g. December).
+    Matches what Advanced Metrics shows per month: sum of daily_volume_usd for that month.
+    Used for month-over-month %: (current_30d_volume - prev_month_volume) / prev_month_volume.
+    """
+    entries = get_box_historical_data(box_id)
+    if not entries:
+        return None
+    today = datetime.now()
+    first_day_this_month = today.replace(day=1)
+    last_day_prev_month = first_day_this_month - timedelta(days=1)
+    first_day_prev_month = last_day_prev_month.replace(day=1)
+    prev_start = first_day_prev_month.strftime("%Y-%m-%d")
+    prev_end = last_day_prev_month.strftime("%Y-%m-%d")
+    prev_month_entries = [
+        e for e in entries
+        if prev_start <= (e.get("date") or "") <= prev_end
+    ]
+    if not prev_month_entries:
+        return None
+    total = 0.0
+    for e in prev_month_entries:
+        daily = e.get("daily_volume_usd")
+        if daily is None or daily == 0:
+            fp = e.get("floor_price_usd") or 0
+            sold = e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0
+            daily = fp * sold if (fp and sold) else 0
+        total += daily
+    return round(total, 2) if total > 0 else None
+
+
 def get_box_volume_metrics(box_id: str) -> dict:
     """
     Get all volume metrics for a box in one call.
@@ -1029,12 +1061,7 @@ def get_box_volume_change_pcts(box_id: str) -> Dict[str, Optional[float]]:
     latest = entries[-1]
     cutoff_7 = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     cutoff_14 = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
-    cutoff_30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    cutoff_60 = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
-    recent_7 = [e for e in entries if (e.get("date") or "") >= cutoff_7]
-    recent_30 = [e for e in entries if (e.get("date") or "") >= cutoff_30]
     prev_7 = [e for e in entries if cutoff_14 <= (e.get("date") or "") < cutoff_7]
-    prev_30 = [e for e in entries if cutoff_60 <= (e.get("date") or "") < cutoff_30]
 
     volume_1d_change_pct = None
     if len(entries) >= 2:
@@ -1055,39 +1082,13 @@ def get_box_volume_change_pcts(box_id: str) -> Dict[str, Optional[float]]:
         if prev_7_sum and prev_7_sum > 0:
             volume_7d_change_pct = round(((vol_7d - prev_7_sum) / prev_7_sum) * 100, 2)
 
+    # MoM: computed and tracked so it's accurate when we have enough data to show it (hidden in UI for now)
     volume_30d_change_pct = None
     vol_30d = get_box_30d_volume_or_ramp(box_id) or 0
-    if prev_30 and vol_30d:
-        prev_30_obj = datetime.strptime(cutoff_60, "%Y-%m-%d")
-        cutoff_30_obj = datetime.strptime(cutoff_30, "%Y-%m-%d")
-        today = datetime.now()
-        prev_30_sum = 0.0
-        for i, entry in enumerate(prev_30):
-            fp = entry.get("floor_price_usd") or 0
-            sold = entry.get("boxes_sold_per_day") or entry.get("boxes_sold_today") or 0
-            dt_str = entry.get("date", "")
-            if not fp or not sold or not dt_str:
-                continue
-            try:
-                ed = datetime.strptime(dt_str, "%Y-%m-%d")
-            except (ValueError, TypeError):
-                continue
-            if i < len(prev_30) - 1:
-                next_d = prev_30[i + 1].get("date", "")
-                try:
-                    nd = datetime.strptime(next_d, "%Y-%m-%d")
-                    start = max(ed, prev_30_obj)
-                    end = min(nd, cutoff_30_obj)
-                    days = max(1, (end - start).days)
-                except (ValueError, TypeError):
-                    days = 1
-            else:
-                start = max(ed, prev_30_obj)
-                end = min(cutoff_30_obj, prev_30_obj + timedelta(days=30))
-                days = max(1, (end - start).days)
-            prev_30_sum += fp * sold * days
-        if prev_30_sum > 0:
-            volume_30d_change_pct = round(((vol_30d - prev_30_sum) / prev_30_sum) * 100, 2)
+    prev_month_vol = get_previous_calendar_month_volume(box_id)
+    if prev_month_vol and prev_month_vol >= 1000 and vol_30d is not None:
+        pct = ((vol_30d - prev_month_vol) / prev_month_vol) * 100
+        volume_30d_change_pct = round(max(-500, min(500, pct)), 2)
 
     return {
         "volume_1d_change_pct": volume_1d_change_pct,
@@ -1109,8 +1110,14 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
     except Exception:
         all_entries = {}
     out: Dict[str, Dict[str, Any]] = {}
-    cutoff_7 = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-    cutoff_30 = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    today = datetime.now()
+    first_day_this_month = today.replace(day=1)
+    last_day_prev_month = first_day_this_month - timedelta(days=1)
+    first_day_prev_month = last_day_prev_month.replace(day=1)
+    prev_month_start = first_day_prev_month.strftime('%Y-%m-%d')
+    prev_month_end = last_day_prev_month.strftime('%Y-%m-%d')
+    cutoff_7 = (today - timedelta(days=7)).strftime('%Y-%m-%d')
+    cutoff_30 = (today - timedelta(days=30)).strftime('%Y-%m-%d')
     for box_id, entries in all_entries.items():
         if not entries:
             out[box_id] = {}
@@ -1198,44 +1205,29 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
             if prev_daily and prev_daily > 0 and curr_daily is not None:
                 volume_1d_change_pct = round(((curr_daily - prev_daily) / prev_daily) * 100, 2)
         cutoff_14 = (datetime.now() - timedelta(days=14)).strftime('%Y-%m-%d')
-        cutoff_60 = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
         prev_7 = [e for e in entries if cutoff_14 <= (e.get('date') or '') < cutoff_7]
-        prev_30 = [e for e in entries if cutoff_60 <= (e.get('date') or '') < cutoff_30]
         if prev_7 and volume_7d:
             prev_7_sum = sum((e.get('daily_volume_usd') or 0) for e in prev_7)
             if prev_7_sum and prev_7_sum > 0:
                 volume_7d_change_pct = round(((volume_7d - prev_7_sum) / prev_7_sum) * 100, 2)
-        if prev_30 and volume_30d:
-            prev_30_obj = datetime.strptime(cutoff_60, '%Y-%m-%d')
-            cutoff_30_obj = datetime.strptime(cutoff_30, '%Y-%m-%d')
-            today = datetime.now()
-            prev_30_sum = 0.0
-            for i, entry in enumerate(prev_30):
-                fp = entry.get('floor_price_usd') or 0
-                sold = entry.get('boxes_sold_per_day') or entry.get('boxes_sold_today') or 0
-                dt = entry.get('date', '')
-                if not fp or not sold or not dt:
-                    continue
-                try:
-                    ed = datetime.strptime(dt, '%Y-%m-%d')
-                except (ValueError, TypeError):
-                    continue
-                if i < len(prev_30) - 1:
-                    next_d = prev_30[i + 1].get('date', '')
-                    try:
-                        nd = datetime.strptime(next_d, '%Y-%m-%d')
-                        start = max(ed, prev_30_obj)
-                        end = min(nd, cutoff_30_obj)
-                        days = max(1, (end - start).days)
-                    except (ValueError, TypeError):
-                        days = 1
-                else:
-                    start = max(ed, prev_30_obj)
-                    end = min(cutoff_30_obj, prev_30_obj + timedelta(days=30))
-                    days = max(1, (end - start).days)
-                prev_30_sum += fp * sold * days
-            if prev_30_sum > 0:
-                volume_30d_change_pct = round(((volume_30d - prev_30_sum) / prev_30_sum) * 100, 2)
+        # MoM: computed and tracked so it's accurate when we have enough data to show it (hidden in UI for now)
+        prev_month_entries = [e for e in entries if prev_month_start <= (e.get('date') or '') <= prev_month_end]
+        prev_month_vol = None
+        if prev_month_entries:
+            s = 0.0
+            for e in prev_month_entries:
+                daily = e.get('daily_volume_usd')
+                if daily is None or daily == 0:
+                    fp = e.get('floor_price_usd') or 0
+                    sold = e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0
+                    daily = fp * sold if (fp and sold) else 0
+                s += daily
+            prev_month_vol = round(s, 2) if s > 0 else None
+        if prev_month_vol and prev_month_vol >= 1000 and volume_30d is not None:
+            pct = ((volume_30d - prev_month_vol) / prev_month_vol) * 100
+            volume_30d_change_pct = round(max(-500, min(500, pct)), 2)
+        else:
+            volume_30d_change_pct = None
 
         out[box_id] = {
             'floor_price_usd': latest.get('floor_price_usd'),

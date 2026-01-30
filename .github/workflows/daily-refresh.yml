@@ -1,6 +1,7 @@
 # Daily TCGplayer refresh (Apify + Listings Scraper)
 # Runs at 1pm EST (18:00 UTC) with 16GB RAM - no 512Mi limit like Render free cron.
 # Add secrets: DATABASE_URL, APIFY_API_TOKEN (Repo → Settings → Secrets and variables → Actions).
+# Schedule: GitHub runs this at 18:00 UTC daily; re-push this file if scheduled runs stop.
 
 name: Daily Refresh (Apify + Scraper)
 
