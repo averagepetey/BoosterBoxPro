@@ -139,9 +139,7 @@ def create_access_token(user_id: str, token_version: int = 1) -> str:
     - tv: Token version (for bulk revocation)
     """
     now = datetime.utcnow()
-    # Use shorter expiry for better security (30 min recommended)
-    # For MVP, using configured value but should be short
-    expires_delta = timedelta(minutes=30)  # Hardened: 30 min instead of days
+    expires_delta = timedelta(hours=24)
     expire = now + expires_delta
     
     payload = {
