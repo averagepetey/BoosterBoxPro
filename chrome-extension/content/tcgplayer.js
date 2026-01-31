@@ -13,11 +13,6 @@
     if (existingPanel) {
       existingPanel.style.display = 'block';
       existingPanel.classList.remove('bbp-collapsed');
-      const collapseBtn = existingPanel.querySelector('.bbp-btn-collapse');
-      if (collapseBtn) {
-        collapseBtn.textContent = '◀';
-        collapseBtn.title = 'Collapse';
-      }
     }
     return;
   }
@@ -31,6 +26,10 @@
   let panelElement = null;
   let isCompareMode = false;
   let compareBoxData = null;
+  // Track which boxes the user has already seen (auto-opened) this session
+  let seenBoxesThisSession = new Set();
+  // Whether the user explicitly collapsed/closed the panel
+  let userDismissed = false;
 
   /**
    * Set name to set code mapping (matches database product names)
@@ -56,84 +55,134 @@
   };
 
   /**
-   * Extract set code from page (OP-01, OP-02, EB-01, PRB-01, etc.)
+   * Try to match a set code from a single text string.
+   * Returns "OP-XX" / "EB-XX" / "PRB-XX" or null.
    */
-  function extractSetCode() {
-    const url = decodeURIComponent(window.location.href).toLowerCase();
-    const title = document.title.toLowerCase();
-    
-    // Get page text - try multiple selectors for TCGplayer's dynamic content
-    let pageText = '';
-    const h1 = document.querySelector('h1');
-    if (h1) pageText += ' ' + h1.textContent.toLowerCase();
-    const productTitle = document.querySelector('[class*="product-details__name"], [class*="ProductDetails__name"]');
-    if (productTitle) pageText += ' ' + productTitle.textContent.toLowerCase();
-    const breadcrumbs = document.querySelectorAll('[class*="breadcrumb"] a, nav a');
-    breadcrumbs.forEach(el => pageText += ' ' + el.textContent.toLowerCase());
-    
-    // Also get body text but limit it
-    if (document.body) {
-      pageText += ' ' + document.body.innerText.substring(0, 5000).toLowerCase();
-    }
-    
-    // Combine all text sources
-    const allText = url + ' ' + title + ' ' + pageText;
-    
-    console.log('[BBP] Searching text for set code...');
-    
-    // 1. Try direct set code patterns - multiple regex patterns
-    // Matches: OP-13, OP13, OP 13, (OP13), op-13, etc.
+  function matchSetCode(text) {
+    if (!text) return null;
+    const lower = text.toLowerCase();
+
+    // Regex patterns in priority order
     const patterns = [
-      /[([\s]?(op|eb|prb)[-\s]?(\d{1,2})[\s)\]]/i,  // (OP13) or [OP-13]
-      /\b(op|eb|prb)-(\d{1,2})\b/i,                  // OP-13 with hyphen
-      /\b(op|eb|prb)(\d{1,2})\b/i,                   // OP13 no separator
-      /(op|eb|prb)[-\s]?(\d{1,2})/i,                 // Loose match anywhere
+      /[([\s]?(op|eb|prb)[-\s]?(\d{1,2})[\s)\]]/i,
+      /\b(op|eb|prb)-(\d{1,2})\b/i,
+      /\b(op|eb|prb)(\d{1,2})\b/i,
+      /(op|eb|prb)[-\s]?(\d{1,2})/i,
     ];
-    
+
     for (const pattern of patterns) {
-      const match = allText.match(pattern);
+      const match = text.match(pattern);
       if (match) {
         const prefix = match[1].toUpperCase();
         const num = match[2].padStart(2, '0');
-        console.log(`[BBP] Found set code via pattern: ${prefix}-${num}`);
         return `${prefix}-${num}`;
       }
     }
-    
-    // 2. Try set name mapping
+
+    // Try set name mapping
     for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
-      if (allText.includes(setName)) {
-        console.log(`[BBP] Found set name "${setName}" → ${setCode}`);
+      if (lower.includes(setName)) {
         return setCode;
       }
     }
-    
-    // 3. Check product title element specifically with wait
-    const productTitleEl = document.querySelector('h1, [class*="product-details__name"]');
-    if (productTitleEl) {
-      const titleText = productTitleEl.textContent.toLowerCase();
-      console.log(`[BBP] H1 text: "${titleText}"`);
-      
-      // Check for set code in title with looser pattern
-      const titleMatch = titleText.match(/(op|eb|prb)[-\s]?(\d{1,2})/i);
-      if (titleMatch) {
-        const prefix = titleMatch[1].toUpperCase();
-        const num = titleMatch[2].padStart(2, '0');
-        console.log(`[BBP] Found in H1: ${prefix}-${num}`);
-        return `${prefix}-${num}`;
-      }
-      
-      // Check for set name in title
-      for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
-        if (titleText.includes(setName)) {
-          console.log(`[BBP] Found set name in title "${setName}" → ${setCode}`);
-          return setCode;
-        }
+
+    return null;
+  }
+
+  /**
+   * Extract set code from page using priority-ordered sources.
+   * Checks URL first (most reliable on navigation), then H1/product title,
+   * then breadcrumbs, then body text as last resort.
+   */
+  function extractSetCode() {
+    // 1. URL — most reliable after SPA navigation
+    const url = decodeURIComponent(window.location.href);
+    const urlCode = matchSetCode(url);
+    if (urlCode) {
+      console.log(`[BBP] Found set code in URL: ${urlCode}`);
+      return urlCode;
+    }
+
+    // 2. Page title (browser tab)
+    const titleCode = matchSetCode(document.title);
+    if (titleCode) {
+      console.log(`[BBP] Found set code in title: ${titleCode}`);
+      return titleCode;
+    }
+
+    // 3. H1 / product title element — specific to the viewed product
+    const h1 = document.querySelector('h1');
+    if (h1) {
+      const h1Code = matchSetCode(h1.textContent);
+      if (h1Code) {
+        console.log(`[BBP] Found set code in H1: ${h1Code}`);
+        return h1Code;
       }
     }
-    
-    console.log('[BBP] No set code detected in:', allText.substring(0, 500));
+
+    const productTitle = document.querySelector(
+      '[class*="product-details__name"], [class*="ProductDetails__name"]'
+    );
+    if (productTitle) {
+      const ptCode = matchSetCode(productTitle.textContent);
+      if (ptCode) {
+        console.log(`[BBP] Found set code in product title: ${ptCode}`);
+        return ptCode;
+      }
+    }
+
+    // 4. Breadcrumbs
+    const breadcrumbs = document.querySelectorAll('[class*="breadcrumb"] a, nav a');
+    for (const el of breadcrumbs) {
+      const bcCode = matchSetCode(el.textContent);
+      if (bcCode) {
+        console.log(`[BBP] Found set code in breadcrumb: ${bcCode}`);
+        return bcCode;
+      }
+    }
+
+    // 5. Body text (first 3000 chars) — last resort, may pick up related products
+    if (document.body) {
+      const bodyCode = matchSetCode(document.body.innerText.substring(0, 3000));
+      if (bodyCode) {
+        console.log(`[BBP] Found set code in body text: ${bodyCode}`);
+        return bodyCode;
+      }
+    }
+
+    console.log('[BBP] No set code detected on this page');
     return null;
+  }
+
+  /**
+   * Mark a box as seen so it won't auto-open again within this tab.
+   * Tracking is purely in-memory (per-tab). Each new tab starts fresh.
+   */
+  function markBoxSeen(setCode) {
+    seenBoxesThisSession.add(setCode);
+  }
+
+  /**
+   * Load saved panel position from storage
+   */
+  async function loadPanelPosition() {
+    try {
+      const { bbpPanelPos } = await chrome.storage.local.get('bbpPanelPos');
+      return bbpPanelPos || null; // { top, left }
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Save panel position to storage
+   */
+  async function savePanelPosition(top, left) {
+    try {
+      await chrome.storage.local.set({ bbpPanelPos: { top, left } });
+    } catch (e) {
+      // storage unavailable
+    }
   }
 
   /**
@@ -145,36 +194,37 @@
     panel.className = 'bbp-panel';
     // Get extension URL for logo
     const logoUrl = chrome.runtime.getURL('icons/logo.png');
-    
+
     panel.innerHTML = `
-      <div class="bbp-panel-header">
+      <div class="bbp-panel-header" id="bbp-drag-handle">
         <div class="bbp-logo">
           <img src="${logoUrl}" alt="BoosterPro" class="bbp-logo-img" onerror="this.style.display='none'">
           <span class="bbp-title">BoosterPro</span>
         </div>
         <div class="bbp-controls">
           <button class="bbp-btn-collapse" title="Collapse">▶</button>
+          <button class="bbp-btn-minimize" title="Minimize">−</button>
           <button class="bbp-btn-close" title="Close">×</button>
         </div>
       </div>
-      
+
       <div class="bbp-panel-content">
         <div class="bbp-loading">
           <div class="bbp-spinner"></div>
           <span>Detecting box...</span>
         </div>
-        
+
         <div class="bbp-box-info" style="display: none;">
           <div class="bbp-box-header">
             <img class="bbp-box-image" src="" alt="">
             <div class="bbp-box-name"></div>
           </div>
-          
+
           <div class="bbp-tabs">
             <button class="bbp-tab active" data-tab="stats">📊 Stats</button>
             <button class="bbp-tab" data-tab="compare">⚖️ Compare</button>
           </div>
-          
+
           <div class="bbp-tab-content" data-content="stats">
             <div class="bbp-key-metrics">
               <div class="bbp-key-metric">
@@ -214,11 +264,12 @@
                 <div class="bbp-stat"><span class="bbp-stat-label">Top 10 Value</span><span class="bbp-stat-value" id="bbp-top10">—</span></div>
                 <div class="bbp-stat"><span class="bbp-stat-label">Daily Vol</span><span class="bbp-stat-value" id="bbp-daily-volume">—</span></div>
                 <div class="bbp-stat"><span class="bbp-stat-label">Reprint Risk</span><span class="bbp-stat-value" id="bbp-reprint-risk">—</span></div>
+                <div class="bbp-stat"><span class="bbp-stat-label">Listings Added</span><span class="bbp-stat-value" id="bbp-listings-added">—</span></div>
               </div>
             </div>
             <a class="bbp-dashboard-link" href="#" target="_blank">View full box detail →</a>
           </div>
-          
+
           <div class="bbp-tab-content" data-content="compare" style="display: none;">
             <div class="bbp-compare-search">
               <label>Compare to:</label>
@@ -243,7 +294,7 @@
                 <option value="PRB-02">PRB-02 Premium Booster</option>
               </select>
             </div>
-            
+
             <div class="bbp-compare-results" style="display: none;">
               <div class="bbp-compare-header">
                 <div class="bbp-compare-col">
@@ -254,37 +305,37 @@
                   <span id="bbp-compare-box2-name">—</span>
                 </div>
               </div>
-              
+
               <div class="bbp-compare-row">
                 <div class="bbp-compare-label">Floor Price</div>
                 <div class="bbp-compare-col" id="bbp-cmp-price1">—</div>
                 <div class="bbp-compare-col" id="bbp-cmp-price2">—</div>
               </div>
-              
+
               <div class="bbp-compare-row">
                 <div class="bbp-compare-label">30d Change</div>
                 <div class="bbp-compare-col" id="bbp-cmp-change1">—</div>
                 <div class="bbp-compare-col" id="bbp-cmp-change2">—</div>
               </div>
-              
+
               <div class="bbp-compare-row">
                 <div class="bbp-compare-label">Daily Volume</div>
                 <div class="bbp-compare-col" id="bbp-cmp-volume1">—</div>
                 <div class="bbp-compare-col" id="bbp-cmp-volume2">—</div>
               </div>
-              
+
               <div class="bbp-compare-row">
                 <div class="bbp-compare-label">Sales/Day</div>
                 <div class="bbp-compare-col" id="bbp-cmp-sales1">—</div>
                 <div class="bbp-compare-col" id="bbp-cmp-sales2">—</div>
               </div>
-              
+
               <div class="bbp-compare-row">
                 <div class="bbp-compare-label">Liquidity</div>
                 <div class="bbp-compare-col" id="bbp-cmp-liq1">—</div>
                 <div class="bbp-compare-col" id="bbp-cmp-liq2">—</div>
               </div>
-              
+
               <div class="bbp-compare-row">
                 <div class="bbp-compare-label">Days to +20%</div>
                 <div class="bbp-compare-col" id="bbp-cmp-days1">—</div>
@@ -293,13 +344,13 @@
             </div>
           </div>
         </div>
-        
+
         <div class="bbp-no-box" style="display: none;">
           <div class="bbp-no-box-icon">🔍</div>
           <div class="bbp-no-box-text">No One Piece booster box detected on this page.</div>
           <div class="bbp-no-box-hint">Navigate to a booster box product page to see market data.</div>
         </div>
-        
+
         <div class="bbp-error" style="display: none;">
           <div class="bbp-error-icon">⚠️</div>
           <div class="bbp-error-text">Unable to load market data.</div>
@@ -308,7 +359,7 @@
         </div>
       </div>
     `;
-    
+
     return panel;
   }
 
@@ -344,14 +395,14 @@
    */
   function updatePanel(data) {
     if (!panelElement) return;
-    
+
     const loading = panelElement.querySelector('.bbp-loading');
     const boxInfo = panelElement.querySelector('.bbp-box-info');
     const noBox = panelElement.querySelector('.bbp-no-box');
     const error = panelElement.querySelector('.bbp-error');
-    
+
     loading.style.display = 'none';
-    
+
     if (!data || !data.matched) {
       if (data && data.error) {
         error.style.display = 'block';
@@ -372,16 +423,18 @@
       chrome.runtime.sendMessage({ action: 'noBoxDetected' });
       return;
     }
-    
+
     boxInfo.style.display = 'block';
+    noBox.style.display = 'none';
+    error.style.display = 'none';
     chrome.runtime.sendMessage({ action: 'boxDetected' });
-    
+
     const box = data.box;
     const metrics = data.metrics;
-    
+
     // Update box info
     panelElement.querySelector('.bbp-box-name').textContent = box.product_name;
-    
+
     // Update image if available
     const img = panelElement.querySelector('.bbp-box-image');
     if (box.image_url) {
@@ -390,7 +443,7 @@
     } else {
       img.style.display = 'none';
     }
-    
+
     // Key metrics (same as box detail page)
     document.getElementById('bbp-floor-price').textContent = formatCurrency(metrics.floor_price_usd);
     const el24h = document.getElementById('bbp-24h-change');
@@ -421,6 +474,8 @@
     const reprintRisk = (box.reprint_risk || 'UNKNOWN').toString();
     const riskClass = reprintRisk.toLowerCase() === 'low' ? 'bbp-risk-low' : reprintRisk.toLowerCase() === 'high' ? 'bbp-risk-high' : 'bbp-risk-medium';
     document.getElementById('bbp-reprint-risk').innerHTML = '<span class="' + riskClass + '">' + reprintRisk + '</span>';
+    const listingsAdded = metrics.boxes_added_today != null ? metrics.boxes_added_today : (metrics.avg_boxes_added_per_day != null ? metrics.avg_boxes_added_per_day : null);
+    document.getElementById('bbp-listings-added').textContent = listingsAdded != null ? formatNumber(Math.round(listingsAdded)) + '/day' : '—';
     const dashboardLink = panelElement.querySelector('.bbp-dashboard-link');
     dashboardLink.href = 'http://localhost:3000/boxes/' + box.id;
     currentBoxData = data;
@@ -429,71 +484,131 @@
   }
 
   /**
+   * Setup drag-to-move on the panel header
+   */
+  function setupDrag() {
+    const handle = panelElement.querySelector('#bbp-drag-handle');
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    handle.addEventListener('mousedown', (e) => {
+      // Don't start drag on button clicks
+      if (e.target.closest('button')) return;
+      // Don't start drag when collapsed (header click expands)
+      if (panelElement.classList.contains('bbp-collapsed')) return;
+
+      isDragging = true;
+      const rect = panelElement.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      panelElement.classList.add('bbp-dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+
+      let newLeft = e.clientX - dragOffsetX;
+      let newTop = e.clientY - dragOffsetY;
+
+      // Clamp to viewport
+      const panelWidth = panelElement.offsetWidth;
+      const panelHeight = panelElement.offsetHeight;
+      newLeft = Math.max(0, Math.min(window.innerWidth - panelWidth, newLeft));
+      newTop = Math.max(0, Math.min(window.innerHeight - panelHeight, newTop));
+
+      panelElement.style.left = newLeft + 'px';
+      panelElement.style.top = newTop + 'px';
+      // Clear right/bottom so left/top take precedence
+      panelElement.style.right = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      panelElement.classList.remove('bbp-dragging');
+
+      // Save position
+      const rect = panelElement.getBoundingClientRect();
+      savePanelPosition(rect.top, rect.left);
+    });
+  }
+
+  /**
    * Setup event listeners
    */
   function setupEventListeners() {
     if (!panelElement) return;
-    
-    // Collapse button - slides panel to edge (panel is on LEFT)
+
+    // Collapse button — minimizes to strip, does NOT set userDismissed
+    // (panel will still auto-expand when navigating to a new box)
     const collapseBtn = panelElement.querySelector('.bbp-btn-collapse');
     collapseBtn.addEventListener('click', () => {
       const isCollapsed = panelElement.classList.toggle('bbp-collapsed');
       collapseBtn.textContent = isCollapsed ? '◀' : '▶';
       collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
     });
-    
+
     // Also allow clicking header to expand when collapsed
     panelElement.querySelector('.bbp-panel-header').addEventListener('click', (e) => {
-      if (panelElement.classList.contains('bbp-collapsed') && e.target !== collapseBtn) {
+      if (panelElement.classList.contains('bbp-collapsed') && !e.target.closest('button')) {
         panelElement.classList.remove('bbp-collapsed');
         collapseBtn.textContent = '▶';
         collapseBtn.title = 'Collapse';
       }
     });
-    
-    // Close button - now collapses instead of hiding (so tab stays visible)
-    panelElement.querySelector('.bbp-btn-close').addEventListener('click', () => {
-      panelElement.classList.add('bbp-collapsed');
-      collapseBtn.textContent = '◀';
-      collapseBtn.title = 'Expand';
+
+    // Minimize button (−) — toggles between full height and compact scrollable view
+    const minimizeBtn = panelElement.querySelector('.bbp-btn-minimize');
+    minimizeBtn.addEventListener('click', () => {
+      const isMinimized = panelElement.classList.toggle('bbp-minimized');
+      minimizeBtn.textContent = isMinimized ? '+' : '−';
+      minimizeBtn.title = isMinimized ? 'Expand' : 'Minimize';
     });
-    
+
+    // Close button (X) — hides panel entirely until user clicks "Open Extension" in popup
+    panelElement.querySelector('.bbp-btn-close').addEventListener('click', () => {
+      panelElement.style.display = 'none';
+      userDismissed = true;
+    });
+
     // Tab switching
     panelElement.querySelectorAll('.bbp-tab').forEach(tab => {
       tab.addEventListener('click', (e) => {
         const tabName = e.target.dataset.tab;
-        
+
         // Update tab buttons
         panelElement.querySelectorAll('.bbp-tab').forEach(t => t.classList.remove('active'));
         e.target.classList.add('active');
-        
+
         // Update tab content
         panelElement.querySelectorAll('.bbp-tab-content').forEach(content => {
           content.style.display = content.dataset.content === tabName ? 'block' : 'none';
         });
       });
     });
-    
+
     // Compare dropdown
     const compareSelect = document.getElementById('bbp-compare-select');
     compareSelect.addEventListener('change', async (e) => {
       const compareCode = e.target.value;
       if (!compareCode || !currentSetCode) return;
-      
+
       // Remove current box from options display
       const resultsDiv = panelElement.querySelector('.bbp-compare-results');
       resultsDiv.style.display = 'block';
-      
+
       // Update header
       document.getElementById('bbp-compare-box2-name').textContent = compareCode;
-      
+
       // Fetch comparison data
       try {
         const response = await chrome.runtime.sendMessage({
           action: 'fetchBoxData',
           setCode: compareCode
         });
-        
+
         if (response && response.matched) {
           compareBoxData = response;
           updateCompareView();
@@ -502,11 +617,14 @@
         console.error('[BBP] Compare error:', err);
       }
     });
-    
+
     // Retry button
     panelElement.querySelector('.bbp-retry-btn').addEventListener('click', () => {
       detectAndFetch();
     });
+
+    // Drag to move
+    setupDrag();
   }
 
   /**
@@ -514,30 +632,30 @@
    */
   function updateCompareView() {
     if (!currentBoxData || !compareBoxData) return;
-    
+
     const m1 = currentBoxData.metrics;
     const m2 = compareBoxData.metrics;
-    
+
     // Price
     document.getElementById('bbp-cmp-price1').textContent = formatCurrency(m1.floor_price_usd);
     document.getElementById('bbp-cmp-price2').textContent = formatCurrency(m2.floor_price_usd);
-    
+
     // 30d change
     document.getElementById('bbp-cmp-change1').innerHTML = formatPercent(m1.floor_price_30d_change_pct);
     document.getElementById('bbp-cmp-change2').innerHTML = formatPercent(m2.floor_price_30d_change_pct);
-    
+
     // Volume
     document.getElementById('bbp-cmp-volume1').textContent = formatCurrency(m1.daily_volume_usd);
     document.getElementById('bbp-cmp-volume2').textContent = formatCurrency(m2.daily_volume_usd);
-    
+
     // Sales
     document.getElementById('bbp-cmp-sales1').textContent = m1.sales_per_day ? m1.sales_per_day.toFixed(1) : '—';
     document.getElementById('bbp-cmp-sales2').textContent = m2.sales_per_day ? m2.sales_per_day.toFixed(1) : '—';
-    
+
     // Liquidity
     document.getElementById('bbp-cmp-liq1').textContent = m1.liquidity_score ? `${m1.liquidity_score.toFixed(1)}/10` : '—';
     document.getElementById('bbp-cmp-liq2').textContent = m2.liquidity_score ? `${m2.liquidity_score.toFixed(1)}/10` : '—';
-    
+
     // Days to +20%
     document.getElementById('bbp-cmp-days1').textContent = m1.days_to_20pct_increase ? `${Math.round(m1.days_to_20pct_increase)} days` : '—';
     document.getElementById('bbp-cmp-days2').textContent = m2.days_to_20pct_increase ? `${Math.round(m2.days_to_20pct_increase)} days` : '—';
@@ -556,39 +674,60 @@
       panelElement.querySelector('.bbp-no-box').style.display = 'none';
       panelElement.querySelector('.bbp-error').style.display = 'none';
     }
-    
+
     // Detect set code
-    currentSetCode = extractSetCode();
-    console.log(`[BBP] Detected set code: ${currentSetCode} (attempt ${retryCount + 1})`);
-    
+    const newSetCode = extractSetCode();
+    console.log(`[BBP] Detected set code: ${newSetCode} (attempt ${retryCount + 1})`);
+
     // If not found and we haven't retried enough, wait and try again
     // TCGplayer loads content dynamically
-    if (!currentSetCode && retryCount < 3) {
+    if (!newSetCode && retryCount < 3) {
       console.log(`[BBP] No set code found, retrying in 500ms...`);
       setTimeout(() => detectAndFetch(retryCount + 1, forceShow), 500);
       return;
     }
-    
-    if (!currentSetCode) {
-      // No box detected - only show panel if user explicitly requested (forceShow)
+
+    if (!newSetCode) {
+      // No box detected
+      currentSetCode = null;
       if (forceShow && panelElement) {
         panelElement.style.display = 'block';
         updatePanel(null);
       } else if (panelElement) {
-        // Hide panel completely on non-applicable pages
         panelElement.style.display = 'none';
       }
       chrome.runtime.sendMessage({ action: 'noBoxDetected' });
       return;
     }
-    
-    // Box detected - show panel and fetch data
-    if (panelElement) {
+
+    // Determine if this is a new box the user hasn't seen yet
+    const isNewBox = newSetCode !== currentSetCode;
+    const isFirstTimeSeeingThisBox = !seenBoxesThisSession.has(newSetCode);
+    currentSetCode = newSetCode;
+
+    // Decide whether to show/expand the panel
+    if (forceShow) {
+      // User clicked "Open Extension" in popup — always show expanded
       panelElement.style.display = 'block';
       panelElement.classList.remove('bbp-collapsed');
+      userDismissed = false;
+    } else if (userDismissed) {
+      // User clicked X — panel stays hidden until they click "Open Extension"
+      // Just update data silently in the background
+    } else if (isFirstTimeSeeingThisBox) {
+      // First time seeing this box in this tab — auto-open expanded
+      panelElement.style.display = 'block';
+      panelElement.classList.remove('bbp-collapsed');
+    } else if (isNewBox) {
+      // Different box (previously seen in this tab) — keep panel visible, don't force expand
+      panelElement.style.display = 'block';
     }
-    
-    // Fetch data from background script (with timeout so we never hang on loading)
+    // Same box, same state — keep as-is
+
+    // Mark this box as seen
+    markBoxSeen(newSetCode);
+
+    // Fetch data from background script
     const FETCH_TIMEOUT_MS = 12000;
     try {
       const response = await Promise.race([
@@ -617,28 +756,38 @@
   /**
    * Initialize extension
    */
-  function init(forceShow = false) {
+  async function init(forceShow = false) {
     console.log('[BBP] Initializing BoosterBoxPro panel');
-    
+
     // Create and inject panel (hidden by default)
     panelElement = createPanel();
     panelElement.style.display = 'none'; // Hide initially
     document.body.appendChild(panelElement);
-    
+
+    // Restore saved position or use default (right side)
+    const savedPos = await loadPanelPosition();
+    if (savedPos) {
+      panelElement.style.top = savedPos.top + 'px';
+      panelElement.style.left = savedPos.left + 'px';
+      panelElement.style.right = 'auto';
+    }
+
     // Setup event listeners
     setupEventListeners();
-    
-    // Detect and fetch data - only show if applicable
+
+    // Detect and fetch data
     detectAndFetch(0, forceShow);
-    
-    // Re-detect on navigation (SPA support)
+
+    // Re-detect on SPA navigation
     let lastUrl = location.href;
     new MutationObserver(() => {
       const url = location.href;
       if (url !== lastUrl) {
         lastUrl = url;
         console.log('[BBP] URL changed, re-detecting...');
-        setTimeout(() => detectAndFetch(0, false), 500); // Small delay for page to load
+        // Do NOT reset userDismissed — if user clicked X, panel stays hidden
+        // until they click "Open Extension" in the Chrome popup
+        setTimeout(() => detectAndFetch(0, false), 600);
       }
     }).observe(document, { subtree: true, childList: true });
   }
@@ -646,30 +795,26 @@
   // Listen for messages from popup/background
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('[BBP] Received message:', request);
-    
+
     if (request.action === 'ping') {
       // Used to check if content script is loaded
       sendResponse({ pong: true });
       return true;
     }
-    
+
     if (request.action === 'showPanel' || request.action === 'togglePanel') {
       // User manually triggered - show panel even if no box detected (forceShow=true)
+      userDismissed = false;
       if (!panelElement) {
         init(true); // forceShow = true
       } else {
         panelElement.style.display = 'block';
         panelElement.classList.remove('bbp-collapsed');
-        const collapseBtn = panelElement.querySelector('.bbp-btn-collapse');
-        if (collapseBtn) {
-          collapseBtn.textContent = '▶';
-          collapseBtn.title = 'Collapse';
-        }
         detectAndFetch(0, true); // forceShow = true
       }
       sendResponse({ success: true });
     }
-    
+
     return true;
   });
 
@@ -677,7 +822,7 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => init(false));
   } else {
-    init(false); // Don't force show - only show if box detected
+    init(false);
   }
 
 })();

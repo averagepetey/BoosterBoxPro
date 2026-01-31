@@ -24,21 +24,6 @@ interface PricingTier {
 
 const pricingTiers: PricingTier[] = [
   {
-    id: 1,
-    name: 'Free',
-    price: 'FREE',
-    description: 'Perfect for casual collectors tracking a few boxes.',
-    features: [
-      'Basic leaderboard access',
-      'Limited historical data',
-      'Community access',
-      'Basic metrics'
-    ],
-    ctaText: 'Get Started',
-    ctaHref: '/signup',
-    highlighted: false
-  },
-  {
     id: 2,
     tag: 'POPULAR',
     tagColor: 'green',
@@ -97,7 +82,7 @@ export function PricingSection() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-4 sm:mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-3xl mx-auto mb-4 sm:mb-6 lg:mb-8">
           {pricingTiers.map((tier) => (
             <div
               key={tier.id}
@@ -183,7 +168,7 @@ export function PricingSection() {
         {/* Additional Info */}
         <div className="text-center mt-4 sm:mt-6">
           <p className="text-xs sm:text-sm text-white/60 mb-1">
-            All plans include a 14-day free trial. Cancel anytime.
+            All plans include a 7-day free trial. Cancel anytime.
           </p>
           <p className="text-[10px] sm:text-xs text-white/50">
             No credit card required to start.
