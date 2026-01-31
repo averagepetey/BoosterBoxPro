@@ -17,6 +17,7 @@ import { MarketEdgeSection } from '@/components/landing/MarketEdgeSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { FAQSection } from '@/components/landing/FAQSection';
 import { Navigation } from '@/components/ui/Navigation';
+import Footer from '@/components/ui/Footer';
 import { AuthModalsProvider } from '@/components/auth/AuthModalsProvider';
 import { getAuthToken } from '@/lib/api/client';
 
@@ -111,6 +112,11 @@ export default function LandingPage() {
       {/* FAQ Section */}
       <div className="relative z-10">
         <FAQSection />
+      </div>
+
+      {/* Footer */}
+      <div className="relative z-10">
+        <Footer />
       </div>
       </div>
     </AuthModalsProvider>

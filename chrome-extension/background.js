@@ -49,7 +49,7 @@ async function fetchBoxData(setCode) {
   console.log(`[BBP] Fetching data for ${setCode} from ${API_BASE_URL}`);
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch(`${API_BASE_URL}/extension/box/${setCode}`, {

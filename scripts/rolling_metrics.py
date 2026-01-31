@@ -247,15 +247,14 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
     db_updated = 0
     try:
         from app.services.box_metrics_writer import upsert_daily_metrics
-        from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP
 
         for box_id, entries in data.items():
             entry = _get_entry_for_date(entries, target_date)
             if entry is None:
                 continue
-            booster_box_id = DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)
+            # box_id in the JSON IS the DB UUID — use directly, don't remap
             ok = upsert_daily_metrics(
-                booster_box_id=booster_box_id,
+                booster_box_id=box_id,
                 metric_date=target_date,
                 floor_price_usd=entry.get("floor_price_usd"),
                 boxes_sold_per_day=entry.get("boxes_sold_per_day"),
