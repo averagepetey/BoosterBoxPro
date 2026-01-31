@@ -260,9 +260,9 @@ def main():
             logger.warning(f"Could not invalidate API cache: {e}")
     else:
         if not backend_url:
-            logger.debug("BACKEND_URL not set – skipping cache invalidation")
+            logger.warning("BACKEND_URL not set – leaderboard/box detail will not auto-update until cache TTL expires; set BACKEND_URL secret for automatic refresh.")
         if not invalidate_secret:
-            logger.debug("INVALIDATE_CACHE_SECRET not set – skipping cache invalidation")
+            logger.warning("INVALIDATE_CACHE_SECRET not set – leaderboard/box detail will not auto-update until cache TTL expires; set INVALIDATE_CACHE_SECRET secret for automatic refresh.")
     
     # Optional success alert (only if ALERT_ON_SUCCESS=true)
     if not status["overall_success"]:

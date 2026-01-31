@@ -274,6 +274,9 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             if net_burn > 0.05:
                 expected_days_to_sell = round(max(1.0, min(365.0, supply / net_burn)), 2)
 
+        boxes_added_today = latest.get("boxes_added_today")
+        if boxes_added_today is None and latest_db_metric and latest_db_metric.boxes_added_today is not None:
+            boxes_added_today = int(latest_db_metric.boxes_added_today)
         box_metrics = {
             "floor_price_usd": float(current_floor_override) if current_floor_override is not None else latest.get("floor_price_usd"),
             "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
@@ -284,7 +287,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "unified_volume_usd": volume_30d,
             "unified_volume_7d_ema": unified_volume_7d_ema,
             "boxes_sold_per_day": boxes_sold_per_day,
-            "boxes_added_today": latest.get("boxes_added_today"),
+            "boxes_added_today": boxes_added_today,
             "avg_boxes_added_per_day": round(avg_boxes_added_per_day, 2) if (avg_boxes_added_per_day is not None and has_30_days_boxes_added) else None,
             "days_to_20pct_increase": days_to_20pct,
             "liquidity_score": liquidity_score,
@@ -329,6 +332,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
                 "unified_volume_7d_ema": float(latest_db_metric.unified_volume_7d_ema) if latest_db_metric.unified_volume_7d_ema else None,
                 "boxes_sold_per_day": float(latest_db_metric.boxes_sold_per_day) if latest_db_metric.boxes_sold_per_day else None,
                 "boxes_sold_30d_avg": avg_30d,
+                "boxes_added_today": int(latest_db_metric.boxes_added_today) if latest_db_metric.boxes_added_today is not None else None,
                 "avg_boxes_added_per_day": float(latest_db_metric.avg_boxes_added_per_day) if latest_db_metric.avg_boxes_added_per_day is not None else None,
                 "days_to_20pct_increase": days_to_20pct if days_to_20pct is not None else (float(latest_db_metric.days_to_20pct_increase) if latest_db_metric.days_to_20pct_increase else None),
                 "liquidity_score": float(latest_db_metric.liquidity_score) if latest_db_metric.liquidity_score else None,
