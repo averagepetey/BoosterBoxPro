@@ -576,22 +576,22 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                     break
                 prev_page_count = len(page_listings)
             
-            # Try to go to next page - scroll to bottom first so pagination "1, 2, 3" is in view
+            # Try to go to next page - scroll to bottom so pagination "1, 2, 3" is in view (TCGplayer)
             next_page_num = current_page + 1
             page_button = None
             logger.info(f"  Trying to go to page {next_page_num}...")
 
-            # Scroll to bottom of listings so pagination row is visible (TCGplayer puts 1,2,3 at bottom)
-            try:
-                await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                await asyncio.sleep(1.5)
-                # Scroll up a bit so pagination isn't at the very edge
-                await page.evaluate('window.scrollTo(0, document.body.scrollHeight - 400)')
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
+            # Scroll to bottom and wait so pagination is visible and stable (TCGplayer often lazy-loads)
+            for _ in range(2):
+                try:
+                    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                    await asyncio.sleep(2)
+                    await page.evaluate('window.scrollTo(0, document.body.scrollHeight - 300)')
+                    await asyncio.sleep(1)
+                except Exception:
+                    pass
 
-            # Strategy 4 first: URL with page param - avoids scroll_into_view timeouts entirely
+            # Strategy 4: URL with page param (TCGplayer may use ?page=2 or no query on first load)
             try:
                 from urllib.parse import parse_qs, urlencode, urlparse
                 parsed = urlparse(page.url)
@@ -608,43 +608,60 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 logger.info(f"  Navigated to page {current_page} via URL")
                 continue
             except Exception as e:
-                logger.debug(f"  URL pagination (first) failed: {e}")
+                logger.debug(f"  URL pagination failed: {e}")
 
-            # Strategy 0: TCGplayer-style numbered buttons "1", "2", "3" at bottom - find and click (JS, no Playwright scroll)
+            # Strategy 0: TCGplayer-style numbered buttons "1", "2", "3" at bottom - find and click
+            # Prefer Playwright locator with longer timeout so we wait for pagination to be visible
+            clicked = False
             try:
-                # First try non-disabled only; then try including disabled (some sites use disabled for styling)
-                clicked = await page.evaluate('''(nextPageNum) => {
-                    const want = String(nextPageNum);
-                    const sel = "button, a[href], [role=\\"button\\"]";
-                    const all = Array.from(document.querySelectorAll(sel)).filter(el => {
-                        const t = (el.textContent || "").trim();
-                        return t === want;
-                    });
-                    const notDisabled = all.filter(el => !el.disabled && el.getAttribute("aria-disabled") !== "true");
-                    const withSiblings = (arr) => arr.filter(el => {
-                        const parent = el.parentElement;
-                        if (!parent) return false;
-                        const sibs = Array.from(parent.children).map(c => (c.textContent || "").trim());
-                        return sibs.some(t => /^\\d+$/.test(t));
-                    });
-                    const toClick = (withSiblings(notDisabled).length ? withSiblings(notDisabled)[0] : notDisabled[0])
-                        || (withSiblings(all).length ? withSiblings(all)[0] : all[0]);
-                    if (toClick) {
-                        toClick.scrollIntoView({ block: "center" });
-                        toClick.click();
-                        return true;
-                    }
-                    return false;
-                }''', next_page_num)
-                if clicked:
-                    logger.debug(f"  Clicked page {next_page_num} via numbered buttons (1,2,3)")
-                    await asyncio.sleep(human_delay() + 2)
-                    await page.evaluate('window.scrollTo(0, 500)')
-                    await asyncio.sleep(1)
-                    current_page = next_page_num
-                    continue
+                for loc in [
+                    page.get_by_role('link', name=str(next_page_num)),
+                    page.get_by_role('button', name=str(next_page_num)),
+                    page.get_by_text(str(next_page_num), exact=True),
+                ]:
+                    if await loc.count() > 0:
+                        await loc.first.scroll_into_view_if_needed(timeout=10000)
+                        await asyncio.sleep(0.5)
+                        await loc.first.click(timeout=5000)
+                        clicked = True
+                        logger.debug(f"  Clicked page {next_page_num} via get_by_role/get_by_text")
+                        break
             except Exception as e:
-                logger.debug(f"  Numbered-buttons strategy error: {e}")
+                logger.debug(f"  Playwright locator click: {e}")
+            if not clicked:
+                try:
+                    clicked = await page.evaluate('''(nextPageNum) => {
+                        const want = String(nextPageNum);
+                        const sel = "button, a[href], [role=\\"button\\"]";
+                        const all = Array.from(document.querySelectorAll(sel)).filter(el => {
+                            const t = (el.textContent || "").trim();
+                            return t === want;
+                        });
+                        const notDisabled = all.filter(el => !el.disabled && el.getAttribute("aria-disabled") !== "true");
+                        const withSiblings = (arr) => arr.filter(el => {
+                            const parent = el.parentElement;
+                            if (!parent) return false;
+                            const sibs = Array.from(parent.children).map(c => (c.textContent || "").trim());
+                            return sibs.some(t => /^\\d+$/.test(t));
+                        });
+                        const toClick = (withSiblings(notDisabled).length ? withSiblings(notDisabled)[0] : notDisabled[0])
+                            || (withSiblings(all).length ? withSiblings(all)[0] : all[0]);
+                        if (toClick) {
+                            toClick.scrollIntoView({ block: "center" });
+                            toClick.click();
+                            return true;
+                        }
+                        return false;
+                    }''', next_page_num)
+                except Exception as e:
+                    logger.debug(f"  Numbered-buttons JS error: {e}")
+            if clicked:
+                await asyncio.sleep(human_delay() + 2)
+                await page.evaluate('window.scrollTo(0, 500)')
+                await asyncio.sleep(1)
+                current_page = next_page_num
+                logger.info(f"  Navigated to page {current_page} via pagination click")
+                continue
 
             # Strategy 1: class*="pagination" or "Page" (button/link with page number)
             try:
@@ -779,7 +796,7 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                         logger.warning(f"  Error clicking page {next_page_num} button: {e}")
                     break
             else:
-                logger.info(f"  No page {next_page_num} button found (reached end)")
+                logger.warning(f"  Could not navigate to page {next_page_num} (URL and click strategies failed); stopping with {len(all_listings)} listings from page(s) 1–{current_page}")
                 break
         
         # Process listings

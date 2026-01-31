@@ -107,3 +107,19 @@ The script fetches the leaderboard and one box detail and prints key metrics so 
 | 5 | Leaderboard API returns recent `floor_price_usd`, `unified_volume_usd`, etc. |
 | 6 | Box detail API returns `boxes_added_today`, `boxes_sold_per_day`, `daily_volume_usd`. |
 | 7 | After a refresh, reload dashboard/box detail and see updated numbers. |
+
+---
+
+## Workflow ran but box detail / leaderboard not updating
+
+If the GitHub Actions workflow runs but the box detail page (or leaderboard) still shows old data or "—":
+
+1. **Check workflow logs** (Actions → latest run → "Run daily refresh"):
+   - Do you see **"✅ API caches invalidated"**? If yes, the backend was told to clear caches; if the page still doesn't update, the backend may be reading from a different DB or the frontend may be caching.
+   - Do you see **"BACKEND_URL not set"** or **"INVALIDATE_CACHE_SECRET not set"**? Then the workflow never called your backend, so caches were not cleared. Add both secrets in the repo (Settings → Secrets and variables → Actions).
+   - Do you see **"Invalidate cache failed: HTTP 401"**? Then the secret doesn't match: `INVALIDATE_CACHE_SECRET` in GitHub must equal the same env var on your **deployed** backend.
+   - Do you see **"Could not invalidate API cache: …"** (e.g. timeout)? Then the workflow can't reach `BACKEND_URL` – use your **public** API URL (e.g. `https://your-app.run.app`), not localhost.
+
+2. **Same DB**: The workflow writes to the DB using `DATABASE_URL` in GitHub secrets. Your **deployed backend** must use the **same** `DATABASE_URL`. If the backend uses a different DB, it will never see the new rows.
+
+3. **Backend env**: On the host where your API runs (Cloud Run, Render, etc.), set `INVALIDATE_CACHE_SECRET` to the same value you put in GitHub secrets so the backend accepts the invalidation request.

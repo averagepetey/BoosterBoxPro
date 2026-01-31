@@ -246,23 +246,31 @@ def main():
     if backend_url and invalidate_secret:
         try:
             import urllib.request
+            url = f"{backend_url}/admin/invalidate-cache"
+            logger.info(f"Calling POST {url} to invalidate caches...")
             req = urllib.request.Request(
-                f"{backend_url}/admin/invalidate-cache",
+                url,
                 method="POST",
                 headers={"X-Invalidate-Secret": invalidate_secret},
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
+                body = resp.read().decode() if hasattr(resp, "read") else ""
                 if resp.status in (200, 201):
                     logger.info("✅ API caches invalidated – leaderboard and box detail will serve fresh data")
                 else:
-                    logger.warning(f"Invalidate cache returned status {resp.status}")
+                    logger.warning(f"Invalidate cache returned status {resp.status}: {body[:200]}")
         except Exception as e:
-            logger.warning(f"Could not invalidate API cache: {e}")
+            err_code = getattr(e, "code", None)
+            err_body = getattr(e, "read", lambda: None)()
+            if err_code is not None:
+                logger.warning(f"Invalidate cache failed: HTTP {err_code} – check BACKEND_URL and INVALIDATE_CACHE_SECRET match your deployed backend. Body: {(err_body.decode() if err_body else '')[:200]}")
+            else:
+                logger.warning(f"Could not invalidate API cache: {e}")
     else:
         if not backend_url:
-            logger.warning("BACKEND_URL not set – leaderboard/box detail will not auto-update until cache TTL expires; set BACKEND_URL secret for automatic refresh.")
+            logger.warning("BACKEND_URL not set – leaderboard/box detail will not auto-update until cache TTL expires; set BACKEND_URL secret (your deployed API URL).")
         if not invalidate_secret:
-            logger.warning("INVALIDATE_CACHE_SECRET not set – leaderboard/box detail will not auto-update until cache TTL expires; set INVALIDATE_CACHE_SECRET secret for automatic refresh.")
+            logger.warning("INVALIDATE_CACHE_SECRET not set – leaderboard/box detail will not auto-update until cache TTL expires; set INVALIDATE_CACHE_SECRET secret (same value as on your backend).")
     
     # Optional success alert (only if ALERT_ON_SUCCESS=true)
     if not status["overall_success"]:
