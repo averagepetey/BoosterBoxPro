@@ -57,12 +57,28 @@ If you prefer not to use the blueprint, ignore `render.yaml` and use **Option A*
 ## What it runs
 
 - **Random delay**: 0–30 minutes after cron fires at 1pm EST (so the run is randomly between 1:00 and 1:30 PM, not the same second every day).
-- **Phase 1**: Apify – fetches TCGplayer sales data for all boxes.
-- **Phase 2**: Listings scraper – after Apify finishes, scrapes active listings and writes to the same DB.
+- **Phase 1**: Apify – fetches TCGplayer sales data for all boxes (sales/volume, floor price, boxes_sold_30d_avg).
+- **Phase 2**: Listings scraper – after Apify finishes, scrapes active listings and writes floor_price_usd, active_listings_count, boxes_added_today (yesterday→today delta) to the same DB.
+- **Cache invalidation**: After both phases, the script calls `POST {BACKEND_URL}/admin/invalidate-cache` so the next leaderboard and box detail request serve fresh data automatically.
 
-Order is fixed: delay → Apify → listings scraper (see `scripts/daily_refresh.py`).
+Order is fixed: delay → Apify → listings scraper → invalidate cache (see `scripts/daily_refresh.py`).
 
 **Manual run (no delay)**: `python scripts/daily_refresh.py --no-delay`
+
+---
+
+## GitHub Actions (daily-refresh workflow)
+
+When using `.github/workflows/daily-refresh.yml`, set these **secrets** (Repo → Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+|--------|--------|
+| `DATABASE_URL` | DB for all metrics (Apify + Scraper write here). |
+| `APIFY_API_TOKEN` | Phase 1: sales/volume (boxes_sold_per_day, unified_volume_usd, boxes_sold_30d_avg). |
+| `BACKEND_URL` | Public API URL (e.g. `https://your-api.run.app`) so the refresh can call invalidate-cache. |
+| `INVALIDATE_CACHE_SECRET` | Secret for `POST /admin/invalidate-cache`; **required for leaderboard/box detail to show new data automatically**. |
+
+Your **backend** (Cloud Run, Render, etc.) must have `INVALIDATE_CACHE_SECRET` set to the same value so it accepts the invalidation request. Without `BACKEND_URL` and `INVALIDATE_CACHE_SECRET`, data still updates in the DB, but leaderboard/box detail will show cached data until the cache TTL expires (e.g. 30 min for leaderboard).
 
 ---
 

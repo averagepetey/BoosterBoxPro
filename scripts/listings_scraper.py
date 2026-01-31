@@ -439,55 +439,14 @@ async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
                         const sellerEl = el.querySelector('[class*="seller"], [class*="Seller"]');
                         const seller = sellerEl ? sellerEl.innerText.trim() : '';
                         
-                        // Parse quantity listed - try all common TCGplayer formats
+                        // Parse quantity ONLY when it looks like the quantity selector: "1" (dropdown) "of 9" = 9 boxes
+                        // Ignore pagination ("Page 1 of 4"), total count ("1 of 24 listings"), and other patterns
                         let quantity = 1;
-                        // "1 of 4" or "1 of 4 available" → 4 units
+                        const looksLikePagination = /page\s*\d|per\s*page|showing\s*\d+\s*of|\d+\s*of\s*\d+\s*listings/i.test(fullText);
                         const ofMatch = fullText.match(/(\d+)\s*of\s*(\d+)/i);
-                        if (ofMatch) {
+                        if (ofMatch && !looksLikePagination) {
                             const n = parseInt(ofMatch[2], 10);
                             if (n >= 1 && n <= 9999) quantity = n;
-                        }
-                        // "1 / 4" or "1/4" (slash format) → 4 units
-                        if (quantity === 1) {
-                            const slashMatch = fullText.match(/(\d+)\s*\/\s*(\d+)/);
-                            if (slashMatch) {
-                                const n = parseInt(slashMatch[2], 10);
-                                if (n >= 1 && n <= 9999) quantity = n;
-                            }
-                        }
-                        // "× 4" or "x 4" or "4 available" or "Qty: 4"
-                        if (quantity === 1) {
-                            const qtyMatch = fullText.match(/(?:qty|quantity|available)[\s:]*?(\d+)|(?:^|[\s\xd7x×])\s*(\d+)\s*(?:available|left|in stock)?/i)
-                                || fullText.match(/\b(\d+)\s*(?:available|units|boxes|in stock)/i)
-                                || fullText.match(/(\d+)\s*\/\s*\d+/);  // "4 / 4" take first number as available qty
-                            if (qtyMatch) {
-                                const n = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
-                                if (n >= 1 && n <= 9999) quantity = n;
-                            }
-                        }
-                        // "4 in stock" or "in stock: 4"
-                        if (quantity === 1) {
-                            const inStockMatch = fullText.match(/(?:in stock|in stock:)\s*(\d+)|(\d+)\s*in stock/i);
-                            if (inStockMatch) {
-                                const n = parseInt(inStockMatch[1] || inStockMatch[2], 10);
-                                if (n >= 1 && n <= 9999) quantity = n;
-                            }
-                        }
-                        // Fallback: (4) or — 4 or "4" near quantity-like context
-                        if (quantity === 1) {
-                            const parenMatch = fullText.match(/\((\d+)\)\s*(?:available|in stock|left)?/i);
-                            if (parenMatch) {
-                                const n = parseInt(parenMatch[1], 10);
-                                if (n >= 2 && n <= 9999) quantity = n;
-                            }
-                        }
-                        // Data attributes (some sites use data-quantity, data-qty)
-                        if (quantity === 1) {
-                            const qtyAttr = el.getAttribute('data-quantity') || el.getAttribute('data-qty') || el.querySelector('[data-quantity]')?.getAttribute('data-quantity');
-                            if (qtyAttr) {
-                                const n = parseInt(qtyAttr, 10);
-                                if (n >= 1 && n <= 9999) quantity = n;
-                            }
                         }
                         
                         // Only include if price is valid
@@ -993,7 +952,9 @@ def save_results(results: List[Dict]):
         boxes_added_today = max(0, delta) if delta is not None else None
         boxes_removed_today = max(0, -delta) if delta is not None else None
 
-        # active_listings_count = boxes within 20% of floor; listings_within_10pct_floor = boxes within 10% (for expected time to sale)
+        # Build scraper entry; preserve Apify sales/volume from existing today entry if present
+        # (Phase 1 Apify runs first and writes sales/volume; we must not wipe them from JSON)
+        existing_today = next((e for e in hist[box_id] if e.get('date') == today), None)
         entry = {
             'date': today,
             'source': 'tcgplayer_scraper',
@@ -1006,6 +967,10 @@ def save_results(results: List[Dict]):
             'boxes_added_today': boxes_added_today,
             'boxes_removed_today': boxes_removed_today,
         }
+        if existing_today:
+            for key in ('boxes_sold_per_day', 'boxes_sold_today', 'unified_volume_usd', 'daily_volume_usd', 'market_price_usd', 'volume_7d'):
+                if existing_today.get(key) is not None and entry.get(key) is None:
+                    entry[key] = existing_today[key]
 
         # Remove existing entry for today (update mode)
         hist[box_id] = [e for e in hist[box_id] if e.get('date') != today]
@@ -1013,6 +978,9 @@ def save_results(results: List[Dict]):
 
         # Running 30d avg from historical data so DB stays up to date when we only write floor/listings
         boxes_sold_30d_avg = get_box_30d_avg_sales(DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)) if get_box_30d_avg_sales else None
+        # Carry Apify sales/volume into DB if Phase 1 wrote them to JSON but DB write failed (so UI gets full data)
+        boxes_sold_per_day = entry.get('boxes_sold_per_day') if existing_today else None
+        unified_volume_usd = entry.get('unified_volume_usd') if existing_today else None
 
         # Write to DB using the ID that exists in booster_boxes (leaderboard UUID).
         # TCGPLAYER_URLS use TCGPlayer/DB UUIDs; booster_boxes.id may be leaderboard UUIDs.
@@ -1022,7 +990,9 @@ def save_results(results: List[Dict]):
                 booster_box_id=booster_box_id_for_db,
                 metric_date=today,
                 floor_price_usd=result.get('floor_price'),
+                boxes_sold_per_day=boxes_sold_per_day,
                 active_listings_count=boxes_within_20pct,
+                unified_volume_usd=unified_volume_usd,
                 boxes_sold_30d_avg=boxes_sold_30d_avg,
                 boxes_added_today=boxes_added_today,
             )
