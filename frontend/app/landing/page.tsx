@@ -28,11 +28,11 @@ export default function LandingPage() {
   useEffect(() => {
     const token = getAuthToken();
     if (token) {
-      router.replace('/dashboard');
+      window.location.replace('/dashboard');
       return;
     }
     setChecking(false);
-  }, [router]);
+  }, []);
 
   if (checking) {
     return (
