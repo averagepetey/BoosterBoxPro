@@ -1,4 +1,4 @@
-import Navigation from '@/components/ui/Navigation';
+import { Navigation } from '@/components/ui/Navigation';
 import Footer from '@/components/ui/Footer';
 
 export const metadata = {
