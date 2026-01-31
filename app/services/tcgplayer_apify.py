@@ -483,29 +483,37 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             # Extract metrics from API
             avg_daily = float(data.get("averageDailyQuantitySold") or 0)
             buckets = data.get("buckets") or []
-            
+
+            # Sort buckets newest-first so buckets[0] is the most recent day
+            buckets = sorted(buckets, key=lambda b: b.get("bucketStartDate", ""), reverse=True)
+
             if buckets:
                 market_price = float(buckets[0].get("marketPrice") or 0)
                 low_sale = float(buckets[0].get("lowSalePrice") or 0)
-                # Use market_price as floor proxy (more accurate than lowSalePrice)
-                # lowSalePrice is the lowest sale in the bucket (often old/outlier)
-                # marketPrice is the average sale price (closer to current floor)
                 floor = market_price if market_price > 0 else low_sale
+                # Actual daily sales from the latest bucket (not the rolling avg)
+                boxes_sold_today = int(buckets[0].get("quantitySold") or 0)
+                bucket_date = buckets[0].get("bucketStartDate", "")
             else:
                 market_price = 0
                 floor = 0
-            
+                boxes_sold_today = 0
+                bucket_date = ""
+
+            # Use actual bucket sales for daily metrics when available, fall back to rolling avg
+            effective_daily_sold = boxes_sold_today if boxes_sold_today > 0 else avg_daily
+
             # Get previous entry for comparison
             prev_entry = get_previous_entry(historical, box_id, today)
             prev_avg = prev_entry.get("boxes_sold_per_day") if prev_entry else None
             prev_price = prev_entry.get("market_price_usd") if prev_entry else None
-            
+
             # Calculate estimated actual daily sales from rolling avg change
             estimated_today_sales = calculate_estimated_daily_sales(prev_avg, avg_daily)
-            
+
             # Get 7-day baseline for spike detection
             baseline_7d = get_7day_baseline(historical, box_id, today)
-            
+
             # Check for volume spike
             spike = detect_spike(estimated_today_sales, baseline_7d) if baseline_7d else None
             if spike:
@@ -513,30 +521,35 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 spike["box_id"] = box_id
                 alerts.append(spike)
                 logger.warning(f"🔥 {name}: {spike['type']} - {spike['change_pct']:+.1f}% vs baseline")
-            
+
             # Calculate day-over-day changes
             avg_change = round(avg_daily - prev_avg, 2) if prev_avg else None
             avg_change_pct = round(((avg_daily - prev_avg) / prev_avg) * 100, 1) if prev_avg and prev_avg > 0 else None
             price_change = round(market_price - prev_price, 2) if prev_price else None
             price_change_pct = round(((market_price - prev_price) / prev_price) * 100, 1) if prev_price and prev_price > 0 else None
-            
-            # Daily volume = floor price × avg daily sold; 7d/30d are running sums of these (when we have multiple days)
-            daily_vol = round(avg_daily * floor, 2) if floor else 0
+
+            # Daily volume from actual bucket sales (not rolling avg × floor)
+            daily_vol = round(effective_daily_sold * floor, 2) if floor else 0
             volume_7d = round(daily_vol * 7, 2)
-            volume_30d = round(daily_vol * 30, 2)
+            # Use actual 30d volume from bucket history when available
+            volume_30d_actual = calculate_30d_volume_from_buckets(buckets)
+            volume_30d = round(volume_30d_actual, 2) if volume_30d_actual > 0 else round(daily_vol * 30, 2)
             
             # Create enriched entry
             new_entry = {
                 "date": today,
                 "source": "apify_tcgplayer",
                 # Raw API data
-                "boxes_sold_per_day": avg_daily,  # TCGplayer's rolling average
+                "boxes_sold_per_day": effective_daily_sold,  # Actual bucket sales (or rolling avg fallback)
+                "boxes_sold_today": boxes_sold_today,  # Exact count from latest bucket
+                "tcgplayer_rolling_avg": avg_daily,  # TCGplayer's 30d rolling average (for reference)
                 "floor_price_usd": floor,
                 "market_price_usd": market_price,
                 "daily_volume_usd": daily_vol,
-                # Calculated rolling volumes (extrapolated from daily average)
+                # Calculated rolling volumes (from actual bucket history)
                 "volume_7d": volume_7d,
                 "unified_volume_usd": volume_30d,
+                "bucket_date": bucket_date,
                 # Derived metrics (our calculations)
                 "estimated_actual_sales_today": estimated_today_sales,
                 "baseline_7d_avg": round(baseline_7d, 2) if baseline_7d else None,
@@ -580,7 +593,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                     booster_box_id=booster_box_id_for_db,
                     metric_date=today,
                     floor_price_usd=floor,
-                    boxes_sold_per_day=avg_daily,
+                    boxes_sold_per_day=effective_daily_sold,
                     unified_volume_usd=volume_30d,
                     boxes_sold_30d_avg=boxes_sold_30d_avg,
                 )
@@ -589,14 +602,17 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             
             # Log with day-over-day context
             change_str = f" ({avg_change_pct:+.1f}%)" if avg_change_pct else ""
-            logger.info(f"✅ {name}: {avg_daily}/day{change_str} @ ${market_price:.2f}")
-            
+            bucket_str = f" (bucket: {boxes_sold_today} sold on {bucket_date})" if bucket_date else ""
+            logger.info(f"✅ {name}: {effective_daily_sold}/day{change_str} @ ${market_price:.2f}{bucket_str}")
+
             results.append({
-                "name": name, 
+                "name": name,
                 "box_id": box_id,
-                "sold": avg_daily, 
+                "sold": effective_daily_sold,
+                "sold_today_bucket": boxes_sold_today,
+                "rolling_avg": avg_daily,
                 "estimated_today": estimated_today_sales,
-                "price": market_price, 
+                "price": market_price,
                 "vol": daily_vol,
                 "change_pct": avg_change_pct
             })
