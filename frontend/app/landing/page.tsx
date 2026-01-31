@@ -69,8 +69,8 @@ export default function LandingPage() {
         {/* Overlay to ensure content is readable */}
         <div className="absolute inset-0 bg-black/20 pointer-events-none" />
         
-        {/* Navigation - NOT sticky */}
-        <div className="relative z-10">
+        {/* Navigation - NOT sticky, z-20 so buttons aren't overlapped by hero */}
+        <div className="relative z-20">
           <Navigation sticky={false} />
         </div>
       

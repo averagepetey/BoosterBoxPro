@@ -66,7 +66,7 @@ export function Navigation({ sticky = true }: NavigationProps) {
       }}
     >
       <div className="w-full max-w-full">
-        <div className="flex items-center justify-between h-[84px] sm:h-[60px] px-4 sm:px-6">
+        <div className="flex items-center justify-between h-[84px] sm:h-[72px] px-4 sm:px-6">
           {/* Logo - Responsive size: md on mobile, lg on desktop */}
           <div className="flex-shrink-0 py-1">
             <div className="block sm:hidden">
