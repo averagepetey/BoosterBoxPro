@@ -15,9 +15,13 @@ _upsert_sql = text("""
         booster_box_id, metric_date, floor_price_usd,
         boxes_sold_per_day, active_listings_count,
         unified_volume_usd, unified_volume_7d_ema,
-        boxes_sold_30d_avg, boxes_added_today
+        boxes_sold_30d_avg, boxes_added_today,
+        liquidity_score, days_to_20pct_increase,
+        avg_boxes_added_per_day, expected_days_to_sell,
+        floor_price_1d_change_pct
     ) VALUES (
-        CAST(:bid AS uuid), CAST(:md AS date), :fp, :bspd, :alc, :uvu, :uv7, :bs30, :bat
+        CAST(:bid AS uuid), CAST(:md AS date), :fp, :bspd, :alc, :uvu, :uv7, :bs30, :bat,
+        :liq, :d20, :abapd, :edts, :fp1d
     )
     ON CONFLICT (booster_box_id, metric_date)
     DO UPDATE SET
@@ -28,6 +32,11 @@ _upsert_sql = text("""
         unified_volume_7d_ema = COALESCE(EXCLUDED.unified_volume_7d_ema, box_metrics_unified.unified_volume_7d_ema),
         boxes_sold_30d_avg = COALESCE(EXCLUDED.boxes_sold_30d_avg, box_metrics_unified.boxes_sold_30d_avg),
         boxes_added_today = COALESCE(EXCLUDED.boxes_added_today, box_metrics_unified.boxes_added_today),
+        liquidity_score = COALESCE(EXCLUDED.liquidity_score, box_metrics_unified.liquidity_score),
+        days_to_20pct_increase = COALESCE(EXCLUDED.days_to_20pct_increase, box_metrics_unified.days_to_20pct_increase),
+        avg_boxes_added_per_day = COALESCE(EXCLUDED.avg_boxes_added_per_day, box_metrics_unified.avg_boxes_added_per_day),
+        expected_days_to_sell = COALESCE(EXCLUDED.expected_days_to_sell, box_metrics_unified.expected_days_to_sell),
+        floor_price_1d_change_pct = COALESCE(EXCLUDED.floor_price_1d_change_pct, box_metrics_unified.floor_price_1d_change_pct),
         updated_at = NOW()
 """)
 
@@ -42,6 +51,11 @@ def upsert_daily_metrics(
     unified_volume_7d_ema: Optional[float] = None,
     boxes_sold_30d_avg: Optional[float] = None,
     boxes_added_today: Optional[int] = None,
+    liquidity_score: Optional[float] = None,
+    days_to_20pct_increase: Optional[float] = None,
+    avg_boxes_added_per_day: Optional[float] = None,
+    expected_days_to_sell: Optional[float] = None,
+    floor_price_1d_change_pct: Optional[float] = None,
 ) -> bool:
     """Upsert one row into box_metrics_unified. Returns True on success, False on FK/error."""
     try:
@@ -58,6 +72,11 @@ def upsert_daily_metrics(
                     "uv7": unified_volume_7d_ema,
                     "bs30": boxes_sold_30d_avg,
                     "bat": boxes_added_today,
+                    "liq": liquidity_score,
+                    "d20": days_to_20pct_increase,
+                    "abapd": avg_boxes_added_per_day,
+                    "edts": expected_days_to_sell,
+                    "fp1d": floor_price_1d_change_pct,
                 })
         return True
     except Exception:

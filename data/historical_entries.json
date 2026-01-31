@@ -3991,6 +3991,37 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 9014.99,
+      "active_listings_count": 9,
+      "listings_within_10pct_floor": 2,
+      "scrape_timestamp": "2026-01-31T02:09:21.464285",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 0.0,
+      "daily_volume_usd": 0.0,
+      "volume_7d": 0.0,
+      "unified_volume_usd": 0.0,
+      "market_price_usd": 5773.67,
+      "estimated_actual_sales_today": 0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 0.17,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 0.0,
+      "liquidity_score": null,
+      "days_to_20pct_increase": null,
+      "expected_time_to_sale_days": null,
+      "unified_volume_7d_ema": null
     }
   ],
   "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": [
@@ -4061,6 +4092,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 2073,
+      "active_listings_count": 10,
+      "listings_within_10pct_floor": 9,
+      "scrape_timestamp": "2026-01-31T02:10:27.827630",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 1.0,
+      "daily_volume_usd": 1699.03,
+      "volume_7d": 11893.21,
+      "unified_volume_usd": 50970.9,
+      "market_price_usd": 1699.03,
+      "estimated_actual_sales_today": 1.0,
+      "baseline_7d_avg": 0.67,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 6.31,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 0.8,
+      "liquidity_score": 8.0,
+      "days_to_20pct_increase": 12.5,
+      "expected_time_to_sale_days": 9.0,
+      "unified_volume_7d_ema": 49024.18
     }
   ],
   "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": [
@@ -4131,6 +4196,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 538.98,
+      "active_listings_count": 20,
+      "listings_within_10pct_floor": 14,
+      "scrape_timestamp": "2026-01-31T02:01:17.777768",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 2.0,
+      "daily_volume_usd": 1039.62,
+      "volume_7d": 7277.34,
+      "unified_volume_usd": 31188.6,
+      "market_price_usd": 519.81,
+      "estimated_actual_sales_today": 2.0,
+      "baseline_7d_avg": 1.33,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 7.8,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 1.6,
+      "liquidity_score": 8.0,
+      "days_to_20pct_increase": 12.5,
+      "expected_time_to_sale_days": 7.0,
+      "unified_volume_7d_ema": 29839.54
     }
   ],
   "d3929fc6-6afa-468a-b7a1-ccc0f392131a": [
@@ -4201,6 +4300,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 728.49,
+      "active_listings_count": 25,
+      "listings_within_10pct_floor": 20,
+      "scrape_timestamp": "2026-01-31T02:02:51.207743",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 1.0,
+      "daily_volume_usd": 717.07,
+      "volume_7d": 5019.49,
+      "unified_volume_usd": 21512.1,
+      "market_price_usd": 717.07,
+      "estimated_actual_sales_today": 1.0,
+      "baseline_7d_avg": 0.67,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": -0.21,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 0.8,
+      "liquidity_score": 3.2,
+      "days_to_20pct_increase": 31.25,
+      "expected_time_to_sale_days": 20.0,
+      "unified_volume_7d_ema": 20329.38
     }
   ],
   "526c28b7-bc13-449b-a521-e63bdd81811a": [
@@ -4271,6 +4404,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 564.98,
+      "active_listings_count": 16,
+      "listings_within_10pct_floor": 11,
+      "scrape_timestamp": "2026-01-31T02:03:53.390720",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 2.0,
+      "daily_volume_usd": 1120.7,
+      "volume_7d": 7844.9,
+      "unified_volume_usd": 33621.0,
+      "market_price_usd": 560.35,
+      "estimated_actual_sales_today": 2.0,
+      "baseline_7d_avg": 1.33,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 0.89,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 1.6,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 10.0,
+      "expected_time_to_sale_days": 5.5,
+      "unified_volume_7d_ema": 33085.57
     }
   ],
   "6ea1659d-7b86-46c5-8fb2-0596262b8e68": [
@@ -4341,6 +4508,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 939,
+      "active_listings_count": 1,
+      "listings_within_10pct_floor": 1,
+      "scrape_timestamp": "2026-01-31T02:08:14.740170",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 8.0,
+      "daily_volume_usd": 8528.24,
+      "volume_7d": 59697.68,
+      "unified_volume_usd": 255847.2,
+      "market_price_usd": 1066.03,
+      "estimated_actual_sales_today": 8.0,
+      "baseline_7d_avg": 5.33,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 0.21,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 6.4,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 0.16,
+      "expected_time_to_sale_days": 1.0,
+      "unified_volume_7d_ema": 252942.85
     }
   ],
   "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": [
@@ -4411,6 +4612,38 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 336.88,
+      "active_listings_count": 43,
+      "listings_within_10pct_floor": 22,
+      "scrape_timestamp": "2026-01-31T02:04:24.778593",
+      "pages_scraped": 3,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 5.0,
+      "daily_volume_usd": 1695.05,
+      "volume_7d": 11865.35,
+      "unified_volume_usd": 50851.5,
+      "market_price_usd": 339.01,
+      "estimated_actual_sales_today": 5.0,
+      "baseline_7d_avg": 3.33,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 3.66,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 4.0,
+      "liquidity_score": 9.3,
+      "days_to_20pct_increase": 10.75,
+      "expected_time_to_sale_days": 4.4,
+      "unified_volume_7d_ema": 50886.37
     }
   ],
   "9bfebc47-4a92-44b3-b157-8c53d6a6a064": [
@@ -4481,6 +4714,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 1
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 250,
+      "active_listings_count": 18,
+      "listings_within_10pct_floor": 3,
+      "scrape_timestamp": "2026-01-31T02:02:27.542165",
+      "pages_scraped": 3,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 1
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 8.0,
+      "daily_volume_usd": 2374.8,
+      "volume_7d": 16623.6,
+      "unified_volume_usd": 71244.0,
+      "market_price_usd": 296.85,
+      "estimated_actual_sales_today": 8.0,
+      "baseline_7d_avg": 5.33,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": -1.96,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 6.4,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 2.81,
+      "expected_time_to_sale_days": 1.0,
+      "unified_volume_7d_ema": 72541.23
     }
   ],
   "d0faf871-a930-4c80-a981-9df8741c90a9": [
@@ -4551,6 +4818,38 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 234.98000000000002,
+      "active_listings_count": 25,
+      "listings_within_10pct_floor": 17,
+      "scrape_timestamp": "2026-01-31T02:11:47.919020",
+      "pages_scraped": 3,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 7.0,
+      "daily_volume_usd": 1551.06,
+      "volume_7d": 10857.42,
+      "unified_volume_usd": 46531.8,
+      "market_price_usd": 221.58,
+      "estimated_actual_sales_today": 7.0,
+      "baseline_7d_avg": 4.67,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 14.63,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 5.6,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 4.46,
+      "expected_time_to_sale_days": 2.43,
+      "unified_volume_7d_ema": 46196.82
     }
   ],
   "62e94d8d-bde1-4aec-a4f4-98c28d5e98c6": [
@@ -4633,6 +4932,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 217.99,
+      "active_listings_count": 73,
+      "listings_within_10pct_floor": 34,
+      "scrape_timestamp": "2026-01-31T02:10:03.779175",
+      "pages_scraped": 4,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 19.0,
+      "daily_volume_usd": 4241.18,
+      "volume_7d": 29688.26,
+      "unified_volume_usd": 127235.4,
+      "market_price_usd": 223.22,
+      "estimated_actual_sales_today": 19.0,
+      "baseline_7d_avg": 12.67,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 1.39,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 15.2,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 4.8,
+      "expected_time_to_sale_days": 1.79,
+      "unified_volume_7d_ema": 130113.55
     }
   ],
   "46039dfc-a980-4bbd-aada-8cc1e124b44b": [
@@ -4703,6 +5036,38 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 421.96000000000004,
+      "active_listings_count": 72,
+      "listings_within_10pct_floor": 35,
+      "scrape_timestamp": "2026-01-31T02:08:58.298295",
+      "pages_scraped": 4,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 20.0,
+      "daily_volume_usd": 8421.4,
+      "volume_7d": 58949.8,
+      "unified_volume_usd": 252642.0,
+      "market_price_usd": 421.07,
+      "estimated_actual_sales_today": 20.0,
+      "baseline_7d_avg": 13.33,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 1.68,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 16.0,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 4.5,
+      "expected_time_to_sale_days": 1.75,
+      "unified_volume_7d_ema": 252268.24
     }
   ],
   "be5fccb2-a76b-45a4-aff9-46a57fd41d38": [
@@ -4797,6 +5162,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 888.99,
+      "active_listings_count": 10,
+      "listings_within_10pct_floor": 6,
+      "scrape_timestamp": "2026-01-31T02:06:12.198689",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 1.0,
+      "daily_volume_usd": 833.54,
+      "volume_7d": 5834.78,
+      "unified_volume_usd": 25006.2,
+      "market_price_usd": 833.54,
+      "estimated_actual_sales_today": 1.0,
+      "baseline_7d_avg": 0.67,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 2.18,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 0.8,
+      "liquidity_score": 8.0,
+      "days_to_20pct_increase": 12.5,
+      "expected_time_to_sale_days": 6.0,
+      "unified_volume_7d_ema": 24866.74
     }
   ],
   "7509a855-f6da-445e-b445-130824d81d04": [
@@ -4867,6 +5266,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 567.49,
+      "active_listings_count": 16,
+      "listings_within_10pct_floor": 9,
+      "scrape_timestamp": "2026-01-31T02:03:21.358493",
+      "pages_scraped": 2,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 9.0,
+      "daily_volume_usd": 4929.75,
+      "volume_7d": 34508.25,
+      "unified_volume_usd": 147892.5,
+      "market_price_usd": 547.75,
+      "estimated_actual_sales_today": 9.0,
+      "baseline_7d_avg": 6.0,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 0.0,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 7.2,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 2.22,
+      "expected_time_to_sale_days": 1.0,
+      "unified_volume_7d_ema": 145561.18
     }
   ],
   "743bf253-98ca-49d5-93fe-a3eaef9f72c1": [
@@ -4937,6 +5370,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 974.98,
+      "active_listings_count": 31,
+      "listings_within_10pct_floor": 31,
+      "scrape_timestamp": "2026-01-31T02:01:51.231088",
+      "pages_scraped": 3,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 4.0,
+      "daily_volume_usd": 3606.16,
+      "volume_7d": 25243.12,
+      "unified_volume_usd": 108184.8,
+      "market_price_usd": 901.54,
+      "estimated_actual_sales_today": 4.0,
+      "baseline_7d_avg": 2.67,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 9.55,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 3.2,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 9.69,
+      "expected_time_to_sale_days": 7.75,
+      "unified_volume_7d_ema": 105276.07
     }
   ],
   "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": [
@@ -5007,6 +5474,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 344.99,
+      "active_listings_count": 45,
+      "listings_within_10pct_floor": 7,
+      "scrape_timestamp": "2026-01-31T02:05:35.106403",
+      "pages_scraped": 5,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 11.0,
+      "daily_volume_usd": 3754.08,
+      "volume_7d": 26278.56,
+      "unified_volume_usd": 112622.4,
+      "market_price_usd": 341.28,
+      "estimated_actual_sales_today": 11.0,
+      "baseline_7d_avg": 7.33,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 4.54,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 8.8,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 5.11,
+      "expected_time_to_sale_days": 1.0,
+      "unified_volume_7d_ema": 110884.91
     }
   ],
   "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": [
@@ -5077,6 +5578,38 @@
         "japanese_removed": 0,
         "suspicious_removed": 3
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 624.99,
+      "active_listings_count": 40,
+      "listings_within_10pct_floor": 21,
+      "scrape_timestamp": "2026-01-31T02:11:16.149864",
+      "pages_scraped": 4,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 3
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 14.0,
+      "daily_volume_usd": 8690.78,
+      "volume_7d": 60835.46,
+      "unified_volume_usd": 260723.4,
+      "market_price_usd": 620.77,
+      "estimated_actual_sales_today": 14.0,
+      "baseline_7d_avg": 9.33,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 4.17,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 11.2,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 3.57,
+      "expected_time_to_sale_days": 1.5,
+      "unified_volume_7d_ema": 262721.57
     }
   ],
   "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": [
@@ -5147,6 +5680,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 223.95,
+      "active_listings_count": 54,
+      "listings_within_10pct_floor": 31,
+      "scrape_timestamp": "2026-01-31T02:07:47.464458",
+      "pages_scraped": 4,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 19.0,
+      "daily_volume_usd": 4216.48,
+      "volume_7d": 29515.36,
+      "unified_volume_usd": 126494.4,
+      "market_price_usd": 221.92,
+      "estimated_actual_sales_today": 19.0,
+      "baseline_7d_avg": 12.67,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 50.0,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 6.64,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 15.2,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 3.55,
+      "expected_time_to_sale_days": 1.63,
+      "unified_volume_7d_ema": 122995.77
     }
   ],
   "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": [
@@ -5230,6 +5797,40 @@
         "japanese_removed": 0,
         "suspicious_removed": 0
       }
+    },
+    {
+      "date": "2026-01-30",
+      "source": "tcgplayer_scraper",
+      "floor_price_usd": 704.98,
+      "active_listings_count": 52,
+      "listings_within_10pct_floor": 36,
+      "scrape_timestamp": "2026-01-31T02:07:03.983113",
+      "pages_scraped": 5,
+      "filters_applied": {
+        "japanese_removed": 0,
+        "suspicious_removed": 0
+      },
+      "boxes_added_today": null,
+      "boxes_removed_today": null,
+      "boxes_sold_per_day": 19.0,
+      "daily_volume_usd": 13273.02,
+      "volume_7d": 92911.14,
+      "unified_volume_usd": 398190.6,
+      "market_price_usd": 698.58,
+      "estimated_actual_sales_today": 19.0,
+      "baseline_7d_avg": 9.0,
+      "spike_detected": "VOLUME_SPIKE",
+      "spike_magnitude_pct": 111.1,
+      "avg_boxes_added_per_day": null,
+      "boxes_added_7d_ema": null,
+      "boxes_added_30d_ema": null,
+      "floor_price_1d_change_pct": 6.82,
+      "floor_price_30d_change_pct": null,
+      "boxes_sold_30d_avg": 12.33,
+      "liquidity_score": 10.0,
+      "days_to_20pct_increase": 4.22,
+      "expected_time_to_sale_days": 1.89,
+      "unified_volume_7d_ema": 361057.79
     }
   ]
 }

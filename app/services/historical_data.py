@@ -297,9 +297,9 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             if total_sold > 0:
                 boxes_sold_per_day = total_sold
         
-        # Calculate 1-day change percentage
-        floor_price_1d_change_pct = None
-        if i > 0:
+        # Calculate 1-day change percentage — prefer stored value from Phase 3
+        floor_price_1d_change_pct = entry.get('floor_price_1d_change_pct')
+        if floor_price_1d_change_pct is None and i > 0:
             prev_entry = entries[i - 1]
             prev_price = prev_entry.get('floor_price_usd')
             if prev_price and prev_price > 0:
@@ -375,10 +375,9 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             except:
                 pass  # Keep original if parsing fails
         
-        # Calculate 7-day EMA of daily volume
-        # All volume metrics must be calculated from daily_volume_usd, not estimates
-        unified_volume_7d_ema = None
-        if daily_volume_usd:
+        # Calculate 7-day EMA of daily volume — prefer stored value from Phase 3
+        unified_volume_7d_ema = entry.get('unified_volume_7d_ema')
+        if unified_volume_7d_ema is None and daily_volume_usd:
             if i == 0:
                 # First entry: use current daily volume as initial EMA
                 unified_volume_7d_ema = daily_volume_usd

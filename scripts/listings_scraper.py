@@ -282,8 +282,10 @@ def filter_outlier_prices(listings: List[Dict], market_price: float) -> List[Dic
 
 
 def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
-    """Full filtering pipeline"""
-    logger.info(f"  Raw listings: {len(raw_listings)}")
+    """Full filtering pipeline. All counts are total box quantity (sum of listing quantities), not row count."""
+    raw_rows = len(raw_listings)
+    raw_boxes = sum(l.get('quantity', 1) for l in raw_listings)
+    logger.info(f"  Raw: {raw_rows} listing rows, {raw_boxes} boxes total")
     
     # Step 1: Remove Japanese listings
     listings = [l for l in raw_listings if not is_japanese_listing(l)]
@@ -341,7 +343,8 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
     boxes_within_20pct = sum(l.get('quantity', 1) for l in within_20pct)
     boxes_within_10pct = sum(l.get('quantity', 1) for l in within_10pct)
     
-    logger.info(f"  Floor: ${floor_price:.2f}, Within 20% (to ${threshold_20pct:.2f}): {boxes_within_20pct} boxes; Within 10% (to ${threshold_10pct:.2f}): {boxes_within_10pct} boxes")
+    # boxes_within_20pct / boxes_within_10pct are total box quantity (sum of quantities), not row count
+    logger.info(f"  Floor: ${floor_price:.2f}, Within 20%: {boxes_within_20pct} boxes, Within 10%: {boxes_within_10pct} boxes (all totals = quantity)")
     
     return {
         'floor_price': floor_price,
@@ -358,137 +361,383 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
 # SCRAPING FUNCTIONS
 # ============================================================================
 
-async def scrape_listings_page(page: Page, min_price: float) -> List[Dict]:
-    """Extract listings from current page using JavaScript for reliability"""
+async def scrape_listings_page(page: Page, min_price: float, debug: bool = False) -> List[Dict]:
+    """Extract listings from current page using JavaScript for reliability.
+
+    Three-strategy approach:
+      Strategy A (primary): Anchor on "Add to Cart" buttons, walk up DOM to find
+        listing container, extract price/condition/seller/quantity.
+      Strategy B: Use listing container class selectors (listing-item, etc.)
+        with safe quantity parsing (select/option only).
+      Strategy C (fallback): Find price elements, require condition-like text nearby.
+
+    Quantity is ONLY parsed from <select>/<option> elements or aria-label
+    quantity controls inside the listing card.  Never from arbitrary full text.
+    """
     listings = []
-    
+
     try:
-        # Wait for listings to appear - try multiple selectors (TCGplayer DOM varies)
-        listing_selector = None
-        for selector, timeout_ms in [
-            ('.listing-item', 8000),
-            ('[class*="listing"]', 5000),
-            ('[class*="Listing"]', 5000),
-            ('[data-testid*="listing"]', 3000),
-            ('[class*="listing-item"]', 3000),
-        ]:
-            try:
-                await page.wait_for_selector(selector, timeout=timeout_ms)
-                listing_selector = selector
-                logger.debug(f"  Listings container found: {selector}")
-                break
-            except Exception:
-                continue
-        if not listing_selector:
-            logger.warning("  No listing container found (tried .listing-item, [class*='listing'], etc.) - extracting with broad selector")
-        
-        # Use JavaScript to extract listing data; try multiple selectors if primary missing
-        selector_js = listing_selector or '.listing-item, [class*="listing"], [class*="Listing"]'
-        listings_data = await page.evaluate('''
-            (sel) => {
-                const listings = [];
-                const listingElements = document.querySelectorAll(sel);
-                
-                listingElements.forEach(el => {
-                    try {
-                        // Get full text first to check if it's a box
-                        const fullText = (el.innerText || '').toLowerCase();
-                        
-                        // Skip if it's clearly a single pack (look for pack indicators)
-                        if (fullText.includes('single pack') || 
-                            fullText.includes('1 pack') ||
-                            (fullText.includes('pack') && !fullText.includes('box'))) {
-                            return; // Skip this listing
-                        }
-                        
-                        // Find price - try common TCGplayer price locations first
-                        let price = 0;
-                        const priceSelectors = [
-                            '[class*="price"]',
-                            '[class*="Price"]',
-                            '[data-price]',
-                            '[class*="amount"]',
-                        ];
-                        
-                        for (const sel of priceSelectors) {
-                            const priceEl = el.querySelector(sel);
-                            if (priceEl) {
-                                const text = (priceEl.innerText || priceEl.textContent || '').trim();
-                                const match = text.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/);
-                                if (match) {
-                                    price = parseFloat(match[1].replace(',', ''));
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Fallback: search all text in element
-                        if (price === 0) {
-                            const allText = el.innerText || '';
-                            const match = allText.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/);
-                            if (match) {
-                                price = parseFloat(match[1].replace(',', ''));
-                            }
-                        }
-                        
-                        // Get condition text
-                        const conditionEl = el.querySelector('[class*="condition"], [class*="Condition"]');
-                        const condition = conditionEl ? conditionEl.innerText.trim() : '';
-                        
-                        // Get seller info
-                        const sellerEl = el.querySelector('[class*="seller"], [class*="Seller"]');
-                        const seller = sellerEl ? sellerEl.innerText.trim() : '';
-                        
-                        // Parse quantity ONLY when it looks like the quantity selector: "1" (dropdown) "of 9" = 9 boxes
-                        // Ignore pagination ("Page 1 of 4"), total count ("1 of 24 listings"), and other patterns
-                        let quantity = 1;
-                        const looksLikePagination = /page\s*\d|per\s*page|showing\s*\d+\s*of|\d+\s*of\s*\d+\s*listings/i.test(fullText);
-                        const ofMatch = fullText.match(/(\d+)\s*of\s*(\d+)/i);
-                        if (ofMatch && !looksLikePagination) {
-                            const n = parseInt(ofMatch[2], 10);
-                            if (n >= 1 && n <= 9999) quantity = n;
-                        }
-                        
-                        // Only include if price is valid
-                        if (price > 0) {
-                            listings.push({
-                                price: price,
-                                quantity: quantity,
-                                condition: condition,
-                                seller: seller,
-                                title: fullText.substring(0, 200),
-                                description: '',
-                                variant: ''
-                            });
-                        }
-                    } catch (e) {
-                        // Skip this listing
-                    }
+        # Give page a moment to finish rendering listings
+        await asyncio.sleep(1)
+
+        # In debug mode, dump DOM diagnostics first
+        if debug:
+            diag = await page.evaluate('''() => {
+                const allBtns = document.querySelectorAll('button, a, [role="button"]');
+                const cartBtns = Array.from(allBtns).filter(el => {
+                    const t = (el.textContent || '').trim().toLowerCase();
+                    return t.includes('cart') || t.includes('add');
                 });
-                
-                return listings;
+                const cartTexts = cartBtns.slice(0, 15).map(el => ({
+                    tag: el.tagName,
+                    text: (el.textContent || '').trim().substring(0, 60),
+                    classes: (el.className || '').toString().substring(0, 80),
+                    ariaLabel: el.getAttribute('aria-label') || ''
+                }));
+                const listingEls = document.querySelectorAll('[class*="listing"], [class*="Listing"], .listing-item');
+                const priceEls = document.querySelectorAll('[class*="price"], [class*="Price"]');
+                const priceTexts = Array.from(priceEls).slice(0, 10).map(el => (el.textContent || '').trim().substring(0, 50));
+                return {
+                    totalButtons: allBtns.length,
+                    cartButtons: cartBtns.length,
+                    cartTexts,
+                    listingElements: listingEls.length,
+                    priceElements: priceEls.length,
+                    priceTexts,
+                    bodyTextLength: document.body.innerText.length,
+                    pageTitle: document.title
+                };
+            }''')
+            logger.info(f"  [DEBUG] DOM diagnostics:")
+            logger.info(f"    Page title: {diag.get('pageTitle', '')[:80]}")
+            logger.info(f"    Total buttons/links: {diag.get('totalButtons')}")
+            logger.info(f"    Cart-related buttons: {diag.get('cartButtons')}")
+            logger.info(f"    Listing class elements: {diag.get('listingElements')}")
+            logger.info(f"    Price class elements: {diag.get('priceElements')}")
+            for ct in diag.get('cartTexts', [])[:8]:
+                logger.info(f"      Cart btn: <{ct['tag']}> text={ct['text']!r} class={ct['classes']!r} aria={ct['ariaLabel']!r}")
+            for pt in diag.get('priceTexts', [])[:5]:
+                logger.info(f"      Price el: {pt!r}")
+
+        # Return ALL listings (no min_price filter in JS -- Python filters after for logging)
+        listings_data = await page.evaluate('''
+            () => {
+                const results = [];
+                const seen = new Set();
+
+                // ── helpers ──────────────────────────────────────────────
+                const CONDITIONS = [
+                    'near mint', 'lightly played', 'moderately played',
+                    'heavily played', 'damaged', 'nm', 'lp', 'mp', 'hp',
+                    'mint', 'new', 'sealed', 'factory sealed',
+                    'unopened', 'verified'
+                ];
+
+                function extractPriceWithShipping(el) {
+                    const text = el.innerText || '';
+                    // Find the primary listing price
+                    const m = text.match(/\\$([\\d,]+\\.\\d{2})/);
+                    if (!m) return { price: 0, shipping: 0 };
+                    const basePrice = parseFloat(m[1].replace(',', ''));
+
+                    // Find shipping: "+ $X.XX Shipping" or "Free Shipping" or "+ Shipping: $X.XX"
+                    let shipping = 0;
+                    const shipMatch = text.match(/[\\+]\\s*\\$([\\d,]+\\.\\d{2})\\s*(?:shipping|ship)/i);
+                    if (shipMatch) {
+                        shipping = parseFloat(shipMatch[1].replace(',', ''));
+                    } else if (/free\\s*shipping/i.test(text)) {
+                        shipping = 0;
+                    } else {
+                        // Look for a second dollar amount that might be shipping
+                        // (smaller amount after the main price)
+                        const allPrices = text.match(/\\$([\\d,]+\\.\\d{2})/g);
+                        if (allPrices && allPrices.length >= 2) {
+                            const secondPrice = parseFloat(allPrices[1].replace('$', '').replace(',', ''));
+                            // Only treat as shipping if it's much smaller than base price
+                            if (secondPrice < basePrice * 0.15 && secondPrice > 0) {
+                                shipping = secondPrice;
+                            }
+                        }
+                    }
+                    return { price: basePrice, shipping };
+                }
+
+                function extractCondition(container) {
+                    for (const sel of ['[class*="condition"]', '[class*="Condition"]']) {
+                        const el = container.querySelector(sel);
+                        if (el) return el.innerText.trim();
+                    }
+                    const text = (container.innerText || '').toLowerCase();
+                    for (const c of CONDITIONS) {
+                        if (text.includes(c)) return c;
+                    }
+                    return '';
+                }
+
+                function extractSeller(container) {
+                    let raw = '';
+                    for (const sel of [
+                        '[class*="seller"]', '[class*="Seller"]',
+                        'a[href*="/seller/"]', 'a[href*="/shop/"]',
+                        '[class*="sellerName"]', '[class*="seller-name"]'
+                    ]) {
+                        const el = container.querySelector(sel);
+                        if (el) {
+                            const t = el.innerText.trim();
+                            if (t && t.length < 100) { raw = t; break; }
+                        }
+                    }
+                    if (!raw) {
+                        // Fallback: look for "Sold by X" text pattern
+                        const m = (container.innerText || '').match(/Sold\\s+by\\s+([\\w\\s&'-]+)/i);
+                        if (m) raw = m[1].trim();
+                    }
+                    // Normalize: strip "Sold by " prefix, trim stats
+                    raw = raw.replace(/^Sold\\s+by\\s+/i, '');
+                    // Strip trailing stats like "100% (1234 Sales)" after a newline
+                    raw = raw.split(String.fromCharCode(10))[0].trim();
+                    return raw;
+                }
+
+                function extractQuantity(container) {
+                    // Strategy 1: <select> with <option> elements
+                    const selects = container.querySelectorAll('select');
+                    for (const sel of selects) {
+                        const opts = Array.from(sel.options || []);
+                        if (opts.length > 0) {
+                            const lastVal = parseInt(opts[opts.length - 1].value, 10);
+                            if (!isNaN(lastVal) && lastVal >= 1 && lastVal <= 999) return lastVal;
+                        }
+                        for (const opt of opts) {
+                            const m = opt.text.match(/(\\d+)\\s*of\\s*(\\d+)/i);
+                            if (m) {
+                                const n = parseInt(m[2], 10);
+                                if (n >= 1 && n <= 999) return n;
+                            }
+                        }
+                    }
+                    // Strategy 2: aria-label quantity
+                    const qtyEls = container.querySelectorAll('[aria-label*="uantity"], [aria-label*="qty"], [aria-label*="Qty"]');
+                    for (const el of qtyEls) {
+                        const val = parseInt(el.value || el.textContent, 10);
+                        if (!isNaN(val) && val >= 1 && val <= 999) return val;
+                    }
+                    // Strategy 3: input[type=number]
+                    const inputs = container.querySelectorAll('input[type="number"]');
+                    for (const inp of inputs) {
+                        const max = parseInt(inp.getAttribute('max'), 10);
+                        if (!isNaN(max) && max >= 1 && max <= 999) return max;
+                    }
+                    return 1;
+                }
+
+                function makeListing(container, priceInfo) {
+                    const condition = extractCondition(container);
+                    const seller = extractSeller(container);
+                    const quantity = extractQuantity(container);
+                    const title = (container.innerText || '').substring(0, 200);
+                    const totalPrice = priceInfo.price + priceInfo.shipping;
+                    return {
+                        price: totalPrice,
+                        base_price: priceInfo.price,
+                        shipping: priceInfo.shipping,
+                        quantity, condition, seller, title,
+                        description: '', variant: ''
+                    };
+                }
+
+                function dedupKey(listing) {
+                    return listing.price.toFixed(2) + '|' + listing.seller.toLowerCase().trim();
+                }
+
+                function addListing(listing) {
+                    if (listing.price <= 0) return;
+                    const key = dedupKey(listing);
+                    if (seen.has(key)) return;
+                    seen.add(key);
+                    results.push(listing);
+                }
+
+                // ── Strategy A: "Add to Cart" button anchors ─────────────
+                const cartButtons = Array.from(document.querySelectorAll(
+                    'button, a, [role="button"], [class*="addToCart"], [class*="add-to-cart"]'
+                )).filter(el => {
+                    const t = (el.textContent || '').trim().toLowerCase();
+                    const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+                    const cls = (el.className || '').toString().toLowerCase();
+                    return t === 'add to cart' || t === 'add'
+                        || t.includes('add to cart')
+                        || ariaLabel.includes('add to cart') || ariaLabel.includes('cart')
+                        || cls.includes('addtocart') || cls.includes('add-to-cart');
+                });
+
+                // Only use REAL "Add to Cart" buttons (with aria-label containing seller)
+                // This avoids processing ~100 wrapper divs that also match CSS selectors
+                const realCartButtons = cartButtons.filter(el => {
+                    const al = (el.getAttribute('aria-label') || '').toLowerCase();
+                    return al.includes('add to cart');
+                });
+
+                const _cartDebug = [];
+                for (const btn of realCartButtons) {
+                    const ariaLabel = btn.getAttribute('aria-label') || '';
+
+                    // Walk up from the real button to the listing row
+                    // The listing row contains: seller, condition, price, shipping, quantity, cart button
+                    let container = btn.parentElement;
+                    let bestContainer = null;
+                    let bestPrice = null;
+                    let bestQty = 1;
+
+                    for (let i = 0; i < 8 && container; i++) {
+                        const text = container.innerText || '';
+                        // Stop if container is too large (spans multiple listings)
+                        const dollarCount = (text.match(/\\$/g) || []).length;
+                        if (dollarCount > 6) break;
+
+                        const priceInfo = extractPriceWithShipping(container);
+                        if (priceInfo.price > 0) {
+                            bestContainer = container;
+                            bestPrice = priceInfo;
+
+                            // Check for quantity: "of N" text pattern (e.g. "1 of 3" or "of 3")
+                            const ofMatch = text.match(/(\\d+)\\s+of\\s+(\\d+)/i);
+                            if (ofMatch) {
+                                const n = parseInt(ofMatch[2], 10);
+                                if (n >= 1 && n <= 999) bestQty = n;
+                            }
+                            // Also check extractQuantity (select/input elements)
+                            const eqQty = extractQuantity(container);
+                            if (eqQty > bestQty) bestQty = eqQty;
+                        }
+                        container = container.parentElement;
+                    }
+
+                    if (bestContainer && bestPrice) {
+                        const listing = makeListing(bestContainer, bestPrice);
+                        listing.quantity = bestQty;
+                        // Extract seller from aria-label: "Add to cart, ... from SELLER_NAME"
+                        const fromMatch = ariaLabel.match(/from\\s+(.+)$/i);
+                        if (fromMatch && fromMatch[1].trim()) {
+                            listing.seller = fromMatch[1].trim();
+                        }
+                        addListing(listing);
+                        _cartDebug.push({ ariaLabel: ariaLabel.substring(0, 80), status: 'ok', price: bestPrice.price, qty: bestQty });
+                    } else {
+                        _cartDebug.push({ ariaLabel: ariaLabel.substring(0, 80), status: 'no_price_found' });
+                    }
+                }
+
+                // ── Strategy B: Listing container class selectors ────────
+                if (results.length === 0) {
+                    const containerSels = [
+                        '.listing-item',
+                        '[class*="listing-item"]',
+                        '[class*="ListingItem"]',
+                        '[class*="listingItem"]',
+                        '[class*="product-listing"]',
+                        '[data-testid*="listing"]',
+                    ];
+                    for (const sel of containerSels) {
+                        const els = document.querySelectorAll(sel);
+                        if (els.length === 0) continue;
+                        for (const el of els) {
+                            const text = el.innerText || '';
+                            const dollarCount = (text.match(/\\$/g) || []).length;
+                            if (dollarCount > 3) continue;
+                            const priceInfo = extractPriceWithShipping(el);
+                            if (priceInfo.price > 0) {
+                                addListing(makeListing(el, priceInfo));
+                            }
+                        }
+                        if (results.length > 0) break;
+                    }
+                }
+
+                // ── Strategy C: Broad [class*="listing"] with strict filters ─
+                if (results.length === 0) {
+                    const els = document.querySelectorAll('[class*="listing"], [class*="Listing"]');
+                    for (const el of els) {
+                        const text = el.innerText || '';
+                        if (text.length > 1000) continue;
+                        const dollarCount = (text.match(/\\$/g) || []).length;
+                        if (dollarCount > 3 || dollarCount === 0) continue;
+                        const priceInfo = extractPriceWithShipping(el);
+                        if (priceInfo.price > 0) {
+                            addListing(makeListing(el, priceInfo));
+                        }
+                    }
+                }
+
+                // ── Strategy D (last resort): Price-anchored extraction ──
+                if (results.length === 0) {
+                    const allEls = document.querySelectorAll('*');
+                    for (const el of allEls) {
+                        const text = el.innerText || '';
+                        if (text.length > 500 || text.length < 10) continue;
+                        const priceMatches = text.match(/\\$[\\d,]+\\.\\d{2}/g);
+                        if (!priceMatches || priceMatches.length !== 1) continue;
+                        const priceVal = parseFloat(priceMatches[0].replace('$', '').replace(',', ''));
+                        if (priceVal <= 0) continue;
+                        const lowerText = text.toLowerCase();
+                        const hasCondition = CONDITIONS.some(c => lowerText.includes(c));
+                        if (!hasCondition) continue;
+                        addListing(makeListing(el, { price: priceVal, shipping: 0 }));
+                    }
+                }
+
+                return { listings: results, strategy: results.length > 0 ?
+                    (cartButtons.length > 0 ? 'A:cart_buttons' : 'B/C/D:fallback') : 'none',
+                    cartDebug: _cartDebug };
             }
-        ''', selector_js)
-        
-        listings = listings_data if listings_data else []
-        
-        # Filter by minimum price (exclude listings 19%+ below market price)
+        ''')
+
+        strategy = listings_data.get('strategy', 'unknown') if isinstance(listings_data, dict) else 'unknown'
+        raw_listings = listings_data.get('listings', []) if isinstance(listings_data, dict) else (listings_data or [])
+
+        if debug:
+            logger.info(f"  [DEBUG] Strategy used: {strategy}")
+            cart_debug = listings_data.get('cartDebug', []) if isinstance(listings_data, dict) else []
+            if cart_debug:
+                logger.info(f"  [DEBUG] Cart button results ({len(cart_debug)} real Add to Cart buttons):")
+                for cd in cart_debug:
+                    status = cd.get('status', '?')
+                    aria = cd.get('ariaLabel', '')[:70]
+                    if status == 'ok':
+                        logger.info(f"    OK price=${cd.get('price',0):.2f} qty={cd.get('qty',1)} | {aria}")
+                    else:
+                        logger.info(f"    MISS | {aria}")
+            logger.info(f"  [DEBUG] Raw listings found (before min_price filter): {len(raw_listings)}")
+            for i, l in enumerate(raw_listings[:15]):
+                ship_str = f" +${l.get('shipping', 0):.2f}ship" if l.get('shipping', 0) > 0 else " (free ship)"
+                logger.info(f"    [{i}] ${l.get('base_price', l['price']):.2f}{ship_str} = ${l['price']:.2f} total | qty={l['quantity']} seller={l.get('seller','')[:30]} cond={l.get('condition','')[:20]}")
+            if len(raw_listings) > 15:
+                logger.info(f"    ... and {len(raw_listings) - 15} more")
+
+        # Apply min_price filter in Python (so we can log what was found vs filtered)
         if min_price > 0:
-            listings = [l for l in listings if l.get('price', 0) >= min_price]
-        
+            before = len(raw_listings)
+            listings = [l for l in raw_listings if l.get('price', 0) >= min_price]
+            filtered_out = before - len(listings)
+            if filtered_out > 0 and debug:
+                logger.info(f"  [DEBUG] Filtered {filtered_out} listings below ${min_price:.2f} (kept {len(listings)})")
+        else:
+            listings = raw_listings
+
         logger.debug(f"  Extracted {len(listings)} listings from page (min ${min_price:.2f}, ≥81% of market)")
-                
+
     except Exception as e:
         logger.warning(f"Error extracting listings: {e}")
-    
+
     return listings
 
 
-async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> Optional[Dict]:
+async def scrape_box(page: Page, box_id: str, url: str, market_price: float, debug: bool = False, debug_dir=None) -> Optional[Dict]:
     """Scrape all listings for a single box"""
     logger.info(f"Scraping: {url[:60]}...")
     
     all_listings = []
+    seen_keys = set()  # Cross-page dedup by price+seller
     current_page = 1
     max_pages = 10  # Cap so we don't run forever; real last page is detected by ≤2 listings or sharp drop
     
@@ -522,8 +771,16 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                     break
         except Exception as e:
             logger.debug(f"  Listings tab: {e}")
-        
+
         await asyncio.sleep(1)
+
+        # Debug screenshots after navigation + Listings tab (no extra page load)
+        if debug and debug_dir:
+            try:
+                await page.screenshot(path=str(debug_dir / f"{box_id}_01_listings_tab.png"))
+                logger.info(f"  [DEBUG] Screenshot saved: {box_id}_01_listings_tab.png")
+            except Exception as e:
+                logger.warning(f"  [DEBUG] Screenshot error: {e}")
         
         box_start = time.time()
         BOX_TIMEOUT_SEC = 150  # Per-box max so cron doesn't hang
@@ -536,11 +793,12 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
             
             # Scrape current page (filter for boxes only - $100+)
             logger.info(f"  Scraping page {current_page}...")
-            page_listings = await scrape_listings_page(page, min_price=min_box_price)
+            page_listings = await scrape_listings_page(page, min_price=min_box_price, debug=debug)
             
             if not page_listings:
-                logger.info(f"  Page {current_page}: No box listings found (all < ${min_box_price}), stopping pagination.")
-                break
+                logger.info(f"  Page {current_page}: No box listings above ${min_box_price:.2f}, continuing to next page.")
+                # Don't stop: valid listings may be on later pages (e.g. sorted by price low→high)
+                # Fall through to try next page
             else:
                 # Establish floor + 20% threshold from existing all_listings so we can stop when we hit listings above it (e.g. halfway through page 2)
                 threshold = None
@@ -553,19 +811,27 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                 
                 hit_above_threshold = False
                 added_this_page = 0
+                duped_this_page = 0
                 for l in page_listings:
                     if threshold is not None and l['price'] > threshold:
                         logger.info(f"  Stopping pagination: hit listing at ${l['price']:.2f} (above 20% threshold ${threshold:.2f}); stopping halfway through page {current_page}.")
                         hit_above_threshold = True
                         break
+                    # Cross-page dedup by price+seller
+                    dedup_key = f"{l['price']:.2f}|{(l.get('seller') or '').lower().strip()}"
+                    if dedup_key in seen_keys:
+                        duped_this_page += 1
+                        continue
+                    seen_keys.add(dedup_key)
                     all_listings.append(l)
                     added_this_page += 1
                 
                 if hit_above_threshold:
                     break
                 
-                page_units = sum(l.get('quantity', 1) for l in page_listings[:added_this_page])
-                logger.info(f"  Page {current_page}: {added_this_page} box listings, {page_units} units (≥${min_box_price}, within 20% of floor)")
+                page_units = sum(l.get('quantity', 1) for l in all_listings[-added_this_page:]) if added_this_page > 0 else 0
+                dedup_str = f", {duped_this_page} cross-page dupes skipped" if duped_this_page > 0 else ""
+                logger.info(f"  Page {current_page}: {added_this_page} box listings, {page_units} units (≥${min_box_price}, within 20% of floor){dedup_str}")
                 # Past last real page: many sites (e.g. EB-02) only have 2 pages; page 3+ returns 1–2 bogus/duplicate listings
                 if current_page >= 2 and len(page_listings) <= 2:
                     logger.info(f"  Stopping pagination: page {current_page} has ≤2 listings (likely past last page).")
@@ -576,227 +842,46 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
                     break
                 prev_page_count = len(page_listings)
             
-            # Try to go to next page - scroll to bottom so pagination "1, 2, 3" is in view (TCGplayer)
+            # Navigate to next page via URL (?page=N) -- this is reliable on TCGplayer
+            # and avoids click-based pagination which can navigate to wrong pages (e.g. card set pages).
             next_page_num = current_page + 1
-            page_button = None
-            logger.info(f"  Trying to go to page {next_page_num}...")
+            logger.info(f"  Navigating to page {next_page_num} via URL...")
 
-            # Scroll to bottom and wait so pagination is visible and stable (TCGplayer often lazy-loads)
-            for _ in range(2):
+            try:
+                from urllib.parse import parse_qs, urlencode, urlparse
+                # Always build the pagination URL from the ORIGINAL product URL (not current page.url
+                # which may have drifted). This keeps us on the product's listings.
+                parsed = urlparse(url)
+                base = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                params = parse_qs(parsed.query) if parsed.query else {}
+                params['page'] = [str(next_page_num)]
+                # Preserve Language param
+                if 'Language' not in params:
+                    params['Language'] = ['English']
+                new_url = base + '?' + urlencode(params, doseq=True)
+                await page.goto(new_url, wait_until='domcontentloaded', timeout=30000)
+                await asyncio.sleep(3)
+                # Scroll down to trigger lazy-load, then scroll to listings area
+                for scroll_y in [400, 800, 1200]:
+                    await page.evaluate(f'window.scrollTo(0, {scroll_y})')
+                    await asyncio.sleep(0.3)
+
+                # Click Listings tab again (URL navigation may reset to default tab)
                 try:
-                    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                    await asyncio.sleep(2)
-                    await page.evaluate('window.scrollTo(0, document.body.scrollHeight - 300)')
-                    await asyncio.sleep(1)
+                    for loc in [page.locator('text=Listings').first, page.get_by_text('Listings', exact=True).first]:
+                        if await loc.count() > 0:
+                            await loc.click()
+                            await asyncio.sleep(2)
+                            break
                 except Exception:
                     pass
 
-            # Strategy 4: URL with page param (TCGplayer may use ?page=2 or no query on first load)
-            try:
-                from urllib.parse import parse_qs, urlencode, urlparse
-                parsed = urlparse(page.url)
-                base = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-                params = parse_qs(parsed.query) if parsed.query else {}
-                page_param = next((k for k in ('page', 'pageNumber', 'p', 'pageNum') if k in params), 'page')
-                params[page_param] = [str(next_page_num)]
-                new_url = base + '?' + urlencode(params, doseq=True)
-                await page.goto(new_url, wait_until='domcontentloaded', timeout=30000)
-                await asyncio.sleep(human_delay() + 2)
-                await page.evaluate('window.scrollTo(0, 500)')
                 await asyncio.sleep(1)
                 current_page = next_page_num
-                logger.info(f"  Navigated to page {current_page} via URL")
-                continue
+                logger.info(f"  Navigated to page {current_page} via URL: {new_url[:80]}...")
             except Exception as e:
-                logger.debug(f"  URL pagination failed: {e}")
-
-            # Strategy 0: TCGplayer-style numbered buttons "1", "2", "3" at bottom - find and click
-            # Prefer Playwright locator with longer timeout so we wait for pagination to be visible
-            clicked = False
-            try:
-                for loc in [
-                    page.get_by_role('link', name=str(next_page_num)),
-                    page.get_by_role('button', name=str(next_page_num)),
-                    page.get_by_text(str(next_page_num), exact=True),
-                ]:
-                    if await loc.count() > 0:
-                        await loc.first.scroll_into_view_if_needed(timeout=10000)
-                        await asyncio.sleep(0.5)
-                        await loc.first.click(timeout=5000)
-                        clicked = True
-                        logger.debug(f"  Clicked page {next_page_num} via get_by_role/get_by_text")
-                        break
-            except Exception as e:
-                logger.debug(f"  Playwright locator click: {e}")
-            if not clicked:
-                try:
-                    clicked = await page.evaluate('''(nextPageNum) => {
-                        const want = String(nextPageNum);
-                        const sel = "button, a[href], [role=\\"button\\"]";
-                        const all = Array.from(document.querySelectorAll(sel)).filter(el => {
-                            const t = (el.textContent || "").trim();
-                            return t === want;
-                        });
-                        const notDisabled = all.filter(el => !el.disabled && el.getAttribute("aria-disabled") !== "true");
-                        const withSiblings = (arr) => arr.filter(el => {
-                            const parent = el.parentElement;
-                            if (!parent) return false;
-                            const sibs = Array.from(parent.children).map(c => (c.textContent || "").trim());
-                            return sibs.some(t => /^\\d+$/.test(t));
-                        });
-                        const toClick = (withSiblings(notDisabled).length ? withSiblings(notDisabled)[0] : notDisabled[0])
-                            || (withSiblings(all).length ? withSiblings(all)[0] : all[0]);
-                        if (toClick) {
-                            toClick.scrollIntoView({ block: "center" });
-                            toClick.click();
-                            return true;
-                        }
-                        return false;
-                    }''', next_page_num)
-                except Exception as e:
-                    logger.debug(f"  Numbered-buttons JS error: {e}")
-            if clicked:
-                await asyncio.sleep(human_delay() + 2)
-                await page.evaluate('window.scrollTo(0, 500)')
-                await asyncio.sleep(1)
-                current_page = next_page_num
-                logger.info(f"  Navigated to page {current_page} via pagination click")
-                continue
-
-            # Strategy 1: class*="pagination" or "Page" (button/link with page number)
-            try:
-                for selector in (
-                    '[class*="pagination"] button, [class*="pagination"] a',
-                    '[class*="Page"] button, [class*="Page"] a',
-                    'button[class*="page"], a[class*="page"]',
-                    '[data-page]',
-                    'nav button, nav a',
-                ):
-                    els = await page.query_selector_all(selector)
-                    for btn in els:
-                        try:
-                            text = (await btn.inner_text()).strip()
-                            classes = (await btn.get_attribute('class') or '').lower()
-                            if 'active' in classes or 'current' in classes or 'selected' in classes:
-                                continue
-                            if text == str(next_page_num):
-                                page_button = btn
-                                logger.debug(f"  Found page {next_page_num} via selector: {selector[:40]}...")
-                                break
-                        except Exception:
-                            pass
-                    if page_button:
-                        break
-            except Exception as e:
-                logger.debug(f"  Pagination selector error: {e}")
-
-            # Strategy 2: any button/link with exact text = page number (e.g. "2") - no nav requirement
-            if not page_button:
-                try:
-                    all_buttons = await page.query_selector_all('button, a[href]')
-                    for btn in all_buttons:
-                        try:
-                            text = (await btn.inner_text()).strip()
-                            if text != str(next_page_num):
-                                continue
-                            if await btn.get_attribute('disabled') or await btn.get_attribute('aria-disabled') == 'true':
-                                continue
-                            # Prefer if it has a sibling that is also a single digit (1, 3) = pagination row
-                            has_sibling_number = await btn.evaluate('''el => {
-                                const p = el.parentElement;
-                                if (!p) return false;
-                                return Array.from(p.children).some(c => /^\\d+$/.test((c.textContent||"").trim()));
-                            }''')
-                            if has_sibling_number or not page_button:
-                                page_button = btn
-                                logger.debug(f"  Found page {next_page_num} via text match (1,2,3)")
-                                if has_sibling_number:
-                                    break
-                        except Exception:
-                            pass
-                except Exception as e:
-                    logger.debug(f"  Text match pagination error: {e}")
-
-            # Strategy 3: "Next" or ">" (use locator - no :has-text in query_selector)
-            if not page_button:
-                try:
-                    for label in ('Next', 'next', '>', '›', '»'):
-                        loc = page.locator('button, a').filter(has_text=label).first
-                        n = await loc.count()
-                        if n > 0:
-                            el = await loc.element_handle()
-                            if el:
-                                is_disabled = await el.get_attribute('disabled') or await el.get_attribute('aria-disabled')
-                                if not is_disabled:
-                                    page_button = el
-                                    logger.debug(f"  Found next page via label: {label}")
-                                    break
-                    if not page_button:
-                        for sel in ('[aria-label*="next"]', '[aria-label*="Next"]'):
-                            aria_next = await page.query_selector(sel)
-                            if aria_next and await aria_next.get_attribute('aria-disabled') != 'true':
-                                page_button = aria_next
-                                logger.debug("  Found next page via aria-label")
-                                break
-                except Exception as e:
-                    logger.debug(f"  Next button error: {e}")
-
-            # Strategy 3b: Playwright get_by_role / get_by_text for "2" - short timeout to avoid 30s scroll hang
-            SCROLL_TIMEOUT_MS = 8000
-            if not page_button:
-                try:
-                    for loc in [
-                        page.get_by_role('button', name=str(next_page_num)),
-                        page.get_by_role('link', name=str(next_page_num)),
-                        page.get_by_text(str(next_page_num), exact=True),
-                    ]:
-                        if await loc.count() > 0:
-                            await loc.first.scroll_into_view_if_needed(timeout=SCROLL_TIMEOUT_MS)
-                            await asyncio.sleep(0.3)
-                            await loc.first.click()
-                            page_button = True  # mark as handled
-                            logger.debug(f"  Clicked page {next_page_num} via get_by_role/get_by_text")
-                            break
-                    if page_button:
-                        await asyncio.sleep(human_delay() + 2)
-                        await page.evaluate('window.scrollTo(0, 500)')
-                        await asyncio.sleep(1)
-                        current_page = next_page_num
-                        continue
-                except Exception as e:
-                    logger.debug(f"  get_by_role/get_by_text pagination: {e}")
-
-            if page_button:
-                # Click page number button (try even if marked disabled - some sites use it for styling)
-                is_disabled = await page_button.get_attribute('disabled')
-                aria_disabled = await page_button.get_attribute('aria-disabled')
-                classes = await page_button.get_attribute('class') or ''
-                marked_disabled = is_disabled or aria_disabled == 'true' or 'disabled' in classes.lower()
-
-                try:
-                    logger.debug(f"  Clicking page {next_page_num} button..." + (" (marked disabled, trying anyway)" if marked_disabled else ""))
-                    await page_button.scroll_into_view_if_needed(timeout=8000)
-                    await asyncio.sleep(0.5)
-                    # Use force=True if marked disabled so Playwright doesn't refuse the click
-                    await page_button.click(force=marked_disabled)
-                    
-                    # Wait for new page to load
-                    await asyncio.sleep(human_delay() + 2)  # Extra wait for page load
-                    
-                    # Scroll to trigger lazy loading
-                    await page.evaluate('window.scrollTo(0, 500)')
-                    await asyncio.sleep(1)
-                    
-                    current_page = next_page_num
-                    logger.debug(f"  Navigated to page {current_page}")
-                except Exception as e:
-                    if marked_disabled:
-                        logger.info(f"  No more pages available (page {next_page_num} button disabled, click failed)")
-                    else:
-                        logger.warning(f"  Error clicking page {next_page_num} button: {e}")
-                    break
-            else:
-                logger.warning(f"  Could not navigate to page {next_page_num} (URL and click strategies failed); stopping with {len(all_listings)} listings from page(s) 1–{current_page}")
+                logger.warning(f"  URL pagination to page {next_page_num} failed: {e}")
+                logger.info(f"  Stopping with {len(all_listings)} listings from pages 1-{current_page}")
                 break
         
         # Process listings
@@ -805,7 +890,23 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
         result['url'] = url
         result['pages_scraped'] = current_page
         result['scrape_timestamp'] = datetime.now().isoformat()
-        
+
+        # ── Result validation warnings ──────────────────────────────
+        alc = result.get('listings_within_20pct', 0)
+        floor = result.get('floor_price')
+        if alc and alc > 500:
+            logger.warning(f"  Suspiciously high count ({alc}) for {box_id} -- possible extraction error")
+        if floor and market_price and market_price > 0:
+            ratio = floor / market_price
+            if ratio > 3 or ratio < 0.33:
+                logger.warning(f"  Floor ${floor:.2f} differs from market ${market_price:.2f} by >{3}x for {box_id}")
+
+        if debug:
+            logger.info(f"  [DEBUG] Final result for {box_id}:")
+            logger.info(f"    floor_price={floor}, listings_within_20pct={alc}")
+            logger.info(f"    listings_within_10pct={result.get('listings_within_10pct_floor')}")
+            logger.info(f"    pages_scraped={current_page}, raw_listings_collected={len(all_listings)}")
+
         return result
         
     except Exception as e:
@@ -813,19 +914,37 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float) -> 
         return None
 
 
-async def run_scraper():
-    """Main scraper entry point"""
+async def run_scraper(debug_box_id: Optional[str] = None):
+    """Main scraper entry point.
+
+    Args:
+        debug_box_id: If set, only scrape this single box in headed mode with
+                      screenshots saved to logs/debug_screenshots/.
+    """
+    debug = debug_box_id is not None
+
     logger.info("=" * 60)
-    logger.info("Starting TCGplayer Listings Scraper")
+    if debug:
+        logger.info(f"Starting TCGplayer Listings Scraper [DEBUG MODE: {debug_box_id}]")
+    else:
+        logger.info("Starting TCGplayer Listings Scraper")
     logger.info("=" * 60)
-    
+
     # Get browser profile for this session
     profile = get_random_profile()
     logger.info(f"Browser profile: {profile['user_agent'][:50]}...")
-    
-    # Get products to scrape
-    products = get_daily_products()
-    
+
+    # In debug mode, only scrape the specified box (no noise)
+    if debug:
+        if debug_box_id not in TCGPLAYER_URLS:
+            logger.error(f"Box ID {debug_box_id} not found in TCGPLAYER_URLS. Valid IDs:")
+            for bid, burl in TCGPLAYER_URLS.items():
+                logger.error(f"  {bid}: {burl[:60]}")
+            return [], [debug_box_id]
+        products = [(debug_box_id, TCGPLAYER_URLS[debug_box_id])]
+    else:
+        products = get_daily_products()
+
     # Load market prices from historical data (for outlier detection)
     market_prices = {}
     try:
@@ -837,10 +956,15 @@ async def run_scraper():
                 market_prices[box_id] = latest.get('market_price_usd') or latest.get('floor_price_usd', 0)
     except Exception as e:
         logger.warning(f"Could not load market prices: {e}")
-    
+
     results = []
     errors = []
-    
+
+    # Prepare debug screenshot directory
+    if debug:
+        debug_dir = Path('logs/debug_screenshots')
+        debug_dir.mkdir(parents=True, exist_ok=True)
+
     async with async_playwright() as p:
         # Use Playwright's Chromium (works in Docker). Use channel="chrome" only when Chrome is installed (e.g. local).
         use_chrome = os.environ.get("SCRAPER_USE_CHROME", "").lower() in ("1", "true", "yes")
@@ -860,14 +984,14 @@ async def run_scraper():
             "--mute-audio",
         ]
         launch_options = {
-            "headless": True,
+            "headless": not debug,  # headed mode for debug
             "args": launch_args,
         }
-        if use_chrome:
+        if use_chrome or debug:
             launch_options["channel"] = "chrome"
             launch_options["headless"] = False
         browser = await p.chromium.launch(**launch_options)
-        
+
         # Smaller viewport in low-memory (e.g. Render 512Mi) to reduce rendering memory
         viewport = profile['viewport']
         if low_mem:
@@ -877,16 +1001,16 @@ async def run_scraper():
             user_agent=profile['user_agent'],
             viewport=viewport,
         )
-        
+
         page = await context.new_page()
         stealth = Stealth()
         await stealth.apply_stealth_async(page)
-        
+
         # Visit homepage first (natural behavior)
         logger.info("Visiting TCGplayer homepage...")
         await page.goto('https://www.tcgplayer.com', wait_until='domcontentloaded', timeout=60000)
         await asyncio.sleep(human_delay())
-        
+
         # Scrape each product
         for box_id, url in products:
             if box_id.startswith('noise_'):
@@ -898,27 +1022,49 @@ async def run_scraper():
                 except:
                     pass
                 continue
-            
-            # Real target - scrape data
+
+            # Real target - scrape data (scrape_box handles navigation + Listings tab click)
             market_price = market_prices.get(box_id, 0)
-            result = await scrape_box(page, box_id, url, market_price)
-            
+            result = await scrape_box(page, box_id, url, market_price, debug=debug, debug_dir=debug_dir if debug else None)
+
+            # Debug: screenshot after scraping (may fail if browser crashed during scrape)
+            if debug:
+                try:
+                    await page.screenshot(path=str(debug_dir / f"{box_id}_03_after_scrape.png"))
+                    logger.info(f"  [DEBUG] Screenshot saved: {box_id}_03_after_scrape.png")
+                except Exception as e:
+                    logger.warning(f"  [DEBUG] Could not take after-scrape screenshot: {e}")
+
             if result:
                 results.append(result)
             else:
                 errors.append(box_id)
-            
+
             await asyncio.sleep(human_delay())
-        
+
         await browser.close()
-    
+
     # Save results
     logger.info("=" * 60)
     logger.info(f"Scraping complete: {len(results)} success, {len(errors)} errors")
-    
-    if results:
+
+    if debug and results:
+        # In debug mode, print a full summary instead of saving
+        for r in results:
+            logger.info("=" * 60)
+            logger.info(f"[DEBUG] RESULT for {r['box_id']}:")
+            logger.info(f"  floor_price:              ${r.get('floor_price') or 0:.2f}")
+            logger.info(f"  listings_within_20pct:    {r.get('listings_within_20pct', 0)}")
+            logger.info(f"  listings_within_10pct:    {r.get('listings_within_10pct_floor', 0)}")
+            logger.info(f"  pages_scraped:            {r.get('pages_scraped', 0)}")
+            logger.info(f"  filters_applied:          {r.get('filters_applied', {})}")
+            logger.info(f"  scrape_timestamp:         {r.get('scrape_timestamp')}")
+            logger.info(f"  Screenshots in: logs/debug_screenshots/")
+        logger.info("=" * 60)
+        logger.info("[DEBUG] Skipping save_results() in debug mode.")
+    elif results:
         save_results(results)
-    
+
     return results, errors
 
 
@@ -965,9 +1111,17 @@ def save_results(results: List[Dict]):
                 if yesterday_alc is not None:
                     yesterday_alc = int(yesterday_alc)
                 break
-        delta = (boxes_within_20pct - yesterday_alc) if yesterday_alc is not None else None
-        boxes_added_today = max(0, delta) if delta is not None else None
-        boxes_removed_today = max(0, -delta) if delta is not None else None
+
+        # Guard: if yesterday's count looks like bad data (>100), don't compute delta
+        # This prevents the first correct run from showing a huge negative delta from old inflated data
+        if yesterday_alc is not None and yesterday_alc > 100:
+            logger.warning(f"Yesterday's count ({yesterday_alc}) for {box_id} looks inflated, skipping delta")
+            boxes_added_today = None
+            boxes_removed_today = None
+        else:
+            delta = (boxes_within_20pct - yesterday_alc) if yesterday_alc is not None else None
+            boxes_added_today = max(0, delta) if delta is not None else None
+            boxes_removed_today = max(0, -delta) if delta is not None else None
 
         # Build scraper entry; preserve Apify sales/volume from existing today entry if present
         # (Phase 1 Apify runs first and writes sales/volume; we must not wipe them from JSON)
@@ -1021,7 +1175,7 @@ def save_results(results: List[Dict]):
         add_remove = ""
         if boxes_added_today is not None or boxes_removed_today is not None:
             add_remove = f" | added={boxes_added_today or 0}, removed={boxes_removed_today or 0} (vs yesterday)"
-        logger.info(f"Saved {box_id}: listings={boxes_within_20pct} (boxes within 20% of floor) @ ${result.get('floor_price', 0):.2f}{add_remove}")
+        logger.info(f"Saved {box_id}: {boxes_within_20pct} boxes (total quantity within 20% of floor) @ ${result.get('floor_price', 0):.2f}{add_remove}")
     
     # Backup and save
     backup_path = Path(f'data/historical_entries_backup_{today}.json')
@@ -1039,9 +1193,16 @@ def save_results(results: List[Dict]):
 # ============================================================================
 
 if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(description='TCGplayer Listings Scraper')
+    parser.add_argument('--debug', type=str, metavar='BOX_ID', default=None,
+                        help='Run in debug mode for a single box ID (headed browser, screenshots, verbose output)')
+    args = parser.parse_args()
+
     # Ensure logs directory exists
     Path('logs').mkdir(exist_ok=True)
-    
+
     # Run scraper
-    asyncio.run(run_scraper())
+    asyncio.run(run_scraper(debug_box_id=args.debug))
 

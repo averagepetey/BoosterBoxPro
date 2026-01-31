@@ -215,17 +215,19 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             avg_boxes_added_per_day = avg_boxes_added_per_day or 0
         # Only expose 30-day average when we have 30 entries; otherwise UI shows daily (boxes_added_today)
 
-        days_to_20pct = None
-        if avg_sales_30d and avg_sales_30d > 0 and active_listings:
-            net_burn_rate = avg_sales_30d - avg_boxes_added_per_day
-            if net_burn_rate > 0.05:
-                days_to_20pct = round(active_listings / net_burn_rate, 2)
-                if days_to_20pct > 180:
+        # Prefer pre-computed days_to_20pct from Phase 3
+        days_to_20pct = latest.get("days_to_20pct_increase")
+        if days_to_20pct is None:
+            if avg_sales_30d and avg_sales_30d > 0 and active_listings:
+                net_burn_rate = avg_sales_30d - avg_boxes_added_per_day
+                if net_burn_rate > 0.05:
+                    days_to_20pct = round(active_listings / net_burn_rate, 2)
+                    if days_to_20pct > 180:
+                        days_to_20pct = 180.0
+                elif net_burn_rate <= 0:
+                    days_to_20pct = None
+                else:
                     days_to_20pct = 180.0
-            elif net_burn_rate <= 0:
-                days_to_20pct = None
-            else:
-                days_to_20pct = 180.0
 
         liquidity_score = latest.get("liquidity_score")
         if liquidity_score is None and avg_sales_30d and avg_sales_30d > 0:
@@ -268,15 +270,19 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
         supply = supply_10pct if supply_10pct is not None and supply_10pct > 0 else active_listings
         sales_per_day = boxes_sold_per_day or avg_sales_30d
         listings_added_per_day = avg_boxes_added_per_day or 0.0
-        expected_days_to_sell = None
-        if supply and supply > 0 and sales_per_day and sales_per_day > 0:
-            net_burn = sales_per_day - listings_added_per_day
-            if net_burn > 0.05:
-                expected_days_to_sell = round(max(1.0, min(365.0, supply / net_burn)), 2)
+        # Prefer pre-computed expected_time_to_sale_days from Phase 3
+        expected_days_to_sell = latest.get("expected_time_to_sale_days")
+        if expected_days_to_sell is None:
+            if supply and supply > 0 and sales_per_day and sales_per_day > 0:
+                net_burn = sales_per_day - listings_added_per_day
+                if net_burn > 0.05:
+                    expected_days_to_sell = round(max(1.0, min(365.0, supply / net_burn)), 2)
 
         boxes_added_today = latest.get("boxes_added_today")
         if boxes_added_today is None and latest_db_metric and latest_db_metric.boxes_added_today is not None:
             boxes_added_today = int(latest_db_metric.boxes_added_today)
+        boxes_added_7d_ema = latest.get("boxes_added_7d_ema")
+        boxes_added_30d_ema = latest.get("boxes_added_30d_ema")
         box_metrics = {
             "floor_price_usd": float(current_floor_override) if current_floor_override is not None else latest.get("floor_price_usd"),
             "floor_price_1d_change_pct": latest.get("floor_price_1d_change_pct"),
@@ -294,6 +300,8 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "boxes_sold_30d_avg": avg_sales_30d,
             "expected_days_to_sell": expected_days_to_sell,
             "expected_time_to_sale_days": expected_days_to_sell,
+            "boxes_added_7d_ema": boxes_added_7d_ema,
+            "boxes_added_30d_ema": boxes_added_30d_ema,
         }
         try:
             changes = get_box_volume_change_pcts(str(db_box.id))
