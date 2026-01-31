@@ -498,14 +498,20 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">
                       {box.metrics.avg_boxes_added_per_day !== null && box.metrics.avg_boxes_added_per_day !== undefined
-                        ? 'Avg Daily Added'
-                        : 'Added Today'}
+                        ? 'Avg Daily Change'
+                        : 'Listed Today'}
                     </div>
-                    <div className="text-2xl font-bold text-white">
+                    <div className={`text-2xl font-bold ${
+                      (() => {
+                        const val = box.metrics.avg_boxes_added_per_day ?? box.metrics.boxes_added_today ?? null;
+                        if (val === null || val === undefined) return 'text-white';
+                        return val < 0 ? 'text-red-400' : val > 0 ? 'text-green-400' : 'text-white';
+                      })()
+                    }`}>
                       {box.metrics.avg_boxes_added_per_day !== null && box.metrics.avg_boxes_added_per_day !== undefined
-                        ? (Math.round(box.metrics.avg_boxes_added_per_day * 10) / 10).toString()
+                        ? (Math.round(box.metrics.avg_boxes_added_per_day * 10) / 10 > 0 ? '+' : '') + (Math.round(box.metrics.avg_boxes_added_per_day * 10) / 10).toString()
                         : box.metrics.boxes_added_today !== null && box.metrics.boxes_added_today !== undefined
-                        ? box.metrics.boxes_added_today.toString()
+                        ? (box.metrics.boxes_added_today > 0 ? '+' : '') + box.metrics.boxes_added_today.toString()
                         : box.metrics.boxes_added_7d_ema !== null && box.metrics.boxes_added_7d_ema !== undefined
                         ? (Math.round(box.metrics.boxes_added_7d_ema * 10) / 10).toString()
                         : box.metrics.boxes_added_30d_ema !== null && box.metrics.boxes_added_30d_ema !== undefined

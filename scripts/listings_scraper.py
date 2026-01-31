@@ -1120,7 +1120,7 @@ def save_results(results: List[Dict]):
             boxes_removed_today = None
         else:
             delta = (boxes_within_20pct - yesterday_alc) if yesterday_alc is not None else None
-            boxes_added_today = max(0, delta) if delta is not None else None
+            boxes_added_today = delta
             boxes_removed_today = max(0, -delta) if delta is not None else None
 
         # Build scraper entry; preserve Apify sales/volume from existing today entry if present
