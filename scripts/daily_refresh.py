@@ -44,16 +44,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def run_listings_scraper():
+async def run_listings_scraper(debug_box_id: str = None):
     """Run the listings scraper to get active listings count"""
     logger.info("=" * 50)
     logger.info("Starting Phase 2: Listings Scraper...")
     logger.info("=" * 50)
-    
+
     try:
         from scripts.listings_scraper import run_scraper
-        
-        results, errors = await run_scraper()
+
+        results, errors = await run_scraper(debug_box_id=debug_box_id)
         
         logger.info(f"✅ Scraper Success: {len(results)} boxes")
         logger.info(f"❌ Scraper Errors: {len(errors)} boxes")
@@ -84,6 +84,14 @@ def main():
     logger.info("Starting daily TCGplayer refresh (Apify + Scraper)")
     logger.info(f"⏰ Start time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 70)
+
+    # Parse --debug <box_id> if present
+    debug_box_id = None
+    if "--debug" in sys.argv:
+        idx = sys.argv.index("--debug")
+        if idx + 1 < len(sys.argv):
+            debug_box_id = sys.argv[idx + 1]
+            logger.info(f"Debug mode: will only scrape box {debug_box_id}")
 
     # Random delay (0–30 min) when run by cron so actual work happens at a random time within the 1pm window
     skip_delay = "--no-delay" in sys.argv
@@ -188,7 +196,7 @@ def main():
         scraper_success = 0
         scraper_errors = 0
         try:
-            scraper_success, scraper_errors = asyncio.run(run_listings_scraper())
+            scraper_success, scraper_errors = asyncio.run(run_listings_scraper(debug_box_id=debug_box_id))
             status["scraper"]["success_count"] = scraper_success
             status["scraper"]["error_count"] = scraper_errors
             status["scraper"]["completed"] = True
@@ -212,6 +220,27 @@ def main():
             save_completion_status(status)
             return 1
     
+    # Phase 3: Rolling Metrics (non-fatal — raw data from Phase 1+2 is already saved)
+    logger.info("")
+    logger.info("=" * 50)
+    logger.info("Phase 3: Rolling Metrics — Computing Derived Metrics")
+    logger.info("=" * 50)
+    status["rolling_metrics"] = {"completed": False, "error": None}
+    try:
+        from scripts.rolling_metrics import compute_rolling_metrics
+
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        rm_result = compute_rolling_metrics(target_date=today_str)
+        status["rolling_metrics"]["completed"] = True
+        status["rolling_metrics"]["boxes_updated"] = rm_result.get("boxes_updated", 0)
+        status["rolling_metrics"]["db_updated"] = rm_result.get("db_updated", 0)
+        logger.info(f"✅ Phase 3 complete: {rm_result.get('boxes_updated', 0)} boxes, {rm_result.get('db_updated', 0)} DB rows")
+    except Exception as e:
+        status["rolling_metrics"]["error"] = str(e)
+        logger.warning(f"⚠️  Phase 3 (Rolling Metrics) failed (non-fatal): {e}")
+        import traceback
+        logger.warning(traceback.format_exc())
+
     # Calculate duration
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
