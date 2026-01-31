@@ -127,13 +127,13 @@ export function Navigation({ sticky = true }: NavigationProps) {
               <>
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="px-5 py-2 mt-6 rounded-lg border border-white/40 text-white hover:bg-white/10 hover:border-white/70 font-medium transition-all flex items-center"
+                  className="px-5 py-2 rounded-lg border border-white/40 text-white hover:bg-white/10 hover:border-white/70 font-medium transition-all flex items-center"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => setIsSignupModalOpen(true)}
-                  className="px-5 py-2 mt-6 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition-all"
+                  className="px-5 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition-all"
                 >
                   Sign Up
                 </button>
