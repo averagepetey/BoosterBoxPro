@@ -11,130 +11,73 @@ import Link from 'next/link';
 import { NewReleaseArticle } from '@/components/leaderboard/NewReleases';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
-// Mock data - will be replaced with API call
 const mockArticles: Record<string, NewReleaseArticle> = {
-  '6': {
-    id: '6',
-    title: 'TCG Market Update',
-    set_name: 'Market Analysis',
-    set_code: 'UPDATE',
-    release_date: '2026-01-04',
-    excerpt: 'Latest market trends and insights for TCG collectors.',
-    youtube_url: 'https://www.youtube.com/watch?v=f_2fgWeN8e4',
-    game_type: 'One Piece',
-    author: 'TCG Insights',
-    published_date: '2026-01-04',
-    image_url: null,
-  },
-  '5': {
-    id: '5',
-    title: 'Latest TCG Release Analysis',
-    set_name: 'New Set Review',
-    set_code: 'NEW',
-    release_date: '2026-01-04',
-    excerpt: 'In-depth analysis and review of the latest TCG release.',
-    youtube_url: 'https://www.youtube.com/watch?v=QkS6Llq4Y6Y',
-    game_type: 'One Piece',
-    author: 'TCG Insights',
-    published_date: '2026-01-04',
-    image_url: null,
-  },
   '1': {
     id: '1',
-    title: 'OP-14: The Next Big Set',
-    set_name: 'The Next Adventure',
+    title: 'Is OP-14 A GOOD or BAD Investment? | One Piece TCG: Market Deep Dive',
+    set_name: 'One Piece TCG',
     set_code: 'OP-14',
-    release_date: '2025-02-15',
-    excerpt: 'Get ready for the latest One Piece set featuring new characters and powerful cards.',
-    youtube_url: 'https://www.youtube.com/watch?v=67ueP4okd9I&t=4414s',
+    release_date: '2026-01-30',
+    excerpt: 'Deep dive into OP-14 investment potential and market analysis.',
+    youtube_url: 'https://www.youtube.com/watch?v=iduWQenG0sk',
     game_type: 'One Piece',
-    author: 'TCG Insights',
-    published_date: '2025-01-10',
-    image_url: null,
+    author: 'Treasure Theory',
   },
   '2': {
     id: '2',
-    title: 'EB-02: Expansion Announcement',
-    set_name: 'Eastern Blue Expansion',
-    set_code: 'EB-02',
-    release_date: '2025-03-01',
-    excerpt: 'The Eastern Blue saga continues with this exciting new expansion set.',
-    youtube_url: 'https://www.youtube.com/watch?v=example2',
+    title: 'The One Piece Market Keeps Reaching New Highs',
+    set_name: 'One Piece TCG',
+    set_code: 'MARKET',
+    release_date: '2026-01-28',
+    excerpt: 'The One Piece TCG market continues its upward trend with record-breaking prices.',
+    youtube_url: 'https://www.youtube.com/watch?v=V9IjBRhpen8',
     game_type: 'One Piece',
-    author: 'Card Collector',
-    published_date: '2025-01-08',
-    image_url: null,
+    author: 'Straw Hat Speculator',
   },
   '3': {
     id: '3',
-    title: 'PRB-02: Premium Release',
-    set_name: 'Premium Booster',
-    set_code: 'PRB-02',
-    release_date: '2025-02-28',
-    excerpt: 'Premium booster box with exclusive cards and special artwork.',
-    youtube_url: 'https://www.youtube.com/watch?v=example3',
+    title: 'Ok Now This Is Getting Insane, OP13 Is $700?!',
+    set_name: 'One Piece TCG',
+    set_code: 'OP-13',
+    release_date: '2026-01-25',
+    excerpt: 'OP-13 booster box prices have skyrocketed to $700 — breaking down why.',
+    youtube_url: 'https://www.youtube.com/watch?v=GlDJKnF7GV8',
     game_type: 'One Piece',
-    author: 'TCG Insights',
-    published_date: '2025-01-05',
-    image_url: null,
+    author: "Sam's Pirated Stocks",
   },
   '4': {
     id: '4',
-    title: 'Set Review: OP-13 Analysis',
-    set_name: 'Carrying on His Will',
-    set_code: 'OP-13',
-    release_date: '2024-12-01',
-    excerpt: 'Deep dive into the OP-13 set mechanics and meta implications.',
-    youtube_url: 'https://www.youtube.com/watch?v=example4',
+    title: 'EB-03 Is About To TEST One Piece Collectors | One Piece TCG Market Watch',
+    set_name: 'One Piece TCG',
+    set_code: 'EB-03',
+    release_date: '2026-01-22',
+    excerpt: 'EB-03 is coming and it could shake up the collector market significantly.',
+    youtube_url: 'https://www.youtube.com/watch?v=8Br85Z6dBto',
     game_type: 'One Piece',
-    author: 'Meta Analyst',
-    published_date: '2024-12-15',
-    image_url: null,
+    author: 'Kaizoku Ice TCG',
   },
-};
-
-// Extended article content (full article text)
-const mockArticleContent: Record<string, string> = {
-  '1': `
-    <h2>Introduction</h2>
-    <p>The One Piece TCG community is buzzing with excitement as we approach the release of OP-14: The Next Adventure. This highly anticipated set promises to shake up the meta with new mechanics and powerful cards.</p>
-    
-    <h2>New Mechanics</h2>
-    <p>OP-14 introduces several innovative mechanics that will change how players approach deck building. The new "Adventure" keyword allows players to explore different paths during gameplay, creating more strategic depth.</p>
-    
-    <h2>Key Cards</h2>
-    <p>Several standout cards have been revealed, including powerful leaders and game-changing events. The set features new artwork from the latest One Piece arcs, making it a must-have for collectors.</p>
-    
-    <h2>Meta Implications</h2>
-    <p>Early analysis suggests this set will significantly impact the competitive scene. Players should prepare for new strategies and counter-plays as the meta evolves.</p>
-    
-    <h2>Release Information</h2>
-    <p>OP-14: The Next Adventure releases on February 15, 2025. Pre-orders are now available at participating retailers.</p>
-  `,
-  '2': `
-    <h2>Eastern Blue Expansion</h2>
-    <p>The Eastern Blue saga continues with EB-02, bringing new characters and story elements from this iconic arc.</p>
-    
-    <h2>What to Expect</h2>
-    <p>This expansion focuses on the early adventures of the Straw Hat Pirates, featuring nostalgic cards and powerful new abilities.</p>
-  `,
-  '3': `
-    <h2>Premium Booster Box</h2>
-    <p>PRB-02 offers collectors and players exclusive cards with special artwork and enhanced rarity.</p>
-    
-    <h2>Exclusive Content</h2>
-    <p>This premium release includes alternate art cards and special promotional materials not available in standard sets.</p>
-  `,
-  '4': `
-    <h2>OP-13 Set Review</h2>
-    <p>Now that OP-13 has been in circulation, we can provide a comprehensive analysis of its impact on the meta.</p>
-    
-    <h2>Performance Analysis</h2>
-    <p>The set has proven to be highly competitive, with several cards becoming staples in top-tier decks.</p>
-    
-    <h2>Future Outlook</h2>
-    <p>As we look ahead to future sets, OP-13's influence will continue to shape deck building strategies.</p>
-  `,
+  '5': {
+    id: '5',
+    title: 'Bandai, we need to talk. | Ep 16 | Buds Watch (One Piece TCG)',
+    set_name: 'One Piece TCG',
+    set_code: 'TALK',
+    release_date: '2026-01-20',
+    excerpt: "A candid discussion about Bandai's recent decisions and their impact on the TCG market.",
+    youtube_url: 'https://www.youtube.com/watch?v=yaBXoTsIEoo',
+    game_type: 'One Piece',
+    author: 'TCG Buds',
+  },
+  '6': {
+    id: '6',
+    title: "OP14 Prices Don't Make Sense! — Here's Why I'm Waiting | One Piece TCG",
+    set_name: 'One Piece TCG',
+    set_code: 'OP-14',
+    release_date: '2026-01-18',
+    excerpt: 'Breaking down why current OP-14 pricing may not be sustainable.',
+    youtube_url: 'https://www.youtube.com/watch?v=pdpIrmOkBpI',
+    game_type: 'One Piece',
+    author: 'Daily Dose Of TCG',
+  },
 };
 
 export default function ArticleDetailPage() {
@@ -142,14 +85,11 @@ export default function ArticleDetailPage() {
   const router = useRouter();
   const articleId = params?.id as string;
   const [article, setArticle] = useState<NewReleaseArticle | null>(null);
-  const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Replace with API call
     if (articleId && mockArticles[articleId]) {
       setArticle(mockArticles[articleId]);
-      setContent(mockArticleContent[articleId] || '');
       setIsLoading(false);
     } else {
       setIsLoading(false);
@@ -326,18 +266,6 @@ export default function ArticleDetailPage() {
                   {article.excerpt}
                 </p>
               </div>
-
-              {/* Full Article Content */}
-              {content && (
-                <div 
-                  className="article-content"
-                  style={{
-                    color: 'rgba(255, 255, 255, 0.9)',
-                    lineHeight: '1.8',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
-              )}
 
               {/* Footer Actions */}
               <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-4">
