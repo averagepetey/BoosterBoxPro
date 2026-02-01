@@ -3,7 +3,7 @@
  * Handles API communication and caching
  */
 
-const DEFAULT_API_BASE_URL = 'http://localhost:8000';
+const DEFAULT_API_BASE_URL = 'https://boosterboxpro.onrender.com';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 // In-memory cache for box data

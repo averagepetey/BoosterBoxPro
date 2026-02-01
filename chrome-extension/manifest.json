@@ -13,8 +13,8 @@
     "https://tcgplayer.com/*",
     "https://www.ebay.com/*",
     "https://ebay.com/*",
-    "http://localhost:8000/*",
-    "http://127.0.0.1:8000/*",
+    "https://boosterboxpro.onrender.com/*",
+    "https://*.onrender.com/*",
     "https://*.run.app/*"
   ],
   "options_ui": {

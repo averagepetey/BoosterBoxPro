@@ -100,11 +100,35 @@ class AuthResponse(BaseModel):
     is_admin: bool = False
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_new_password: str
+
+    class Config:
+        extra = "forbid"
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password_complexity(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+
 class UserResponse(BaseModel):
     id: str
     email: str
     is_admin: bool = False
     subscription_status: str = "inactive"
+    discord_handle: Optional[str] = None
+    created_at: Optional[str] = None
 
 
 def hash_password(password: str) -> str:
@@ -298,22 +322,15 @@ async def register(
     
     # Create new user
     hashed_password = hash_password(register_data.password)
-    
-    # Set up 7-day trial period
-    from datetime import timezone
-    now = datetime.now(timezone.utc)
-    trial_end = now + timedelta(days=7)
-    
-    # Create new user with trial period
+
+    # Pioneer program: free access, no trial timer
     new_user = User(
         email=register_data.email,
         hashed_password=hashed_password,
         is_active=True,
         role=UserRole.USER.value,
         token_version=1,
-        trial_started_at=now,
-        trial_ended_at=trial_end,
-        subscription_status="trial"
+        subscription_status="pioneer"
     )
     
     db.add(new_user)
@@ -449,8 +466,46 @@ async def login(
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information (admin status from DB)"""
     return UserResponse(
-        id=str(current_user.id), 
-        email=current_user.email, 
-        is_admin=current_user.is_admin,  # Property checks DB role
-        subscription_status=current_user.subscription_status or "inactive"
+        id=str(current_user.id),
+        email=current_user.email,
+        is_admin=current_user.is_admin,
+        subscription_status=current_user.subscription_status or "inactive",
+        discord_handle=current_user.discord_handle,
+        created_at=current_user.created_at.isoformat() if current_user.created_at else None,
     )
+
+
+@router.post("/change-password", response_model=AuthResponse)
+async def change_password(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Change the current user's password.
+
+    Validates current password, enforces complexity on new password,
+    invalidates all existing tokens, and returns a fresh access token.
+    """
+    body = await request.json()
+    data = ChangePasswordRequest(**body)
+
+    if data.new_password != data.confirm_new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New passwords do not match",
+        )
+
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+
+    current_user.hashed_password = hash_password(data.new_password)
+    current_user.invalidate_tokens()
+    await db.commit()
+    await db.refresh(current_user)
+
+    token = create_access_token(str(current_user.id), current_user.token_version)
+    return AuthResponse(access_token=token, token_type="bearer", is_admin=current_user.is_admin)

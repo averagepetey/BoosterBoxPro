@@ -25,16 +25,8 @@ export function getApiBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  
-  // In browser, use the same hostname as the frontend (works for mobile)
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    // If accessing via IP address (mobile), use that IP for API
-    // If localhost, keep localhost
-    return `http://${hostname}:8000`;
-  }
-  
-  // Server-side fallback
-  return 'http://localhost:8000';
+
+  // Production default
+  return 'https://boosterboxpro.onrender.com';
 }
 

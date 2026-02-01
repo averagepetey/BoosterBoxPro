@@ -17,6 +17,23 @@ from app.services.stripe_service import cancel_subscription, StripeServiceError
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+class UpdateProfileRequest(BaseModel):
+    """Request model for profile updates"""
+    discord_handle: Optional[str] = None
+
+    class Config:
+        extra = "forbid"
+
+
+class ProfileResponse(BaseModel):
+    """Response model for profile data"""
+    id: str
+    email: str
+    discord_handle: Optional[str]
+    subscription_status: str
+    created_at: Optional[str]
+
+
 class SubscriptionInfoResponse(BaseModel):
     """Response model for subscription information"""
     has_access: bool
@@ -49,10 +66,44 @@ async def get_current_user_info(
         "email": current_user.email,
         "role": current_user.role,
         "subscription_status": current_user.subscription_status,
+        "discord_handle": current_user.discord_handle,
         "trial_started_at": current_user.trial_started_at.isoformat() if current_user.trial_started_at else None,
         "trial_ended_at": current_user.trial_ended_at.isoformat() if current_user.trial_ended_at else None,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
     }
+
+
+@router.put("/me/profile", response_model=ProfileResponse)
+async def update_profile(
+    profile_data: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update current user's profile.
+
+    Currently supports updating discord_handle.
+    """
+    if profile_data.discord_handle is not None:
+        handle = profile_data.discord_handle.strip()
+        if len(handle) > 37:
+            from fastapi import HTTPException, status as http_status
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Discord handle must be 37 characters or fewer",
+            )
+        current_user.discord_handle = handle if handle else None
+
+    await db.commit()
+    await db.refresh(current_user)
+
+    return ProfileResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        discord_handle=current_user.discord_handle,
+        subscription_status=current_user.subscription_status,
+        created_at=current_user.created_at.isoformat() if current_user.created_at else None,
+    )
 
 
 @router.get("/me/subscription", response_model=SubscriptionInfoResponse)

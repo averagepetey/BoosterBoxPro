@@ -5,8 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-// Use NEXT_PUBLIC_ prefix for client-side access, or fallback to localhost
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:8000';
+// Use NEXT_PUBLIC_ prefix for client-side access, or fallback to production backend
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://boosterboxpro.onrender.com';
 
 // Export route config to increase timeout (backend does heavy DB + historical batch)
 export const maxDuration = 45; // 45 seconds max for this route

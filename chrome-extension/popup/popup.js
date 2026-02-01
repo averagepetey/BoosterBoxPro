@@ -5,7 +5,7 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   const dashboardLink = document.getElementById('dashboard-link');
-  dashboardLink.href = 'http://localhost:3000/dashboard';
+  dashboardLink.href = 'https://boosterboxpro.vercel.app/dashboard';
 
   const sidebarBtn = document.getElementById('open-sidebar-btn');
   sidebarBtn.addEventListener('click', async () => {

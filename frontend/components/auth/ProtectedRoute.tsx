@@ -110,7 +110,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     const hasActiveAccess = (
       user.subscription_status === 'active' ||
       user.subscription_status === 'trial' ||
-      user.subscription_status === 'trialing' // Stripe trialing status (shouldn't happen, but just in case)
+      user.subscription_status === 'trialing' ||
+      user.subscription_status === 'pioneer'
     );
     
     if (!hasActiveAccess) {

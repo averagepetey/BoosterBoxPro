@@ -182,10 +182,10 @@ async def create_checkout_session(
             },
             
             # Success URL - user returns here after successful checkout
-            success_url=f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
+            success_url=f"{os.getenv('FRONTEND_URL', 'https://boosterboxpro.vercel.app')}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
             
             # Cancel URL - user returns here if they cancel
-            cancel_url=f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/signup?cancelled=true",
+            cancel_url=f"{os.getenv('FRONTEND_URL', 'https://boosterboxpro.vercel.app')}/signup?cancelled=true",
             
             # Metadata to track user and tier
             metadata={
@@ -474,3 +474,55 @@ async def verify_subscription(
             status_code=400,
             detail="Unable to verify subscription"  # Don't expose Stripe error details
         )
+
+
+@router.post("/create-portal-session")
+async def create_portal_session(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a Stripe Customer Portal session.
+
+    Allows users to manage their subscription, payment method, and invoices.
+    Requires the user to have an existing Stripe customer ID.
+    """
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    from app.routers.auth import get_current_user as _get_user
+    from fastapi import Request as _Req
+
+    # Resolve current user from token
+    from app.routers.auth import decode_access_token
+    payload = decode_access_token(credentials.credentials)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    stmt = select(User).where(User.id == UUID(user_id))
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    if not user.stripe_customer_id:
+        raise HTTPException(
+            status_code=400,
+            detail="No billing account found. You'll be able to manage billing after subscribing to a paid plan.",
+        )
+
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe is not configured")
+
+    try:
+        frontend_url = os.getenv("FRONTEND_URL", "https://boosterboxpro.vercel.app")
+        portal_session = stripe.billing_portal.Session.create(
+            customer=user.stripe_customer_id,
+            return_url=f"{frontend_url}/account",
+        )
+        return {"url": portal_session.url}
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe portal session error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to create billing portal session")

@@ -114,7 +114,7 @@ if settings.environment == "development":
     cors_origin_regex = None
     logger.info("🔓 CORS: Development mode - allowing all origins")
 else:
-    cors_origins = settings.cors_origins_list + ["http://localhost:3000", "http://localhost:3001"]
+    cors_origins = settings.cors_origins_list
     cors_credentials = True
     # Allow any https *.vercel.app so Vercel production + preview URLs work without listing each one
     cors_origin_regex = r"https://.*\.vercel\.app"

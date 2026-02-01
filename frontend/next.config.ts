@@ -14,7 +14,7 @@ import type { NextConfig } from "next";
 const isProd = process.env.NODE_ENV === 'production';
 
 // API URL for connect-src (production should be your real domain)
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://boosterboxpro.onrender.com';
 
 /**
  * CSP Directives

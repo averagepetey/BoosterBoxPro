@@ -4,6 +4,7 @@ Provides market data for the BoosterBoxPro Chrome extension.
 Uses same source of truth as box detail: app.services.box_detail_service.build_box_detail_data.
 """
 
+import os
 from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional, List
 from sqlalchemy import select, desc
@@ -63,7 +64,7 @@ async def _get_extension_box_response(db, set_code: str, listing_price: Optional
             "game_type": data["game_type"],
             "image_url": data["image_url"],
             "reprint_risk": data["reprint_risk"],
-            "dashboard_url": f"http://localhost:3000/boxes/{data['id']}",
+            "dashboard_url": f"{os.getenv('FRONTEND_URL', 'https://boosterboxpro.vercel.app')}/boxes/{data['id']}",
         },
         "metrics": metrics,
         "price_history": [],

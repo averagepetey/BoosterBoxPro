@@ -54,6 +54,7 @@ class User(Base):
     stripe_customer_id = Column(String(255), nullable=True, unique=True, index=True)
     stripe_subscription_id = Column(String(255), nullable=True)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
+    discord_handle = Column(String(255), nullable=True)
     
     @property
     def is_admin(self) -> bool:
@@ -77,18 +78,22 @@ class User(Base):
         - User has active subscription (subscription_status == 'active')
         - User has trial subscription from Stripe (subscription_status == 'trial')
         """
+        # Pioneer users have full access
+        if self.subscription_status == 'pioneer':
+            return True
+
         # Check if trial is still active (based on trial_ended_at date)
         if self.trial_ended_at and self.trial_ended_at > datetime.utcnow():
             return True
-        
+
         # Check if subscription is active (paid subscription)
         if self.subscription_status == 'active':
             return True
-        
+
         # Check if subscription is in trial (Stripe trialing status)
         if self.subscription_status == 'trial':
             return True
-        
+
         return False
     
     def days_remaining_in_trial(self) -> Optional[int]:

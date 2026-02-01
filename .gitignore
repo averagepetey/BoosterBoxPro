@@ -37,8 +37,22 @@ ENV/
 
 # Environment Variables
 .env
+.env.bak
 .env.local
 .env.*.local
+
+# Internal docs — keep out of public repo
+CLAUDE.md
+CLAUDE_HANDOFF.md
+Planning Documents/
+Progress Documents/
+Setup Guides/
+*.md
+!README.md
+!frontend/README.md
+!chrome-extension/README.md
+!chrome-extension/icons/README.md
+!frontend/public/images/boxes/README.md
 
 # Database
 *.db

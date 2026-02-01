@@ -21,6 +21,8 @@ export interface UserResponse {
   email: string;
   is_admin: boolean;
   subscription_status: string;
+  discord_handle?: string;
+  created_at?: string;
 }
 
 export interface AuthResponse {

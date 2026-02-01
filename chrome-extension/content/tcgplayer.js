@@ -438,7 +438,7 @@
     // Update image if available
     const img = panelElement.querySelector('.bbp-box-image');
     if (box.image_url) {
-      img.src = `http://localhost:3000${box.image_url}`;
+      img.src = `https://boosterboxpro.vercel.app${box.image_url}`;
       img.style.display = 'block';
     } else {
       img.style.display = 'none';
@@ -477,7 +477,7 @@
     const listingsAdded = metrics.boxes_added_today != null ? metrics.boxes_added_today : (metrics.avg_boxes_added_per_day != null ? metrics.avg_boxes_added_per_day : null);
     document.getElementById('bbp-listings-added').textContent = listingsAdded != null ? formatNumber(Math.round(listingsAdded)) + '/day' : '—';
     const dashboardLink = panelElement.querySelector('.bbp-dashboard-link');
-    dashboardLink.href = 'http://localhost:3000/boxes/' + box.id;
+    dashboardLink.href = 'https://boosterboxpro.vercel.app/boxes/' + box.id;
     currentBoxData = data;
     const cmp1 = document.getElementById('bbp-compare-box1-name');
     if (cmp1) cmp1.textContent = box.set_code || currentSetCode;
@@ -746,9 +746,9 @@
       updatePanel({
         matched: false,
         error: isTimeout
-          ? "Request timed out. Is the backend running at http://localhost:8000? Start it with python main.py, then click Retry."
-          : "Could not reach the extension or API. Refresh this page, ensure the backend is running at http://localhost:8000, then click Retry.",
-        apiBaseUrl: 'http://localhost:8000'
+          ? "Request timed out. The BoosterBoxPro API may be waking up — click Retry in a moment."
+          : "Could not reach the BoosterBoxPro API. Click Retry in a moment.",
+        apiBaseUrl: 'https://boosterboxpro.onrender.com'
       });
     }
   }

@@ -49,18 +49,22 @@ def has_active_access(user: User) -> bool:
     Returns:
         True if user has active access, False otherwise
     """
+    # Pioneer users have full access
+    if user.subscription_status == 'pioneer':
+        return True
+
     # Check if trial is still active (based on trial_ended_at date)
     if check_trial_status(user):
         return True
-    
+
     # Check if subscription is active (paid subscription)
     if user.subscription_status == 'active':
         return True
-    
+
     # Check if subscription is in trial (Stripe trialing status)
     if user.subscription_status == 'trial':
         return True
-    
+
     return False
 
 
