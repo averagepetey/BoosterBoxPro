@@ -37,7 +37,7 @@ const mockNewReleases: NewReleaseArticle[] = [
     set_code: 'ANALYSIS',
     release_date: '2026-01-05',
     excerpt: 'Comprehensive market analysis and trends for TCG collectors.',
-    youtube_url: 'https://www.youtube.com/watch?v=rUu_WpCVGxQ',
+    youtube_url: 'https://www.youtube.com/watch?v=iduWQenG0sk',
     game_type: 'One Piece',
     author: 'TCG Insights',
     published_date: '2026-01-05',
@@ -49,7 +49,7 @@ const mockNewReleases: NewReleaseArticle[] = [
     set_code: 'UPDATE',
     release_date: '2026-01-04',
     excerpt: 'Latest market trends and insights for TCG collectors.',
-    youtube_url: 'https://www.youtube.com/watch?v=f_2fgWeN8e4',
+    youtube_url: 'https://www.youtube.com/watch?v=V9IjBRhpen8',
     game_type: 'One Piece',
     author: 'TCG Insights',
     published_date: '2026-01-04',
@@ -61,7 +61,7 @@ const mockNewReleases: NewReleaseArticle[] = [
     set_code: 'NEW',
     release_date: '2026-01-04',
     excerpt: 'In-depth analysis and review of the latest TCG release.',
-    youtube_url: 'https://www.youtube.com/watch?v=QkS6Llq4Y6Y',
+    youtube_url: 'https://www.youtube.com/watch?v=GlDJKnF7GV8',
     game_type: 'One Piece',
     author: 'TCG Insights',
     published_date: '2026-01-04',
@@ -73,7 +73,7 @@ const mockNewReleases: NewReleaseArticle[] = [
     set_code: 'OP-14',
     release_date: '2025-02-15',
     excerpt: 'Get ready for the latest One Piece set featuring new characters and powerful cards.',
-    youtube_url: 'https://www.youtube.com/watch?v=67ueP4okd9I&t=4414s',
+    youtube_url: 'https://www.youtube.com/watch?v=8Br85Z6dBto',
     game_type: 'One Piece',
     author: 'TCG Insights',
     published_date: '2025-01-10',
@@ -85,7 +85,7 @@ const mockNewReleases: NewReleaseArticle[] = [
     set_code: 'EB-02',
     release_date: '2025-03-01',
     excerpt: 'The Eastern Blue saga continues with this exciting new expansion set.',
-    youtube_url: 'https://www.youtube.com/watch?v=example2',
+    youtube_url: 'https://www.youtube.com/watch?v=yaBXoTsIEoo',
     game_type: 'One Piece',
     author: 'Card Collector',
     published_date: '2025-01-08',
@@ -97,22 +97,10 @@ const mockNewReleases: NewReleaseArticle[] = [
     set_code: 'PRB-02',
     release_date: '2025-02-28',
     excerpt: 'Premium booster box with exclusive cards and special artwork.',
-    youtube_url: 'https://www.youtube.com/watch?v=example3',
+    youtube_url: 'https://www.youtube.com/watch?v=pdpIrmOkBpI',
     game_type: 'One Piece',
     author: 'TCG Insights',
     published_date: '2025-01-05',
-  },
-  {
-    id: '4',
-    title: 'Set Review: OP-13 Analysis',
-    set_name: 'Carrying on His Will',
-    set_code: 'OP-13',
-    release_date: '2024-12-01',
-    excerpt: 'Deep dive into the OP-13 set mechanics and meta implications.',
-    youtube_url: 'https://www.youtube.com/watch?v=example4',
-    game_type: 'One Piece',
-    author: 'Meta Analyst',
-    published_date: '2024-12-15',
   },
 ];
 
@@ -163,13 +151,6 @@ export function NewReleases({ articles = mockNewReleases }: NewReleasesProps) {
     <div className="mb-4 sm:mb-6">
       <div className="flex items-center justify-between mb-1 sm:mb-2">
         <h2 className="text-base sm:text-lg font-semibold text-white">New Releases</h2>
-        <Link
-          href="/releases"
-          className="text-xs sm:text-sm text-white/85 hover:text-white transition-all hover:translate-x-1 flex items-center gap-1 min-h-[44px] px-2"
-        >
-          See all
-          <span className="text-lg">→</span>
-        </Link>
       </div>
       
       {/* Single Container with Horizontal Scroll */}
