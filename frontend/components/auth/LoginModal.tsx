@@ -10,16 +10,18 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToSignup?: () => void;
+  onForgotPassword?: () => void;
 }
 
-export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, onSwitchToSignup, onForgotPassword }: LoginModalProps) {
   const router = useRouter();
-  const { login, isLoggingIn, loginError, isAuthenticated } = useAuth();
+  const { login, isLoggingIn, loginError, isAuthenticated, googleLogin } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -257,7 +259,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
               className="text-sm text-green-400 hover:text-green-300 underline"
               onClick={() => {
                 onClose();
-                // TODO: Navigate to forgot password page
+                onForgotPassword?.();
               }}
             >
               Forgot password?
@@ -280,6 +282,19 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
             )}
           </button>
           
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-white/40">or continue with</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* Google Sign In */}
+          <GoogleSignInButton
+            onSuccess={(credential) => googleLogin({ credential })}
+            disabled={isLoggingIn}
+          />
+
           {/* Sign Up Link */}
           <p className="text-center text-sm text-white/70 mt-4">
             Don't have an account?{' '}

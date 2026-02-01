@@ -122,6 +122,40 @@ class ChangePasswordRequest(BaseModel):
         return v
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    class Config:
+        extra = "forbid"
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+    confirm_new_password: str
+
+    class Config:
+        extra = "forbid"
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password_complexity(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+    class Config:
+        extra = "forbid"
+
+
 class UserResponse(BaseModel):
     id: str
     email: str
@@ -129,6 +163,8 @@ class UserResponse(BaseModel):
     subscription_status: str = "inactive"
     discord_handle: Optional[str] = None
     created_at: Optional[str] = None
+    email_verified: bool = False
+    auth_provider: str = "email"
 
 
 def hash_password(password: str) -> str:
@@ -210,6 +246,45 @@ def decode_access_token(token: str) -> dict:
     except JWTError as e:
         logger.warning(f"JWT validation failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def create_purpose_token(user_id: str, purpose: str, expires_minutes: int) -> str:
+    """Create a short-lived JWT for a specific purpose (password_reset, email_verification)."""
+    now = datetime.utcnow()
+    payload = {
+        "sub": str(user_id),
+        "purpose": purpose,
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
+        "iat": now,
+        "exp": now + timedelta(minutes=expires_minutes),
+    }
+    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+
+
+def decode_purpose_token(token: str, expected_purpose: str) -> str:
+    """Decode a purpose token and return the user_id. Raises HTTPException on failure."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
+            issuer=JWT_ISSUER,
+            audience=JWT_AUDIENCE,
+            options={"verify_exp": True, "verify_iss": True, "verify_aud": True},
+        )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="This link has expired. Please request a new one.")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired link.")
+
+    if payload.get("purpose") != expected_purpose:
+        raise HTTPException(status_code=400, detail="Invalid link.")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid link.")
+    return user_id
 
 
 async def get_current_user(
@@ -336,7 +411,15 @@ async def register(
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
-    
+
+    # Send verification email (fire-and-forget — don't block registration)
+    try:
+        from app.services.email_service import send_verification_email
+        token = create_purpose_token(str(new_user.id), "email_verification", expires_minutes=1440)
+        send_verification_email(new_user.email, token)
+    except Exception as e:
+        logger.warning(f"Failed to send verification email during registration: {e}")
+
     return {"message": "User registered successfully", "email": new_user.email}
 
 
@@ -439,6 +522,14 @@ async def login(
             detail="User account is inactive"
         )
     
+    # Google-only users have no password — return same generic error
+    if not user.hashed_password:
+        logger.warning(f"Login failed: Google-only account {login_data.email[:3]}*** attempted password login from {client_ip}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+
     # Verify password
     if not verify_password(login_data.password, user.hashed_password):
         # Log failed attempt (but don't reveal which field was wrong)
@@ -472,6 +563,8 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         subscription_status=current_user.subscription_status or "inactive",
         discord_handle=current_user.discord_handle,
         created_at=current_user.created_at.isoformat() if current_user.created_at else None,
+        email_verified=current_user.email_verified,
+        auth_provider=current_user.auth_provider or "email",
     )
 
 
@@ -509,3 +602,194 @@ async def change_password(
 
     token = create_access_token(str(current_user.id), current_user.token_version)
     return AuthResponse(access_token=token, token_type="bearer", is_admin=current_user.is_admin)
+
+
+@router.post("/forgot-password")
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a password reset email. Always returns success to prevent email enumeration."""
+    body = await request.json()
+    data = ForgotPasswordRequest(**body)
+
+    stmt = select(User).where(User.email == data.email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if user and user.is_active:
+        token = create_purpose_token(str(user.id), "password_reset", expires_minutes=15)
+        try:
+            from app.services.email_service import send_password_reset_email
+            send_password_reset_email(user.email, token)
+        except Exception as e:
+            logger.error(f"Failed to send password reset email: {e}")
+
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+
+@router.post("/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset password using a token from the reset email."""
+    body = await request.json()
+    data = ResetPasswordRequest(**body)
+
+    if data.new_password != data.confirm_new_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    user_id = decode_purpose_token(data.token, "password_reset")
+
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid reset link.")
+
+    stmt = select(User).where(User.id == user_uuid)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user or not user.is_active:
+        raise HTTPException(status_code=400, detail="Invalid reset link.")
+
+    user.hashed_password = hash_password(data.new_password)
+    user.invalidate_tokens()
+    await db.commit()
+
+    return {"message": "Password has been reset successfully. Please log in with your new password."}
+
+
+@router.post("/verify-email")
+@limiter.limit("10/minute")
+async def verify_email(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Verify email address using a token from the verification email."""
+    body = await request.json()
+    token = body.get("token", "")
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token is required.")
+
+    user_id = decode_purpose_token(token, "email_verification")
+
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
+
+    stmt = select(User).where(User.id == user_uuid)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid verification link.")
+
+    user.email_verified = True
+    await db.commit()
+
+    return {"message": "Email verified successfully.", "email_verified": True}
+
+
+@router.post("/resend-verification")
+@limiter.limit("3/minute")
+async def resend_verification(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Resend verification email to the authenticated user."""
+    if current_user.email_verified:
+        return {"message": "Email is already verified."}
+
+    token = create_purpose_token(str(current_user.id), "email_verification", expires_minutes=1440)
+    try:
+        from app.services.email_service import send_verification_email
+        send_verification_email(current_user.email, token)
+    except Exception as e:
+        logger.error(f"Failed to resend verification email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send verification email.")
+
+    return {"message": "Verification email sent."}
+
+
+@router.post("/google", response_model=AuthResponse)
+@limiter.limit("10/minute")
+async def google_auth(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Authenticate with a Google ID token. Creates account if needed."""
+    body = await request.json()
+    data = GoogleAuthRequest(**body)
+
+    # Verify the Google ID token
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+
+        if not settings.google_client_id:
+            raise HTTPException(status_code=500, detail="Google OAuth is not configured")
+
+        idinfo = google_id_token.verify_oauth2_token(
+            data.credential,
+            google_requests.Request(),
+            settings.google_client_id,
+        )
+    except ValueError as e:
+        logger.warning(f"Google token verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    google_sub = idinfo.get("sub")
+    email = idinfo.get("email")
+    email_verified_by_google = idinfo.get("email_verified", False)
+
+    if not email or not google_sub:
+        raise HTTPException(status_code=401, detail="Google account missing email")
+
+    # 1. Check if user exists by google_id
+    stmt = select(User).where(User.google_id == google_sub)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # 2. Check if user exists by email (link Google to existing account)
+        stmt = select(User).where(User.email == email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if user:
+            user.google_id = google_sub
+            if email_verified_by_google:
+                user.email_verified = True
+            await db.commit()
+            await db.refresh(user)
+        else:
+            # 3. Create new user
+            user = User(
+                email=email,
+                hashed_password=None,
+                is_active=True,
+                role=UserRole.USER.value,
+                token_version=1,
+                subscription_status="pioneer",
+                email_verified=email_verified_by_google,
+                google_id=google_sub,
+                auth_provider="google",
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="User account is inactive")
+
+    token_version = user.token_version or 1
+    access_token = create_access_token(str(user.id), token_version)
+
+    return AuthResponse(access_token=access_token, token_type="bearer", is_admin=user.is_admin)

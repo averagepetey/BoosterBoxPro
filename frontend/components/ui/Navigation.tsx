@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect, useRef } from 'react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { SignupModal } from '@/components/auth/SignupModal';
+import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 import { WelcomeHelpModal, getWelcomeSeen, setWelcomeSeen } from './WelcomeHelpModal';
 
 interface NavigationProps {
@@ -23,6 +24,7 @@ export function Navigation({ sticky = true }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const hasCheckedWelcome = useRef(false);
   const wasFirstTimeWelcome = useRef(false);
@@ -254,21 +256,35 @@ export function Navigation({ sticky = true }: NavigationProps) {
       </div>
       
       {/* Login Modal */}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSwitchToSignup={() => {
           setIsLoginModalOpen(false);
           setIsSignupModalOpen(true);
         }}
+        onForgotPassword={() => {
+          setIsLoginModalOpen(false);
+          setIsForgotPasswordModalOpen(true);
+        }}
       />
-      
+
       {/* Signup Modal */}
-      <SignupModal 
-        isOpen={isSignupModalOpen} 
+      <SignupModal
+        isOpen={isSignupModalOpen}
         onClose={() => setIsSignupModalOpen(false)}
         onSwitchToLogin={() => {
           setIsSignupModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordModalOpen}
+        onClose={() => setIsForgotPasswordModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsForgotPasswordModalOpen(false);
           setIsLoginModalOpen(true);
         }}
       />

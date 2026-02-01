@@ -101,6 +101,13 @@ class Settings(BaseSettings):
     stripe_price_id_pro: Optional[str] = None
     stripe_product_id_pro_plus: Optional[str] = None
     
+    # Email Service (Resend)
+    resend_api_key: Optional[str] = None
+    frontend_url: str = "https://boosterboxpro.vercel.app"
+
+    # Google OAuth
+    google_client_id: Optional[str] = None
+
     # Apify API (TCGplayer scraping)
     apify_api_token: Optional[str] = None
     

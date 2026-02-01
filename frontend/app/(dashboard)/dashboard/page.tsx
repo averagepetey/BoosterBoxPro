@@ -8,6 +8,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
+import { EmailVerificationBanner } from '@/components/auth/EmailVerificationBanner';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { LeaderboardSkeleton } from '@/components/leaderboard/LeaderboardSkeleton';
 import { NewReleases } from '@/components/leaderboard/NewReleases';
@@ -170,7 +171,11 @@ function DashboardContent() {
           }}
         >
           <Navigation />
-          
+
+          <div className="container mx-auto px-6 pt-4">
+            <EmailVerificationBanner />
+          </div>
+
           <div className="container mx-auto px-6 flex-1 flex flex-col justify-center">
             {/* Header */}
             <div 

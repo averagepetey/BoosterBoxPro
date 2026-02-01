@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react';
 import { getApiBaseUrl } from '../../lib/api/client';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
+import { GoogleSignInButton } from './GoogleSignInButton';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -18,6 +20,7 @@ interface SignupModalProps {
 }
 
 export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalProps) {
+  const { googleLogin } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -342,6 +345,20 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
               <span>Create Free Account</span>
             )}
           </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-1">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[10px] text-white/40">or continue with</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* Google Sign Up */}
+          <GoogleSignInButton
+            onSuccess={(credential) => googleLogin({ credential })}
+            disabled={isRegistering}
+            text="Sign up with Google"
+          />
 
           {/* Terms */}
           <p className="text-[10px] text-white/60 text-center leading-tight mt-1.5">

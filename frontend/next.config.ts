@@ -34,12 +34,13 @@ const cspDirectives = [
   
   // Scripts: Production removes unsafe-eval (dev needs it for HMR)
   // unsafe-inline is kept but should eventually use nonces
-  isProd 
-    ? "script-src 'self' 'unsafe-inline'"  // No unsafe-eval in prod!
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  // accounts.google.com needed for Google Identity Services
+  isProd
+    ? "script-src 'self' 'unsafe-inline' https://accounts.google.com"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com",
   
-  // Styles: unsafe-inline required for Tailwind
-  "style-src 'self' 'unsafe-inline'",
+  // Styles: unsafe-inline required for Tailwind, accounts.google.com for GIS styles
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com",
   
   // Images: self + data URIs + external sources
   "img-src 'self' data: blob: https:",
@@ -49,8 +50,8 @@ const cspDirectives = [
   
   // API connections: Strict in production
   isProd
-    ? `connect-src 'self' ${apiUrl}`  // Only your API in prod
-    : "connect-src 'self' http://localhost:8000 https://*.supabase.co wss://*.supabase.co",
+    ? `connect-src 'self' ${apiUrl} https://accounts.google.com`
+    : "connect-src 'self' http://localhost:8000 https://*.supabase.co wss://*.supabase.co https://accounts.google.com",
   
   // Frames: deny all (clickjacking protection)
   "frame-ancestors 'none'",

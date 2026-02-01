@@ -23,6 +23,22 @@ export interface UserResponse {
   subscription_status: string;
   discord_handle?: string;
   created_at?: string;
+  email_verified: boolean;
+  auth_provider: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+  confirm_new_password: string;
+}
+
+export interface GoogleAuthRequest {
+  credential: string;
 }
 
 export interface AuthResponse {
@@ -176,5 +192,90 @@ export async function getCurrentUser(): Promise<UserResponse> {
  */
 export function logout(): void {
   removeAuthToken();
+}
+
+/**
+ * Forgot password — request reset email
+ */
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<{ message: string }> {
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+    throw new Error(error.detail || 'Request failed');
+  }
+  return response.json();
+}
+
+/**
+ * Reset password with token from email
+ */
+export async function resetPassword(data: ResetPasswordRequest): Promise<{ message: string }> {
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Reset failed' }));
+    throw new Error(error.detail || 'Reset failed');
+  }
+  return response.json();
+}
+
+/**
+ * Verify email with token from email
+ */
+export async function verifyEmail(token: string): Promise<{ message: string; email_verified: boolean }> {
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Verification failed' }));
+    throw new Error(error.detail || 'Verification failed');
+  }
+  return response.json();
+}
+
+/**
+ * Resend verification email (requires auth)
+ */
+export async function resendVerification(): Promise<{ message: string }> {
+  const token = getAuthToken();
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/resend-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to resend' }));
+    throw new Error(error.detail || 'Failed to resend');
+  }
+  return response.json();
+}
+
+/**
+ * Authenticate with Google ID token
+ */
+export async function googleAuth(data: GoogleAuthRequest): Promise<AuthResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Google sign-in failed' }));
+    throw new Error(error.detail || 'Google sign-in failed');
+  }
+  const authData: AuthResponse = await response.json();
+  setAuthToken(authData.access_token);
+  return authData;
 }
 

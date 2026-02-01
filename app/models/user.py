@@ -32,7 +32,7 @@ class User(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)  # Legacy, use 'role' instead
     
@@ -55,6 +55,9 @@ class User(Base):
     stripe_subscription_id = Column(String(255), nullable=True)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     discord_handle = Column(String(255), nullable=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    google_id = Column(String(255), unique=True, nullable=True, index=True)
+    auth_provider = Column(String(20), default='email', nullable=False)
     
     @property
     def is_admin(self) -> bool:

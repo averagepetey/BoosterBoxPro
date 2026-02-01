@@ -7,8 +7,12 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { login, register, getCurrentUser, logout, LoginRequest, RegisterRequest, UserResponse } from '../lib/api/auth';
-import { getAuthToken } from '../lib/api/client';
+import {
+  login, register, getCurrentUser, logout,
+  forgotPassword, resetPassword, googleAuth, resendVerification,
+  LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, GoogleAuthRequest, UserResponse,
+} from '../lib/api/auth';
+import { getAuthToken, setAuthToken } from '../lib/api/client';
 
 export function useAuth() {
   const router = useRouter();
@@ -68,6 +72,34 @@ export function useAuth() {
     },
   });
 
+  // Forgot password mutation
+  const forgotPasswordMutation = useMutation({
+    mutationFn: (data: ForgotPasswordRequest) => forgotPassword(data),
+  });
+
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: (data: ResetPasswordRequest) => resetPassword(data),
+  });
+
+  // Google auth mutation
+  const googleAuthMutation = useMutation({
+    mutationFn: (data: GoogleAuthRequest) => googleAuth(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      router.push('/dashboard');
+      router.refresh();
+    },
+  });
+
+  // Resend verification mutation
+  const resendVerificationMutation = useMutation({
+    mutationFn: () => resendVerification(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    },
+  });
+
   // Logout function
   const handleLogout = () => {
     logout();
@@ -93,5 +125,15 @@ export function useAuth() {
     isRegistering: registerMutation.isPending,
     registerError: registerMutation.error,
     logout: handleLogout,
+    forgotPassword: forgotPasswordMutation.mutateAsync,
+    isForgotPasswordPending: forgotPasswordMutation.isPending,
+    resetPassword: resetPasswordMutation.mutateAsync,
+    isResetPasswordPending: resetPasswordMutation.isPending,
+    googleLogin: googleAuthMutation.mutate,
+    googleLoginAsync: googleAuthMutation.mutateAsync,
+    isGoogleLoginPending: googleAuthMutation.isPending,
+    googleLoginError: googleAuthMutation.error,
+    resendVerification: resendVerificationMutation.mutateAsync,
+    isResendVerificationPending: resendVerificationMutation.isPending,
   };
 }
