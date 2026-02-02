@@ -48,7 +48,7 @@ DEBUG_HTML_DIR = project_root / "data" / "debug_html"
 # Title keywords that indicate non-booster-box items (used for sold listings)
 TITLE_EXCLUSIONS = [
     "japanese", "jp", "single", "card lot", "pack", "bundle",
-    "damaged", "opened", "resealed", "case", "display",
+    "damaged", "opened", "resealed", "display",
     "playmat", "sleeve", "deck box", "promo", "lot of",
     "empty", "no cards", "custom", "repack", "break",
 ]
@@ -342,6 +342,21 @@ def _is_excluded_title(title: str) -> bool:
     """Check if a listing title indicates a non-booster-box item."""
     title_lower = title.lower()
     return any(excl in title_lower for excl in TITLE_EXCLUSIONS)
+
+
+def _is_case_listing(title: str) -> bool:
+    """Check if listing is for a case (wholesale multi-box unit), not a single box.
+
+    Cases contain 12+ booster boxes and are priced far above single-box range.
+    "Case fresh" is a condition descriptor for single boxes (pulled straight
+    from a sealed case) and should NOT be excluded.
+    """
+    t = title.lower()
+    # "case fresh" describes a single box's condition — allow it
+    if "case fresh" in t:
+        return False
+    # Match "case" as a whole word (avoids "showcase", "suitcase", etc.)
+    return bool(re.search(r'\bcase\b', t))
 
 
 def _parse_price(price_str: str) -> Optional[int]:
@@ -727,7 +742,7 @@ def filter_active_listings(
     seen_title_price: set = set()
     filtered = []
     multi_box_count = 0
-    excluded = {"no_sealed_box": 0, "japanese": 0, "suspicious": 0,
+    excluded = {"no_sealed_box": 0, "case": 0, "japanese": 0, "suspicious": 0,
                 "price_range": 0, "price_floor": 0, "dedup": 0,
                 "title_price_dedup": 0}
 
@@ -741,12 +756,17 @@ def filter_active_listings(
             excluded["no_sealed_box"] += 1
             continue
 
-        # 2. Japanese exclusion
+        # 2. Case exclusion (allows "case fresh" single-box listings)
+        if _is_case_listing(title):
+            excluded["case"] += 1
+            continue
+
+        # 3. Japanese exclusion
         if _is_japanese(title):
             excluded["japanese"] += 1
             continue
 
-        # 3. Suspicious keywords
+        # 4. Suspicious keywords
         if _is_suspicious(title):
             excluded["suspicious"] += 1
             continue
@@ -999,7 +1019,7 @@ def filter_sold_listings(
     seen_title_price: set = set()
     filtered = []
     multi_box_count = 0
-    excluded = {"title_exclusion": 0, "japanese": 0, "suspicious": 0,
+    excluded = {"title_exclusion": 0, "case": 0, "japanese": 0, "suspicious": 0,
                 "price_range": 0, "dedup": 0, "title_price_dedup": 0}
 
     for item in raw:
@@ -1009,6 +1029,9 @@ def filter_sold_listings(
 
         if _is_excluded_title(title):
             excluded["title_exclusion"] += 1
+            continue
+        if _is_case_listing(title):
+            excluded["case"] += 1
             continue
         if _is_japanese(title):
             excluded["japanese"] += 1
