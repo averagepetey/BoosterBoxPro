@@ -95,17 +95,6 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Supported Marketplaces */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <span className="text-xs sm:text-sm text-white/60">Tracked on:</span>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="text-xs sm:text-sm font-medium text-white/80">TCGplayer</span>
-              <span className="text-white/40">•</span>
-              <span className="text-xs sm:text-sm font-medium text-white/80">eBay</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Right Side - Box Detail Preview (Advanced Analytics) */}
@@ -235,7 +224,7 @@ export function HeroSection() {
                   <div
                     key={range}
                     className={`px-1 py-0.5 text-[7px] sm:text-[8px] rounded-full ${
-                      range === '30D'
+                      range === '1Y'
                         ? 'bg-white/20 text-white'
                         : 'bg-white/5 text-white/70'
                     }`}
@@ -245,54 +234,54 @@ export function HeroSection() {
                 ))}
               </div>
             </div>
-            {/* Mini Price Chart */}
-            <div className="h-16 sm:h-20 w-full relative bg-white/5 rounded border border-white/10 p-1">
-              <svg className="w-full h-full" viewBox="0 0 200 80" preserveAspectRatio="none">
+            {/* Mini Price Chart — ~12 month view, $150→$397 */}
+            <div className="w-full bg-white/5 rounded border border-white/10 p-1">
+              <div className="flex">
                 {/* Y-axis labels */}
-                <text x="5" y="15" fill="rgba(255,255,255,0.4)" fontSize="8">$398</text>
-                <text x="5" y="30" fill="rgba(255,255,255,0.4)" fontSize="8">$389</text>
-                <text x="5" y="45" fill="rgba(255,255,255,0.4)" fontSize="8">$380</text>
-                <text x="5" y="60" fill="rgba(255,255,255,0.4)" fontSize="8">$371</text>
-                <text x="5" y="75" fill="rgba(255,255,255,0.4)" fontSize="8">$363</text>
-                {/* X-axis labels */}
-                <text x="10" y="90" fill="rgba(255,255,255,0.4)" fontSize="8">Dec 24</text>
-                <text x="180" y="90" fill="rgba(255,255,255,0.4)" fontSize="8">Jan 2</text>
-                {/* Grid lines */}
-                <line x1="0" y1="15" x2="200" y2="15" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                <line x1="0" y1="30" x2="200" y2="30" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                <line x1="0" y1="45" x2="200" y2="45" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                <line x1="0" y1="60" x2="200" y2="60" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                <line x1="0" y1="75" x2="200" y2="75" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                {/* Price line - upward trend */}
-                <polyline
-                  points="10,75 30,72 50,68 70,64 90,60 110,56 130,52 150,48 170,44 190,40"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                {/* Area fill */}
-                <polygon
-                  points="10,75 30,72 50,68 70,64 90,60 110,56 130,52 150,48 170,44 190,40 190,80 10,80"
-                  fill="url(#priceGradientPreview)"
-                  opacity="0.2"
-                />
-                <defs>
-                  <linearGradient id="priceGradientPreview" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
+                <div className="flex flex-col justify-between pr-1 shrink-0 h-12 sm:h-16">
+                  {['$400','$300','$200','$150'].map((l) => (
+                    <span key={l} className="text-[6px] sm:text-[7px] leading-none text-white/35 text-right">{l}</span>
+                  ))}
+                </div>
+                {/* Chart area */}
+                <div className="relative flex-1 h-12 sm:h-16">
+                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="priceGradientPreview" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    {/* Horizontal grid lines */}
+                    {[5, 37, 69, 85].map((y) => (
+                      <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                    ))}
+                    {/* Area fill under curve */}
+                    <path
+                      d="M 0,87 C 3,89 6,90 8,90 C 11,90 14,87 17,85 C 20,84 23,81 27,80 C 30,79 33,80 36,79 C 39,79 42,81 45,81 C 48,78 51,69 55,67 C 58,64 61,72 64,74 C 67,71 70,63 73,58 C 76,50 79,40 82,35 C 84,30 86,26 88,24 C 90,21 92,20 94,19 C 95,17 97,14 98,12 C 99,9 99.5,7 100,6 L 100,100 L 0,100 Z"
+                      fill="url(#priceGradientPreview)"
+                      opacity="0.3"
+                    />
+                    {/* Smooth price curve */}
+                    <path
+                      d="M 0,87 C 3,89 6,90 8,90 C 11,90 14,87 17,85 C 20,84 23,81 27,80 C 30,79 33,80 36,79 C 39,79 42,81 45,81 C 48,78 51,69 55,67 C 58,64 61,72 64,74 C 67,71 70,63 73,58 C 76,50 79,40 82,35 C 84,30 86,26 88,24 C 90,21 92,20 94,19 C 95,17 97,14 98,12 C 99,9 99.5,7 100,6"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                </div>
+              </div>
+              {/* X-axis labels below chart */}
+              <div className="flex justify-between pl-5 sm:pl-6 mt-0.5">
+                {["Nov '25","Dec","Jan '26"].map((l) => (
+                  <span key={l} className="text-[6px] sm:text-[7px] leading-none text-white/35">{l}</span>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Reprint Risk Status */}
-          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
-            <span className="text-[10px] sm:text-xs font-bold text-white">Reprint Risk</span>
-            <span className="text-green-400">🟢</span>
-            <span className="text-[10px] sm:text-xs font-semibold marketplace-positive">Low</span>
           </div>
 
           {/* Gauges Row */}
