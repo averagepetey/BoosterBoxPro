@@ -34,7 +34,20 @@ export interface BoxMetricsSummary {
   liquidity_score?: number | null;
   days_to_20pct_increase?: number | null;
   expected_days_to_sell?: number | null;
+  boxes_added_today?: number | null;
   price_sparkline_1d?: number[] | null;
+  // eBay marketplace data (from Phase 1b — 130point.com scraper)
+  ebay_sold_today?: number | null;
+  ebay_daily_volume_usd?: number | null;
+  ebay_median_price_usd?: number | null;
+  ebay_active_listings?: number | null;
+  ebay_active_low_price?: number | null;
+  ebay_volume_30d_usd?: number | null;
+  ebay_boxes_added_today?: number | null;
+  ebay_boxes_removed_today?: number | null;
+  combined_boxes_sold_today?: number | null;
+  daily_volume_tcg_usd?: number | null;
+  daily_volume_ebay_usd?: number | null;
 }
 
 export interface LeaderboardBox {

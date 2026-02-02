@@ -293,6 +293,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "unified_volume_usd": volume_30d,
             "unified_volume_7d_ema": unified_volume_7d_ema,
             "boxes_sold_per_day": boxes_sold_per_day,
+            "boxes_sold_today": latest.get("boxes_sold_today"),
             "boxes_added_today": boxes_added_today,
             "avg_boxes_added_per_day": round(avg_boxes_added_per_day, 2) if (avg_boxes_added_per_day is not None and has_30_days_boxes_added) else None,
             "days_to_20pct_increase": days_to_20pct,
@@ -302,6 +303,22 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "expected_time_to_sale_days": expected_days_to_sell,
             "boxes_added_7d_ema": boxes_added_7d_ema,
             "boxes_added_30d_ema": boxes_added_30d_ema,
+            "liquidity_label": latest.get("liquidity_label"),
+            "data_days_collected": latest.get("data_days_collected"),
+            "days_until_30d_metrics": latest.get("days_until_30d_metrics"),
+            "listings_within_10pct_floor": latest.get("listings_within_10pct_floor"),
+            # eBay marketplace data (from Phase 1b — 130point.com scraper)
+            "ebay_sold_today": latest.get("ebay_sold_today"),
+            "ebay_daily_volume_usd": latest.get("ebay_daily_volume_usd"),
+            "ebay_median_price_usd": latest.get("ebay_median_price_usd"),
+            "ebay_active_listings": latest.get("ebay_active_listings"),
+            "ebay_active_low_price": latest.get("ebay_active_low_price"),
+            "ebay_volume_30d_usd": latest.get("ebay_volume_30d_usd"),
+            "ebay_boxes_added_today": latest.get("ebay_boxes_added_today"),
+            "ebay_boxes_removed_today": latest.get("ebay_boxes_removed_today"),
+            "combined_boxes_sold_today": latest.get("combined_boxes_sold_today"),
+            "daily_volume_tcg_usd": latest.get("daily_volume_tcg_usd"),
+            "daily_volume_ebay_usd": latest.get("daily_volume_ebay_usd"),
         }
         try:
             changes = get_box_volume_change_pcts(str(db_box.id))

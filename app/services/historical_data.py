@@ -1244,5 +1244,16 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
             'boxes_sold_per_day': latest.get('boxes_sold_per_day') or latest.get('boxes_sold_today'),
             'boxes_added_today': latest.get('boxes_added_today'),
             'active_listings_count': latest.get('active_listings_count'),
+            # eBay marketplace data (from Phase 1b)
+            'ebay_sold_today': latest.get('ebay_sold_today'),
+            'ebay_daily_volume_usd': latest.get('ebay_daily_volume_usd'),
+            'ebay_median_price_usd': latest.get('ebay_median_price_usd'),
+            'ebay_active_listings': latest.get('ebay_active_listings'),
+            'ebay_active_low_price': latest.get('ebay_active_low_price'),
+            'ebay_boxes_added_today': latest.get('ebay_boxes_added_today'),
+            'ebay_boxes_removed_today': latest.get('ebay_boxes_removed_today'),
+            'combined_boxes_sold_today': latest.get('combined_boxes_sold_today'),
+            'daily_volume_tcg_usd': latest.get('daily_volume_tcg_usd'),
+            'daily_volume_ebay_usd': latest.get('daily_volume_ebay_usd'),
         }
     return out
