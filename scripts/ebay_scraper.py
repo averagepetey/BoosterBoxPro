@@ -51,12 +51,25 @@ TITLE_EXCLUSIONS = [
     "damaged", "opened", "resealed", "display",
     "playmat", "sleeve", "deck box", "promo", "lot of",
     "empty", "no cards", "custom", "repack", "break",
+    "check description", "check dis",
 ]
 
-# Japanese/Asian listing keywords (from TCGplayer scraper)
+# Japanese/Asian/non-English listing keywords (from TCGplayer scraper)
 JAPANESE_EXCLUSIONS = [
     "japanese", "japan", "jp version", "jp ver", "\u65e5\u672c", "\u65e5\u672c\u8a9e",
     "japanese language", "asian english", "asian",
+    "chinese", "china", "korean", "korea", "thai", "taiwan",
+]
+
+# Non-US seller/region indicators (English product but international seller)
+NON_US_KEYWORDS = [
+    "uk sealed", "uk version", "uk stock", "uk edition", "uk print",
+    "united kingdom",
+    "europe", "european", "eu version", "eu stock", "eu edition",
+    "australia", "australian",
+    "canada", "canadian",
+    "italy", "italian", "germany", "german", "france", "french",
+    "spain", "spanish", "netherlands", "dutch", "mexico", "mexican",
 ]
 
 # Suspicious condition keywords (from TCGplayer scraper)
@@ -65,6 +78,14 @@ SUSPICIOUS_KEYWORDS = [
     "missing", "incomplete", "resealed", "no seal", "unsealed",
     "loose packs", "loose pack", "unsealed box", "no box", "packs only",
     "pack only", "empty box", "for display", "display only",
+    "sleeved",
+]
+
+# Always-exclude keywords — never overridden by positive indicators.
+# "check description" / "check dis" listings hide the real price or condition
+# in the description, making the listed price untrustworthy.
+HARD_EXCLUDE_KEYWORDS = [
+    "check description", "check dis",
 ]
 
 # Positive indicators that confirm a legitimate sealed box
@@ -634,15 +655,27 @@ def parse_sold_listings_html(html: str) -> List[Dict[str, Any]]:
 # ============================================================================
 
 def _is_japanese(title: str) -> bool:
-    """Check if listing is Japanese/Asian product."""
+    """Check if listing is Japanese/Asian/non-English product."""
     t = title.lower()
     return any(excl in t for excl in JAPANESE_EXCLUSIONS)
+
+
+def _is_non_us(title: str) -> bool:
+    """Check if listing is from a non-US seller/region."""
+    t = title.lower()
+    # Match " uk " as a standalone word (avoid matching inside words)
+    if re.search(r'\buk\b', t):
+        return True
+    return any(kw in t for kw in NON_US_KEYWORDS)
 
 
 def _is_suspicious(title: str) -> bool:
     """Check for damaged/opened/resealed indicators."""
     t = title.lower()
-    # Check strict exclusion keywords
+    # Hard excludes are never overridden by positive indicators
+    if any(kw in t for kw in HARD_EXCLUDE_KEYWORDS):
+        return True
+    # Check regular suspicious keywords
     if any(kw in t for kw in SUSPICIOUS_KEYWORDS):
         # Exception: "booster box" + "sealed" overrides ambiguous keywords
         has_positive = any(pos in t for pos in POSITIVE_INDICATORS)
@@ -742,8 +775,8 @@ def filter_active_listings(
     seen_title_price: set = set()
     filtered = []
     multi_box_count = 0
-    excluded = {"no_sealed_box": 0, "case": 0, "japanese": 0, "suspicious": 0,
-                "price_range": 0, "price_floor": 0, "dedup": 0,
+    excluded = {"no_sealed_box": 0, "case": 0, "japanese": 0, "non_us": 0,
+                "suspicious": 0, "price_range": 0, "price_floor": 0, "dedup": 0,
                 "title_price_dedup": 0}
 
     for item in raw:
@@ -761,9 +794,14 @@ def filter_active_listings(
             excluded["case"] += 1
             continue
 
-        # 3. Japanese exclusion
+        # 3. Japanese/non-English exclusion
         if _is_japanese(title):
             excluded["japanese"] += 1
+            continue
+
+        # 3b. Non-US seller/region exclusion
+        if _is_non_us(title):
+            excluded["non_us"] += 1
             continue
 
         # 4. Suspicious keywords
@@ -1019,8 +1057,8 @@ def filter_sold_listings(
     seen_title_price: set = set()
     filtered = []
     multi_box_count = 0
-    excluded = {"title_exclusion": 0, "case": 0, "japanese": 0, "suspicious": 0,
-                "price_range": 0, "dedup": 0, "title_price_dedup": 0}
+    excluded = {"title_exclusion": 0, "case": 0, "japanese": 0, "non_us": 0,
+                "suspicious": 0, "price_range": 0, "dedup": 0, "title_price_dedup": 0}
 
     for item in raw:
         title = item.get("title", "")
@@ -1035,6 +1073,9 @@ def filter_sold_listings(
             continue
         if _is_japanese(title):
             excluded["japanese"] += 1
+            continue
+        if _is_non_us(title):
+            excluded["non_us"] += 1
             continue
         if _is_suspicious(title):
             excluded["suspicious"] += 1
@@ -1082,6 +1123,7 @@ def compute_ebay_fields(
     today: str,
     active: Optional[List[Dict[str, Any]]] = None,
     new_sales_only: Optional[List[Dict[str, Any]]] = None,
+    tcg_floor_price: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
     Transform filtered sold + active listings into ebay_* fields for the JSON entry.
@@ -1091,8 +1133,10 @@ def compute_ebay_fields(
         sold: All filtered sold listings (for aggregate stats like median).
         today: ISO date string (YYYY-MM-DD).
         active: Filtered active listings.
-        new_sales_only: If provided, use these (cross-day deduped) for today's count
-                        instead of date-filtering from sold.
+        new_sales_only: If provided, ALL of these count toward today's metrics
+                        (roll-forward: missed sales from prior days contribute to
+                        today rather than being lost). Pass None on cold start
+                        to fall back to yesterday-only counting.
     """
     # Expand prices by quantity so median/mean/volume reflect per-box prices
     # weighted by actual box count (e.g., "lot of 2" at $1185 → 2× $592.50)
@@ -1106,11 +1150,14 @@ def compute_ebay_fields(
     # Total boxes sold (sum of quantities)
     sold_box_count = sum(item.get("quantity", 1) for item in sold)
 
-    # Daily count uses yesterday (eBay data lags — today's sales aren't complete)
-    yesterday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+    # Roll-forward: when cross-day dedup is active, ALL newly discovered sales
+    # count toward today (missed sales from prior days roll into today's numbers
+    # rather than being lost). On cold start (new_sales_only is None), fall back
+    # to yesterday-only counting to avoid inflating day 1 with the full 130point window.
     if new_sales_only is not None:
-        today_sold = [item for item in new_sales_only if item.get("sold_date") == yesterday]
+        today_sold = new_sales_only
     else:
+        yesterday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
         today_sold = [item for item in sold if item.get("sold_date") == yesterday]
     today_prices = []
     for item in today_sold:
@@ -1131,7 +1178,21 @@ def compute_ebay_fields(
             per_box = item["price_usd"]
             qty = item.get("quantity", 1)
             active_prices.extend([per_box] * qty)
-    active_box_count = sum(item.get("quantity", 1) for item in active) if active else None
+
+    # Apply 20%/10% floor window — match TCGplayer listings scraper parameters
+    # Use TCGplayer floor as source of truth for the window (apples-to-apples)
+    ebay_low = round(min(active_prices), 2) if active_prices else None
+    ref_floor = tcg_floor_price if tcg_floor_price and tcg_floor_price > 0 else ebay_low
+    if ref_floor and ref_floor > 0:
+        threshold_20pct = ref_floor * 1.20
+        threshold_10pct = ref_floor * 1.10
+        within_20pct = sum(1 for p in active_prices if p <= threshold_20pct)
+        within_10pct = sum(1 for p in active_prices if p <= threshold_10pct)
+    else:
+        within_20pct = None
+        within_10pct = None
+
+    active_box_count_total = sum(item.get("quantity", 1) for item in active) if active else None
 
     return {
         "ebay_sold_count": sold_box_count,
@@ -1142,7 +1203,10 @@ def compute_ebay_fields(
         "ebay_avg_price_usd": round(statistics.mean(sold_prices), 2) if sold_prices else None,
         "ebay_low_price_usd": round(min(sold_prices), 2) if sold_prices else None,
         "ebay_high_price_usd": round(max(sold_prices), 2) if sold_prices else None,
-        "ebay_active_listings": active_box_count,
+        "ebay_active_listings": within_20pct,
+        "ebay_active_listings_total": active_box_count_total,
+        "ebay_listings_within_10pct_floor": within_10pct,
+        "ebay_floor_price_usd": ebay_low,
         "ebay_active_median_price": round(statistics.median(active_prices), 2) if active_prices else None,
         "ebay_active_low_price": round(min(active_prices), 2) if active_prices else None,
         "ebay_source": "130point",
@@ -1345,11 +1409,18 @@ async def run_ebay_scraper(
         filtered_sold = sold_data.get(box_id, [])
         filtered_active = active_data.get(box_id, [])
 
+        if box_id not in hist:
+            hist[box_id] = []
+
         # Cross-day dedup: identify items already seen in previous entries
         prev_item_ids = set()
+        has_prev_tracking = False
         for prev_entry in hist.get(box_id, []):
             if prev_entry.get("date") != today:
-                for pid in prev_entry.get("_ebay_sold_item_ids", []):
+                prev_ids = prev_entry.get("_ebay_sold_item_ids", [])
+                if prev_ids:
+                    has_prev_tracking = True
+                for pid in prev_ids:
                     prev_item_ids.add(pid)
 
         # Track this run's item IDs for future cross-day dedup
@@ -1358,10 +1429,26 @@ async def run_ebay_scraper(
         # Truly new sales = not seen in any previous day
         new_sales = [item for item in filtered_sold if item.get("ebay_item_id") not in prev_item_ids]
 
-        ebay_fields = compute_ebay_fields(filtered_sold, today, filtered_active, new_sales_only=new_sales)
+        # Cold start: no previous _ebay_sold_item_ids → pass None so
+        # compute_ebay_fields falls back to yesterday-only counting
+        # (avoids inflating day 1 with the full 130point history window)
+        new_sales_arg = new_sales if has_prev_tracking else None
+
+        # Get TCG floor price for the 20%/10% window reference
+        existing_today = next(
+            (e for e in hist.get(box_id, []) if e.get("date") == today), None
+        )
+        tcg_floor = existing_today.get("floor_price_usd") if existing_today else None
+
+        ebay_fields = compute_ebay_fields(
+            filtered_sold, today, filtered_active,
+            new_sales_only=new_sales_arg,
+            tcg_floor_price=tcg_floor,
+        )
         ebay_fields["_ebay_sold_item_ids"] = current_item_ids
 
         # Compute eBay active listing delta (mirrors TCGplayer boxes_added_today)
+        # Includes: floor-drop compensation, inflated count guard, day-1 null
         ebay_active_count = ebay_fields.get("ebay_active_listings")
         yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         yesterday_entry = next(
@@ -1372,16 +1459,56 @@ async def run_ebay_scraper(
             if yesterday_entry else None
         )
 
-        if ebay_active_count is not None and yesterday_ebay_active is not None:
-            delta = ebay_active_count - yesterday_ebay_active
+        # Day-1 guard: if yesterday has no ebay_listings_within_10pct_floor,
+        # it used the old unwindowed counts — force null to avoid bogus delta
+        yesterday_has_windowed = (
+            yesterday_entry.get("ebay_listings_within_10pct_floor") is not None
+            if yesterday_entry else False
+        )
+
+        if not yesterday_has_windowed:
+            ebay_fields["ebay_boxes_added_today"] = None
+            ebay_fields["ebay_boxes_removed_today"] = None
+        elif yesterday_ebay_active is not None and yesterday_ebay_active > 100:
+            # Inflated count guard — skip delta when yesterday looks like bad data
+            logger.warning(f"Yesterday eBay count ({yesterday_ebay_active}) for {config['name']} looks inflated, skipping delta")
+            ebay_fields["ebay_boxes_added_today"] = None
+            ebay_fields["ebay_boxes_removed_today"] = None
+        elif ebay_active_count is not None and yesterday_ebay_active is not None:
+            # Floor-drop compensation: when TCG floor dropped, recount today's
+            # eBay listings against yesterday's higher threshold for apples-to-apples
+            yesterday_tcg_floor = (
+                yesterday_entry.get("floor_price_usd")
+                if yesterday_entry else None
+            )
+            today_tcg_floor = tcg_floor
+
+            count_for_delta = ebay_active_count  # default: today's 20% count
+            if (today_tcg_floor and yesterday_tcg_floor
+                    and yesterday_tcg_floor > today_tcg_floor
+                    and filtered_active):
+                # Recount using yesterday's higher threshold
+                yesterday_threshold = yesterday_tcg_floor * 1.20
+                active_prices_for_comp = []
+                for item in filtered_active:
+                    if item.get("price_usd") is not None:
+                        qty = item.get("quantity", 1)
+                        active_prices_for_comp.extend([item["price_usd"]] * qty)
+                comparable_count = sum(1 for p in active_prices_for_comp if p <= yesterday_threshold)
+                logger.info(
+                    f"  Floor dropped for {config['name']}: "
+                    f"${yesterday_tcg_floor} -> ${today_tcg_floor}, "
+                    f"comparable eBay count {comparable_count} (vs today's {ebay_active_count}) "
+                    f"for delta against yesterday's {yesterday_ebay_active}"
+                )
+                count_for_delta = comparable_count
+
+            delta = count_for_delta - yesterday_ebay_active
             ebay_fields["ebay_boxes_added_today"] = delta
             ebay_fields["ebay_boxes_removed_today"] = max(0, -delta)
         else:
             ebay_fields["ebay_boxes_added_today"] = None
             ebay_fields["ebay_boxes_removed_today"] = None
-
-        if box_id not in hist:
-            hist[box_id] = []
 
         existing_today = next(
             (e for e in hist[box_id] if e.get("date") == today), None
