@@ -300,8 +300,8 @@ EBAY_SEARCH_CONFIG: Dict[str, Dict[str, Any]] = {
         "name": "OP-13 Carrying on His Will",
         "query": "One Piece OP-13 Carrying His Will booster box sealed",
         "active_query": "carrying on his will op13 booster box sealed",
-        "min_price": 40,
-        "max_price": 350,
+        "min_price": 200,
+        "max_price": 900,
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
@@ -1106,11 +1106,12 @@ def compute_ebay_fields(
     # Total boxes sold (sum of quantities)
     sold_box_count = sum(item.get("quantity", 1) for item in sold)
 
-    # For daily count, prefer new_sales_only (cross-day dedup) over date filter
+    # Daily count uses yesterday (eBay data lags — today's sales aren't complete)
+    yesterday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
     if new_sales_only is not None:
-        today_sold = [item for item in new_sales_only if item.get("sold_date") == today]
+        today_sold = [item for item in new_sales_only if item.get("sold_date") == yesterday]
     else:
-        today_sold = [item for item in sold if item.get("sold_date") == today]
+        today_sold = [item for item in sold if item.get("sold_date") == yesterday]
     today_prices = []
     for item in today_sold:
         if item.get("sold_price_cents") is not None:
