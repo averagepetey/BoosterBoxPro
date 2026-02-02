@@ -281,7 +281,7 @@ def filter_outlier_prices(listings: List[Dict], market_price: float) -> List[Dic
         return normal_priced
 
 
-def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
+def process_listings(raw_listings: List[Dict], market_price: float, yesterday_floor: float = None) -> Dict:
     """Full filtering pipeline. All counts are total box quantity (sum of listing quantities), not row count."""
     raw_rows = len(raw_listings)
     raw_boxes = sum(l.get('quantity', 1) for l in raw_listings)
@@ -345,11 +345,21 @@ def process_listings(raw_listings: List[Dict], market_price: float) -> Dict:
     
     # boxes_within_20pct / boxes_within_10pct are total box quantity (sum of quantities), not row count
     logger.info(f"  Floor: ${floor_price:.2f}, Within 20%: {boxes_within_20pct} boxes, Within 10%: {boxes_within_10pct} boxes (all totals = quantity)")
-    
+
+    # When floor dropped, also count today's listings using yesterday's higher threshold
+    # so boxes_added delta is apples-to-apples (same window size)
+    comparable_20pct = None
+    if yesterday_floor and yesterday_floor > floor_price:
+        yesterday_threshold = yesterday_floor * WITHIN_20PCT_THRESHOLD
+        comparable_within = [l for l in listings if l['price'] <= yesterday_threshold]
+        comparable_20pct = sum(l.get('quantity', 1) for l in comparable_within)
+        logger.info(f"  Floor dropped (${yesterday_floor:.2f} -> ${floor_price:.2f}), comparable count using yesterday threshold ${yesterday_threshold:.2f}: {comparable_20pct} boxes")
+
     return {
         'floor_price': floor_price,
         'listings_within_20pct': boxes_within_20pct,
         'listings_within_10pct_floor': boxes_within_10pct,
+        'listings_within_20pct_comparable': comparable_20pct,
         'filters_applied': {
             'japanese_removed': jp_removed,
             'suspicious_removed': suspicious_removed,
@@ -732,7 +742,7 @@ async def scrape_listings_page(page: Page, min_price: float, debug: bool = False
     return listings
 
 
-async def scrape_box(page: Page, box_id: str, url: str, market_price: float, debug: bool = False, debug_dir=None) -> Optional[Dict]:
+async def scrape_box(page: Page, box_id: str, url: str, market_price: float, yesterday_floor: float = None, debug: bool = False, debug_dir=None) -> Optional[Dict]:
     """Scrape all listings for a single box"""
     logger.info(f"Scraping: {url[:60]}...")
     
@@ -885,7 +895,7 @@ async def scrape_box(page: Page, box_id: str, url: str, market_price: float, deb
                 break
         
         # Process listings
-        result = process_listings(all_listings, market_price)
+        result = process_listings(all_listings, market_price, yesterday_floor=yesterday_floor)
         result['box_id'] = box_id
         result['url'] = url
         result['pages_scraped'] = current_page
@@ -945,8 +955,10 @@ async def run_scraper(debug_box_id: Optional[str] = None):
     else:
         products = get_daily_products()
 
-    # Load market prices from historical data (for outlier detection)
+    # Load market prices and yesterday's floor prices from historical data
     market_prices = {}
+    yesterday_floors = {}
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     try:
         with open('data/historical_entries.json', 'r') as f:
             hist = json.load(f)
@@ -954,6 +966,11 @@ async def run_scraper(debug_box_id: Optional[str] = None):
             if box_id in hist and hist[box_id]:
                 latest = sorted(hist[box_id], key=lambda x: x.get('date', ''), reverse=True)[0]
                 market_prices[box_id] = latest.get('market_price_usd') or latest.get('floor_price_usd', 0)
+                # Find yesterday's floor for comparable boxes_added calculation
+                for e in hist[box_id]:
+                    if e.get('date') == yesterday and e.get('floor_price_usd'):
+                        yesterday_floors[box_id] = float(e['floor_price_usd'])
+                        break
     except Exception as e:
         logger.warning(f"Could not load market prices: {e}")
 
@@ -1025,7 +1042,8 @@ async def run_scraper(debug_box_id: Optional[str] = None):
 
             # Real target - scrape data (scrape_box handles navigation + Listings tab click)
             market_price = market_prices.get(box_id, 0)
-            result = await scrape_box(page, box_id, url, market_price, debug=debug, debug_dir=debug_dir if debug else None)
+            yfloor = yesterday_floors.get(box_id)
+            result = await scrape_box(page, box_id, url, market_price, yesterday_floor=yfloor, debug=debug, debug_dir=debug_dir if debug else None)
 
             # Debug: screenshot after scraping (may fail if browser crashed during scrape)
             if debug:
@@ -1099,6 +1117,7 @@ def save_results(results: List[Dict]):
     for result in results:
         box_id = result['box_id']
         boxes_within_20pct = result.get('listings_within_20pct') or 0
+        comparable_20pct = result.get('listings_within_20pct_comparable')  # Only set when floor dropped
 
         if box_id not in hist:
             hist[box_id] = []
@@ -1119,9 +1138,15 @@ def save_results(results: List[Dict]):
             boxes_added_today = None
             boxes_removed_today = None
         else:
-            delta = (boxes_within_20pct - yesterday_alc) if yesterday_alc is not None else None
+            # When floor dropped, use the comparable count (today's listings counted against
+            # yesterday's higher 20% threshold) so the delta is apples-to-apples.
+            # When floor rose or stayed same, use today's normal 20% count.
+            count_for_delta = comparable_20pct if comparable_20pct is not None else boxes_within_20pct
+            delta = (count_for_delta - yesterday_alc) if yesterday_alc is not None else None
             boxes_added_today = delta
             boxes_removed_today = max(0, -delta) if delta is not None else None
+            if comparable_20pct is not None and yesterday_alc is not None:
+                logger.info(f"  Floor dropped for {box_id}: using comparable count {comparable_20pct} (vs today's {boxes_within_20pct}) for delta against yesterday's {yesterday_alc}")
 
         # Build scraper entry; preserve Apify sales/volume from existing today entry if present
         # (Phase 1 Apify runs first and writes sales/volume; we must not wipe them from JSON)
@@ -1139,7 +1164,7 @@ def save_results(results: List[Dict]):
             'boxes_removed_today': boxes_removed_today,
         }
         if existing_today:
-            for key in ('boxes_sold_per_day', 'boxes_sold_today', 'unified_volume_usd', 'daily_volume_usd', 'market_price_usd', 'volume_7d'):
+            for key in ('boxes_sold_per_day', 'boxes_sold_today', 'bucket_quantity_sold', 'daily_volume_usd', 'market_price_usd', 'current_bucket_start', 'current_bucket_qty', 'delta_boxes_sold_today', 'delta_source'):
                 if existing_today.get(key) is not None and entry.get(key) is None:
                     entry[key] = existing_today[key]
 
@@ -1148,17 +1173,15 @@ def save_results(results: List[Dict]):
         hist[box_id].append(entry)
 
         # Running 30d avg from historical data so DB stays up to date when we only write floor/listings
-        boxes_sold_30d_avg = get_box_30d_avg_sales(DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)) if get_box_30d_avg_sales else None
+        boxes_sold_30d_avg = get_box_30d_avg_sales(box_id) if get_box_30d_avg_sales else None
         # Carry Apify sales/volume into DB if Phase 1 wrote them to JSON but DB write failed (so UI gets full data)
         boxes_sold_per_day = entry.get('boxes_sold_per_day') if existing_today else None
         unified_volume_usd = entry.get('unified_volume_usd') if existing_today else None
 
-        # Write to DB using the ID that exists in booster_boxes (leaderboard UUID).
-        # TCGPLAYER_URLS use TCGPlayer/DB UUIDs; booster_boxes.id may be leaderboard UUIDs.
-        booster_box_id_for_db = DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)
+        # Write to DB using box_id directly (these ARE the DB UUIDs)
         if upsert_daily_metrics:
             ok = upsert_daily_metrics(
-                booster_box_id=booster_box_id_for_db,
+                booster_box_id=box_id,
                 metric_date=today,
                 floor_price_usd=result.get('floor_price'),
                 boxes_sold_per_day=boxes_sold_per_day,

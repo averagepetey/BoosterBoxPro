@@ -138,93 +138,60 @@ class TCGplayerApifyService:
             return None
     
     def transform_to_historical_entry(
-        self, 
-        raw_data: Dict[str, Any], 
+        self,
+        raw_data: Dict[str, Any],
         box_id: str,
         target_date: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Transform Apify response to our historical entry format.
-        
-        Args:
-            raw_data: Raw response from Apify
-            box_id: UUID of the booster box
-            target_date: Date string (YYYY-MM-DD) or None for today
-            
-        Returns:
-            Historical entry dict in our format
+
+        Sales are computed from weekly bucket data, not averageDailyQuantitySold.
         """
         if not raw_data:
             return None
-        
+
         target_date = target_date or datetime.now().strftime('%Y-%m-%d')
-        
-        # Extract top-level metrics
-        avg_daily_sold = float(raw_data.get('averageDailyQuantitySold', 0) or 0)
-        total_sold = int(raw_data.get('totalQuantitySold', 0) or 0)
-        total_transactions = int(raw_data.get('totalTransactionCount', 0) or 0)
-        
-        # Get buckets for detailed data
+
         buckets = raw_data.get('buckets', [])
-        
-        # Find the bucket for target date (or most recent)
-        target_bucket = None
-        latest_bucket = None
-        
-        for bucket in buckets:
-            bucket_date = bucket.get('bucketStartDate', '')
-            if bucket_date == target_date:
-                target_bucket = bucket
-                break
-            if not latest_bucket or bucket_date > latest_bucket.get('bucketStartDate', ''):
-                latest_bucket = bucket
-        
-        # Use target bucket or fall back to latest
-        bucket = target_bucket or latest_bucket
-        
-        if bucket:
-            market_price = float(bucket.get('marketPrice', 0) or 0)
-            quantity_sold = int(bucket.get('quantitySold', 0) or 0)
-            low_sale_price = float(bucket.get('lowSalePrice', 0) or 0)
-            high_sale_price = float(bucket.get('highSalePrice', 0) or 0)
-            transaction_count = int(bucket.get('transactionCount', 0) or 0)
-            
-            # Calculate daily volume
-            daily_volume = market_price * quantity_sold
-            
-            # Use low sale price as floor price approximation
-            floor_price = low_sale_price if low_sale_price > 0 else market_price
+        buckets = sorted(buckets, key=lambda b: b.get("bucketStartDate", ""), reverse=True)
+
+        # Market price from most recent bucket
+        if buckets:
+            market_price = _safe_float(buckets[0].get('marketPrice'))
+            low_sale_price = _safe_float(buckets[0].get('lowSalePrice'))
+            floor_price = market_price if market_price > 0 else low_sale_price
         else:
-            # No bucket data, use top-level metrics
             market_price = 0
-            quantity_sold = 0
             floor_price = 0
-            daily_volume = 0
-            transaction_count = 0
-        
-        # Build historical entry
+
+        # Compute daily sales from weekly buckets (all active period)
+        boxes_sold_per_day = compute_daily_sales_from_buckets(buckets, today=target_date) or 0
+        boxes_sold_today = compute_this_week_daily_rate(buckets, today=target_date) or boxes_sold_per_day
+        daily_volume = round(boxes_sold_today * market_price, 2) if market_price else 0
+
+        # Track current incomplete bucket for delta computation on next run
+        incomplete_bucket = get_current_incomplete_bucket(buckets, target_date)
+        current_bucket_start = incomplete_bucket.get("bucketStartDate", "")[:10] if incomplete_bucket else None
+        current_bucket_qty = _safe_int(incomplete_bucket.get("quantitySold")) if incomplete_bucket else None
+
         entry = {
             'date': target_date,
             'box_id': box_id,
             'floor_price_usd': floor_price,
-            'boxes_sold_per_day': avg_daily_sold if avg_daily_sold > 0 else quantity_sold,
-            'boxes_sold_today': quantity_sold,
+            'market_price_usd': market_price,
+            'boxes_sold_per_day': boxes_sold_per_day,
+            'boxes_sold_today': boxes_sold_today,
             'daily_volume_usd': daily_volume,
-            'unified_volume_usd': daily_volume * 30,  # 30-day projection
-            'active_listings_count': None,  # Not available from this API
-            'boxes_added_today': None,  # Not available, calculated separately
+            'active_listings_count': None,
+            'boxes_added_today': None,
             'source': 'apify_tcgplayer',
-            'raw_apify_data': {
-                'avg_daily_sold': avg_daily_sold,
-                'total_sold': total_sold,
-                'total_transactions': total_transactions,
-                'bucket_date': bucket.get('bucketStartDate') if bucket else None,
-                'market_price': market_price,
-                'low_sale_price': bucket.get('lowSalePrice') if bucket else None,
-                'high_sale_price': bucket.get('highSalePrice') if bucket else None,
-            }
+            'total_quantity_sold': _safe_int(raw_data.get('totalQuantitySold')),
+            'apify_lifetime_avg': _safe_float(raw_data.get('averageDailyQuantitySold')),
+            'current_bucket_start': current_bucket_start,
+            'current_bucket_qty': current_bucket_qty,
         }
-        
+
         return entry
     
     def fetch_box_sales(self, box_id: str) -> Optional[Dict[str, Any]]:
@@ -280,35 +247,199 @@ class TCGplayerApifyService:
         return results
 
 
+def _safe_int(val) -> int:
+    """Safely convert a value to int (handles str/None)."""
+    try:
+        return int(val) if val else 0
+    except (ValueError, TypeError):
+        return 0
+
+
+def _safe_float(val) -> float:
+    """Safely convert a value to float (handles str/None)."""
+    try:
+        return float(val) if val else 0.0
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def get_complete_weekly_buckets(buckets: List[Dict], today: Optional[str] = None) -> List[Dict]:
+    """
+    Return weekly buckets sorted newest-first, excluding today's incomplete bucket.
+
+    Apify returns weekly buckets (7-day intervals). The most recent bucket
+    (matching today's date) is always incomplete/partial, so we skip it.
+    """
+    if not buckets:
+        return []
+
+    today = today or datetime.now().strftime("%Y-%m-%d")
+    sorted_buckets = sorted(buckets, key=lambda b: b.get("bucketStartDate", ""), reverse=True)
+
+    # Skip the current (incomplete) week bucket
+    return [b for b in sorted_buckets if b.get("bucketStartDate", "") < today]
+
+
+def compute_daily_sales_from_buckets(
+    buckets: List[Dict],
+    weeks: Optional[int] = None,
+    today: Optional[str] = None,
+) -> Optional[float]:
+    """
+    Compute average daily sales from complete weekly buckets.
+
+    Each bucket's quantitySold is the total units sold in that 7-day period.
+
+    By default (weeks=None), uses ALL complete buckets that have non-zero sales
+    to compute the average over the product's active selling period. This avoids
+    understating sales for products with declining trends, and avoids inflating
+    with pre-launch zero-sale weeks.
+
+    If weeks is specified, uses only the last N complete weeks.
+
+    Args:
+        buckets: Raw bucket list from Apify
+        weeks: Number of complete weeks to average over, or None for all active
+        today: Date string to determine "current" incomplete bucket
+
+    Returns:
+        Average daily sales rate, or None if no complete buckets
+    """
+    complete = get_complete_weekly_buckets(buckets, today)
+    if not complete:
+        return None
+
+    if weeks is not None:
+        # Fixed window: last N weeks
+        recent = complete[:weeks]
+    else:
+        # All active weeks: find the oldest bucket with non-zero sales and
+        # include everything from that point forward (including any zero weeks
+        # in between, since those are real lull periods, not pre-launch)
+        first_sale_idx = None
+        for i in range(len(complete) - 1, -1, -1):
+            if _safe_int(complete[i].get("quantitySold", 0)) > 0:
+                first_sale_idx = i
+                break
+        if first_sale_idx is None:
+            return None
+        recent = complete[: first_sale_idx + 1]
+
+    total_qty = sum(_safe_int(b.get("quantitySold", 0)) for b in recent)
+    days = len(recent) * 7
+
+    return round(total_qty / days, 2) if days > 0 else None
+
+
+def compute_this_week_daily_rate(
+    buckets: List[Dict],
+    today: Optional[str] = None,
+) -> Optional[float]:
+    """
+    Get the daily sales rate from the most recent complete weekly bucket.
+
+    Returns:
+        Daily sales rate for the most recent complete week, or None
+    """
+    complete = get_complete_weekly_buckets(buckets, today)
+    if not complete:
+        return None
+
+    qty = _safe_int(complete[0].get("quantitySold", 0))
+    return round(qty / 7, 2)
+
+
+def get_current_incomplete_bucket(
+    buckets: List[Dict],
+    today: Optional[str] = None,
+) -> Optional[Dict]:
+    """
+    Find the current week's incomplete bucket (the one whose 7-day window contains today).
+
+    A bucket covers [bucketStartDate, bucketStartDate + 7 days).
+    Returns the bucket dict or None if no match.
+    """
+    if not buckets:
+        return None
+
+    today_str = today or datetime.now().strftime("%Y-%m-%d")
+    today_dt = datetime.strptime(today_str, "%Y-%m-%d")
+
+    sorted_buckets = sorted(buckets, key=lambda b: b.get("bucketStartDate", ""), reverse=True)
+
+    for b in sorted_buckets:
+        start_str = b.get("bucketStartDate", "")
+        if not start_str:
+            continue
+        start_dt = datetime.strptime(start_str[:10], "%Y-%m-%d")
+        end_dt = start_dt + timedelta(days=7)
+        if start_dt <= today_dt < end_dt:
+            return b
+
+    return None
+
+
+def compute_delta_sold_today(
+    current_bucket_qty: int,
+    current_bucket_start: str,
+    prev_entry: Optional[Dict],
+) -> tuple:
+    """
+    Compute daily sales delta from incomplete bucket tracking.
+
+    Compares today's incomplete bucket qty against the value stored in the previous entry.
+
+    Returns:
+        (delta, source) where source is one of:
+        - "same_week": normal delta within the same bucket week
+        - "rollover_partial": new bucket week started, using new bucket qty as partial estimate
+        - "no_data": no previous data available (caller should fall back to weekly rate)
+    """
+    if prev_entry is None:
+        return (None, "no_data")
+
+    prev_bucket_start = prev_entry.get("current_bucket_start")
+    prev_bucket_qty = prev_entry.get("current_bucket_qty")
+
+    if prev_bucket_start is None or prev_bucket_qty is None:
+        return (None, "no_data")
+
+    if prev_bucket_start == current_bucket_start:
+        # Same week: delta = today_qty - yesterday_qty, clamped to 0
+        delta = max(0, current_bucket_qty - prev_bucket_qty)
+        return (delta, "same_week")
+    else:
+        # Rollover: new bucket week started, use new bucket qty as partial estimate
+        delta = max(0, current_bucket_qty)
+        return (delta, "rollover_partial")
+
+
 def calculate_30d_volume_from_buckets(buckets: List[Dict]) -> float:
     """
     Calculate actual 30-day volume by summing bucket data.
-    
+
     Args:
         buckets: List of bucket dictionaries from Apify
-        
+
     Returns:
         Total volume over ~30 days
     """
     if not buckets:
         return 0.0
-    
-    # Sort buckets by date
+
     sorted_buckets = sorted(buckets, key=lambda x: x.get('bucketStartDate', ''), reverse=True)
-    
-    # Get cutoff date (30 days ago)
     cutoff_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-    
+
     total_volume = 0.0
     for bucket in sorted_buckets:
         bucket_date = bucket.get('bucketStartDate', '')
         if bucket_date < cutoff_date:
             break
-        
-        market_price = float(bucket.get('marketPrice', 0) or 0)
-        quantity_sold = int(bucket.get('quantitySold', 0) or 0)
+
+        market_price = _safe_float(bucket.get('marketPrice', 0))
+        quantity_sold = _safe_int(bucket.get('quantitySold', 0))
         total_volume += market_price * quantity_sold
-    
+
     return total_volume
 
 
@@ -374,19 +505,6 @@ def get_7day_baseline(historical: Dict, box_id: str, current_date: str) -> Optio
     return avg_sales
 
 
-def calculate_estimated_daily_sales(prev_avg: float, current_avg: float, window: int = 30) -> float:
-    """
-    Back-calculate estimated actual daily sales from rolling average change.
-    
-    Formula: new_avg = (old_avg × (window-1) + today_sales) / window
-    Solving for today_sales: today_sales = (new_avg × window) - (old_avg × (window-1))
-    """
-    if prev_avg is None or current_avg is None:
-        return current_avg or 0
-    
-    estimated = (current_avg * window) - (prev_avg * (window - 1))
-    return max(0, round(estimated, 1))  # Can't have negative sales
-
 
 def detect_spike(current_value: float, baseline: float, threshold_pct: float = 50) -> Optional[Dict]:
     """
@@ -420,139 +538,164 @@ def detect_spike(current_value: float, baseline: float, threshold_pct: float = 5
 def refresh_all_boxes_sales_data() -> Dict[str, Any]:
     """
     Pull fresh sales data from TCGplayer for all boxes and save to historical_entries.json.
-    
-    Enhanced with:
-    - Day-over-day comparison
-    - Estimated actual daily sales (back-calculated from rolling avg)
-    - Spike detection (>50% above 7-day baseline)
-    
+
+    Sales computation uses actual weekly bucket data from Apify:
+    - boxes_sold_per_day: average daily sales over the full active selling period
+    - boxes_sold_today: daily rate from the most recent complete weekly bucket
+
+    The old approach of using averageDailyQuantitySold (a lifetime avg) is removed.
+
     Returns:
         Dict with success_count, error_count, date, top_5 results, and alerts
     """
     import json
     from pathlib import Path
     from apify_client import ApifyClient
-    
+
     api_token = settings.apify_api_token
     if not api_token:
         raise ValueError("APIFY_API_TOKEN not configured")
-    
+
     client = ApifyClient(api_token)
     today = datetime.now().strftime("%Y-%m-%d")
-    
+
     # Load existing historical data
     data_dir = Path(__file__).parent.parent.parent / "data"
     historical_file = data_dir / "historical_entries.json"
-    
+
     historical = {}
     if historical_file.exists():
         with open(historical_file) as f:
             historical = json.load(f)
-    
+
     results = []
     alerts = []
     success_count = 0
     error_count = 0
-    
+
     for box_id, config in TCGPLAYER_URLS.items():
         url = config.get("url")
         name = config.get("name", box_id)
-        
+
         if not url:
             logger.info(f"Skipping {name} - no URL configured")
             continue
-        
+
         logger.info(f"Fetching {name}...")
-        
+
         try:
             # Call Apify
             run = client.actor("scraped/tcgplayer-sales-history").call(run_input={"url": url})
             items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
-            
+
             if not items:
                 logger.warning(f"No data returned for {name}")
                 error_count += 1
                 continue
-            
+
             data = items[0]
             if not isinstance(data, dict):
                 logger.warning(f"Unexpected data type for {name}: {type(data)}")
                 error_count += 1
                 continue
-            
-            # Extract metrics from API
-            avg_daily = float(data.get("averageDailyQuantitySold") or 0)
+
+            # Extract top-level metrics (for reference only)
+            apify_lifetime_avg = _safe_float(data.get("averageDailyQuantitySold"))
+            total_quantity_sold = _safe_int(data.get("totalQuantitySold"))
+            total_transaction_count = _safe_int(data.get("totalTransactionCount"))
+
             buckets = data.get("buckets") or []
 
-            # Sort buckets newest-first so buckets[0] is the most recent day
+            # Sort buckets newest-first
             buckets = sorted(buckets, key=lambda b: b.get("bucketStartDate", ""), reverse=True)
 
+            # Get market price from the most recent bucket (even if incomplete)
             if buckets:
-                market_price = float(buckets[0].get("marketPrice") or 0)
-                low_sale = float(buckets[0].get("lowSalePrice") or 0)
+                market_price = _safe_float(buckets[0].get("marketPrice"))
+                low_sale = _safe_float(buckets[0].get("lowSalePrice"))
                 floor = market_price if market_price > 0 else low_sale
-                # Actual daily sales from the latest bucket (not the rolling avg)
-                boxes_sold_today = int(buckets[0].get("quantitySold") or 0)
                 bucket_date = buckets[0].get("bucketStartDate", "")
             else:
                 market_price = 0
                 floor = 0
-                boxes_sold_today = 0
                 bucket_date = ""
 
-            # Use actual bucket sales for daily metrics when available, fall back to rolling avg
-            effective_daily_sold = boxes_sold_today if boxes_sold_today > 0 else avg_daily
+            # ── CORE FIX: Compute daily sales from weekly bucket data ──
+            # boxes_sold_per_day: average over full active selling period
+            boxes_sold_per_day = compute_daily_sales_from_buckets(buckets, today=today) or 0
+            # boxes_sold_today: most recent complete week's daily rate
+            boxes_sold_today = compute_this_week_daily_rate(buckets, today=today) or boxes_sold_per_day
+
+            # Store complete bucket data for the most recent complete week (reference)
+            complete_buckets = get_complete_weekly_buckets(buckets, today)
+            recent_bucket_qty = _safe_int(complete_buckets[0].get("quantitySold")) if complete_buckets else 0
+
+            # ── Delta tracking from incomplete bucket ──
+            incomplete_bucket = get_current_incomplete_bucket(buckets, today)
+            current_bucket_start = incomplete_bucket.get("bucketStartDate", "")[:10] if incomplete_bucket else None
+            current_bucket_qty = _safe_int(incomplete_bucket.get("quantitySold")) if incomplete_bucket else None
 
             # Get previous entry for comparison
             prev_entry = get_previous_entry(historical, box_id, today)
-            prev_avg = prev_entry.get("boxes_sold_per_day") if prev_entry else None
-            prev_price = prev_entry.get("market_price_usd") if prev_entry else None
 
-            # Calculate estimated actual daily sales from rolling avg change
-            estimated_today_sales = calculate_estimated_daily_sales(prev_avg, avg_daily)
+            # Compute delta sold today from incomplete bucket tracking
+            delta_boxes_sold_today = None
+            delta_source = None
+            if current_bucket_qty is not None and current_bucket_start:
+                delta_boxes_sold_today, delta_source = compute_delta_sold_today(
+                    current_bucket_qty, current_bucket_start, prev_entry
+                )
+                if delta_boxes_sold_today is not None:
+                    boxes_sold_today = delta_boxes_sold_today
+                    logger.info(f"  Delta tracking: {delta_boxes_sold_today} sold today ({delta_source})")
+
+            prev_sold_per_day = prev_entry.get("boxes_sold_per_day") if prev_entry else None
+            prev_price = prev_entry.get("market_price_usd") if prev_entry else None
 
             # Get 7-day baseline for spike detection
             baseline_7d = get_7day_baseline(historical, box_id, today)
 
             # Check for volume spike
-            spike = detect_spike(estimated_today_sales, baseline_7d) if baseline_7d else None
+            spike = detect_spike(boxes_sold_today, baseline_7d) if baseline_7d else None
             if spike:
                 spike["box"] = name
                 spike["box_id"] = box_id
                 alerts.append(spike)
                 logger.warning(f"🔥 {name}: {spike['type']} - {spike['change_pct']:+.1f}% vs baseline")
 
-            # Calculate day-over-day changes
-            avg_change = round(avg_daily - prev_avg, 2) if prev_avg else None
-            avg_change_pct = round(((avg_daily - prev_avg) / prev_avg) * 100, 1) if prev_avg and prev_avg > 0 else None
+            # Day-over-day changes
+            avg_change = round(boxes_sold_per_day - prev_sold_per_day, 2) if prev_sold_per_day is not None else None
+            avg_change_pct = round(((boxes_sold_per_day - prev_sold_per_day) / prev_sold_per_day) * 100, 1) if prev_sold_per_day and prev_sold_per_day > 0 else None
             price_change = round(market_price - prev_price, 2) if prev_price else None
             price_change_pct = round(((market_price - prev_price) / prev_price) * 100, 1) if prev_price and prev_price > 0 else None
 
-            # Daily volume from actual bucket sales (not rolling avg × floor)
-            daily_vol = round(effective_daily_sold * floor, 2) if floor else 0
-            volume_7d = round(daily_vol * 7, 2)
-            # Use actual 30d volume from bucket history when available
-            volume_30d_actual = calculate_30d_volume_from_buckets(buckets)
-            volume_30d = round(volume_30d_actual, 2) if volume_30d_actual > 0 else round(daily_vol * 30, 2)
-            
+            # Daily volume = daily sales rate × market price
+            daily_vol = round(boxes_sold_today * market_price, 2) if market_price and boxes_sold_today else 0
+
+            # 30-day volume from buckets (actual weekly totals × market prices)
+            volume_30d = calculate_30d_volume_from_buckets(buckets)
+
             # Create enriched entry
             new_entry = {
                 "date": today,
                 "source": "apify_tcgplayer",
-                # Raw API data
-                "boxes_sold_per_day": effective_daily_sold,  # Actual bucket sales (or rolling avg fallback)
-                "boxes_sold_today": boxes_sold_today,  # Exact count from latest bucket
-                "tcgplayer_rolling_avg": avg_daily,  # TCGplayer's 30d rolling average (for reference)
+                # Sales metrics (computed from weekly bucket data)
+                "boxes_sold_per_day": boxes_sold_per_day,  # Active-period avg from all weekly buckets
+                "boxes_sold_today": boxes_sold_today,  # Delta from incomplete bucket, or weekly rate fallback
+                "bucket_quantity_sold": recent_bucket_qty,  # Raw qty from most recent complete week
+                # Incomplete bucket delta tracking
+                "current_bucket_start": current_bucket_start,
+                "current_bucket_qty": current_bucket_qty,
+                "delta_boxes_sold_today": delta_boxes_sold_today,
+                "delta_source": delta_source,
                 "floor_price_usd": floor,
                 "market_price_usd": market_price,
                 "daily_volume_usd": daily_vol,
-                # Calculated rolling volumes (from actual bucket history)
-                "volume_7d": volume_7d,
-                "unified_volume_usd": volume_30d,
                 "bucket_date": bucket_date,
-                # Derived metrics (our calculations)
-                "estimated_actual_sales_today": estimated_today_sales,
-                "baseline_7d_avg": round(baseline_7d, 2) if baseline_7d else None,
+                # Reference fields from API (not used for computations)
+                "apify_lifetime_avg": apify_lifetime_avg,
+                "total_quantity_sold": total_quantity_sold,
+                "total_transaction_count": total_transaction_count,
                 # Day-over-day changes
                 "avg_change_from_yesterday": avg_change,
                 "avg_change_pct": avg_change_pct,
@@ -561,97 +704,90 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 # Spike detection
                 "spike_detected": spike["type"] if spike else None,
                 "spike_magnitude_pct": spike["change_pct"] if spike else None,
+                "baseline_7d_avg": round(baseline_7d, 2) if baseline_7d else None,
                 # Metadata
                 "timestamp": datetime.now().isoformat(),
             }
-            
+
             # Add to historical data
             if box_id not in historical:
                 historical[box_id] = []
-            
+
             # Remove existing entry for today (update mode)
             historical[box_id] = [e for e in historical[box_id] if e.get("date") != today]
             historical[box_id].append(new_entry)
 
-            # Running 30d avg from last 30 days of daily sold (so DB updates as data shifts)
+            # Running 30d avg from last 30 days of daily sold
             entries_30d = sorted(historical[box_id], key=lambda e: e.get("date", ""))
             cutoff_30 = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
             recent_30 = [e for e in entries_30d if (e.get("date") or "") >= cutoff_30]
             boxes_sold_30d_avg = None
             if recent_30:
-                vals = [(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0) for e in recent_30]
+                vals = [_safe_float(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0) for e in recent_30]
                 boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
 
-            # Write to DB so live site updates without commits.
-            # Use leaderboard UUID (same as booster_boxes.id and listings scraper) so FK passes
-            # and the same row gets both Apify sales and scraper listings for today.
+            # Write to DB
             try:
                 from app.services.box_metrics_writer import upsert_daily_metrics
-                from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP
-                booster_box_id_for_db = DB_TO_LEADERBOARD_UUID_MAP.get(box_id, box_id)
                 upsert_daily_metrics(
-                    booster_box_id=booster_box_id_for_db,
+                    booster_box_id=box_id,
                     metric_date=today,
                     floor_price_usd=floor,
-                    boxes_sold_per_day=effective_daily_sold,
+                    boxes_sold_per_day=boxes_sold_per_day,
                     unified_volume_usd=volume_30d,
                     boxes_sold_30d_avg=boxes_sold_30d_avg,
                 )
             except Exception as e:
                 logger.warning(f"DB upsert skipped for {name}: {e}")
-            
-            # Log with day-over-day context
+
+            # Log with context
             change_str = f" ({avg_change_pct:+.1f}%)" if avg_change_pct else ""
-            bucket_str = f" (bucket: {boxes_sold_today} sold on {bucket_date})" if bucket_date else ""
-            logger.info(f"✅ {name}: {effective_daily_sold}/day{change_str} @ ${market_price:.2f}{bucket_str}")
+            logger.info(f"✅ {name}: {boxes_sold_per_day}/day (active avg), {boxes_sold_today}/day (this week){change_str} @ ${market_price:.2f}")
 
             results.append({
                 "name": name,
                 "box_id": box_id,
-                "sold": effective_daily_sold,
-                "sold_today_bucket": boxes_sold_today,
-                "rolling_avg": avg_daily,
-                "estimated_today": estimated_today_sales,
+                "sold": boxes_sold_per_day,
+                "sold_today": boxes_sold_today,
                 "price": market_price,
                 "vol": daily_vol,
-                "change_pct": avg_change_pct
+                "change_pct": avg_change_pct,
             })
             success_count += 1
-            
+
         except Exception as e:
             logger.error(f"Error fetching {name}: {str(e)}")
             error_count += 1
-    
-    # Save updated data to JSON (legacy/backup - optional, don't fail if directory doesn't exist)
-    # Primary storage is now database (box_metrics_unified) via upsert_daily_metrics above
+
+    # Save updated data to JSON
     try:
         data_dir.mkdir(parents=True, exist_ok=True)
         with open(historical_file, "w") as f:
             json.dump(historical, f, indent=2)
-        logger.debug(f"Saved historical data to {historical_file} (backup)")
+        logger.debug(f"Saved historical data to {historical_file}")
     except Exception as e:
-        logger.warning(f"Could not save to JSON backup (non-fatal): {e}")
-    
+        logger.warning(f"Could not save to JSON (non-fatal): {e}")
+
     # Get top 5 by volume
     top_5 = sorted(results, key=lambda x: x["vol"], reverse=True)[:5]
-    
+
     # Get biggest movers (by change %)
     movers = [r for r in results if r.get("change_pct") is not None]
     top_gainers = sorted(movers, key=lambda x: x["change_pct"], reverse=True)[:3]
     top_losers = sorted(movers, key=lambda x: x["change_pct"])[:3]
-    
+
     return {
         "success_count": success_count,
         "error_count": error_count,
         "date": today,
         "top_5_by_volume": [
             {
-                "name": r["name"], 
-                "daily_volume": r["vol"], 
+                "name": r["name"],
+                "daily_volume": r["vol"],
                 "sales_per_day": r["sold"],
-                "estimated_today": r["estimated_today"],
+                "sales_today": r["sold_today"],
                 "price": r["price"],
-                "change_pct": r.get("change_pct")
+                "change_pct": r.get("change_pct"),
             }
             for r in top_5
         ],
@@ -664,5 +800,5 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             for r in top_losers if r["change_pct"] and r["change_pct"] < 0
         ],
         "alerts": alerts,
-        "alert_count": len(alerts)
+        "alert_count": len(alerts),
     }
