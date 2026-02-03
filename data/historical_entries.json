@@ -15754,17 +15754,17 @@
     },
     {
       "date": "2026-02-03",
-      "ebay_sold_count": 45,
+      "ebay_sold_count": 56,
       "ebay_sold_today": 3,
-      "ebay_volume_usd": 29401.7,
+      "ebay_volume_usd": 36562.69,
       "ebay_daily_volume_usd": 2275.98,
       "ebay_median_price_usd": 650.0,
-      "ebay_avg_price_usd": 653.37,
+      "ebay_avg_price_usd": 652.91,
       "ebay_low_price_usd": 499.99,
       "ebay_high_price_usd": 800.0,
       "ebay_last_sold_date": "2026-02-03",
       "ebay_source": "playwright_direct",
-      "ebay_fetch_timestamp": "2026-02-03T18:51:29.247298+00:00",
+      "ebay_fetch_timestamp": "2026-02-03T19:34:53.584502+00:00",
       "_ebay_sold_item_ids": [
         "177811495716",
         "336381862789",
@@ -15810,7 +15810,18 @@
         "157614232629",
         "267552121723",
         "257321252132",
-        "389518199676"
+        "389518199676",
+        "297948838568",
+        "227180245796",
+        "317771262998",
+        "257314702365",
+        "267548613270",
+        "406589132627",
+        "306713410200",
+        "236587067699",
+        "376847103625",
+        "127609862862",
+        "187938812953"
       ],
       "data_days_collected": 1,
       "days_until_30d_metrics": 29,
@@ -15832,7 +15843,92 @@
       "combined_boxes_sold_today": null,
       "volume_7d": 8555.96,
       "unified_volume_usd": 13498.46,
-      "unified_volume_7d_ema": 1444.0
+      "unified_volume_7d_ema": 1444.0,
+      "_ebay_sold_today_items": [
+        {
+          "title": "ONE PIECE EMPERORS IN THE NEW WORLD ENGLISH BOOSTER BOX OP-09 New Sealed Opens in a new window or tab",
+          "price": 699.99,
+          "date": "2026-02-02",
+          "url": "https://www.ebay.com/itm/336381862789?_skw=emperors+in+the+new+world+op-09+booster+box+-case+-korean+-japanese+-display&epid=9073273308&itmmeta=01KGJG02GXZ3GNGSGZHHRSRTWP&hash=item4e51ebe385:g:c6EAAeSwLmtpYSJ8&itmprp=enc%3AAQALAAABEO7PUuNWmJ%2B%2BUShgI9tQz%2Fr1aJeXuhOTLBj9atBzPUfzB%2FIgaHX9rV75ud2wUsswf3Dcy3%2FeleKgzR8RTCLeMfk05cDTbQGOyod2QIoeOKBkROEGU9645IhQVDwJZQYCyLJLmoqSNNC2rKFAwwOYJdrOM1Ze4IlpqsVP47XbxWLwd8j3QIoMN0i2g%2BwwQD1kI8tF5ddAlBbk%2FESbq7dDSycedOz3IvjTGBOusB6I7F96Ub1UDxpZyWY4oRqquU0YNRVSsahoIjQoLUaUroRyFgVdwuPiSpiBxnh1Ex0x531nwfPE51XBt%2FX2HlKgcxKzA45spQfaE8PINmJ%2FShu0UawshkXdQEKMP9KL67sH0C5e%7Ctkp%3ABk9SR8qogNCEZw",
+          "item_id": "336381862789"
+        },
+        {
+          "title": "Open Live One Piece TCG OP-09 Emperors in the New World Booster Box EnglishOpens in a new window or tab",
+          "price": 775.99,
+          "date": "2026-02-02",
+          "url": "https://www.ebay.com/itm/397238787331?_skw=emperors+in+the+new+world+op-09+booster+box+-case+-korean+-japanese+-display&itmmeta=01KGJG02GX2Y27SQ6WDCEKC1PQ&hash=item5c7d46dd03:g:iW8AAeSwnWtpDmAD&itmprp=enc%3AAQALAAABEO7PUuNWmJ%2B%2BUShgI9tQz%2FocB%2BhH7mMDft6sP3CuVU16yLqJZGFwVyngdflo8oVLwEi9ff04bRy%2BYHKGFFyec%2B%2FXai7IBTJBiSo42lvKHx%2Bg9qPWAg5bIxynMWOQpOP4qqMkXkJYcvxiGH7e4qbI51gzKDBx7Y8ad%2FFxclpMwe4bnCA5YIbDJSNIIFtdaEjFxUwiOXWn2EiCJDI1yW60PPX59wrq9EtEZSlxG%2Fh1%2Bd35r524z3B6Zar2jcjrzT4NWHun4umyV3ivxFxmqjzz63zN3m90g7Qd60h%2FNSRfnHRasAnDteujuOHQDrX54oQKxJ%2BeGb866pzGCmjDRXpseVgKHVwQ9CxQgaBpBAkB9Fp9%7Ctkp%3ABk9SR8qogNCEZw",
+          "item_id": "397238787331"
+        },
+        {
+          "title": "ONE PIECE EMPERORS IN THE NEW WORLD ENGLISH BOOSTER BOX OP-09  New Sealed Opens in a new window or tab",
+          "price": 800.0,
+          "date": "2026-02-02",
+          "url": "https://www.ebay.com/itm/187945465007?_skw=emperors+in+the+new+world+op-09+booster+box+-case+-korean+-japanese+-display&itmmeta=01KGJG02GXM3P91BFNE18EYMD8&hash=item2bc26c34af:g:6FEAAeSwue9pZVvM&itmprp=enc%3AAQALAAABMO7PUuNWmJ%2B%2BUShgI9tQz%2FprVbKQg%2BBLK9Lsnm9S0dRsFkyvr9BLZQgtawdeBqerHAW6VuBywBMe6CjuW%2FbdZOYV2PD2%2FTz0C7JuIaqvvqIIZj0mTUFnnvfghiz1x8vce2KQSLnF25ym%2Bse8B0v%2Fcgi26UwLRBVJyU%2BSeV6hecDICTQ4veOvUXRjk8AM868zrI54ua%2F83j3ikAGr2AzGHt7%2Bxoieyuk0bPlxI%2FBodnGBlsh4Rhazp%2B6XVj7ajT6f9Ap2ttSebL6WNIzKEykEmsd2Hfz%2BZ1ot7j7fwPIE1vbAIX6es7Eb6VRpgfASYGeM2MwwiHHo9kZdunfALLi%2BR0QeANYMpIPX9pHpn72NqVaQn8YYmW5Qcd4lB%2FvD%2FizWDX7EPyn5x%2Ft8riZg9pSOajM%3D%7Ctkp%3ABk9SR8qogNCEZw",
+          "item_id": "187945465007"
+        }
+      ],
+      "_ebay_filtered_sample": [
+        {
+          "title": "One Piece OP09 Emperors In The New World Booster Box English, Unsealed by BandaiOpens in a new window or tab",
+          "price": 550.0,
+          "date": "2026-02-03",
+          "item_id": "177811495716"
+        },
+        {
+          "title": "ONE PIECE EMPERORS IN THE NEW WORLD ENGLISH BOOSTER BOX OP-09 New Sealed Opens in a new window or tab",
+          "price": 699.99,
+          "date": "2026-02-02",
+          "item_id": "336381862789"
+        },
+        {
+          "title": "Open Live One Piece TCG OP-09 Emperors in the New World Booster Box EnglishOpens in a new window or tab",
+          "price": 775.99,
+          "date": "2026-02-02",
+          "item_id": "397238787331"
+        },
+        {
+          "title": "ONE PIECE EMPERORS IN THE NEW WORLD ENGLISH BOOSTER BOX OP-09  New Sealed Opens in a new window or tab",
+          "price": 800.0,
+          "date": "2026-02-02",
+          "item_id": "187945465007"
+        },
+        {
+          "title": "One Piece TCG OP09 Emperors in the New World Booster Box  Collector  EnglishOpens in a new window or tab",
+          "price": 645.0,
+          "date": "2026-02-01",
+          "item_id": "188016262523"
+        },
+        {
+          "title": "One Piece CCG Emperors in the New World OP-09 Booster Box English *New/Sealed*Opens in a new window or tab",
+          "price": 699.0,
+          "date": "2026-02-01",
+          "item_id": "168087877435"
+        },
+        {
+          "title": "One Piece Card Game OP-09 Emperors In the New World Booster Sealed Booster Box Opens in a new window or tab",
+          "price": 650.0,
+          "date": "2026-02-01",
+          "item_id": "188013527675"
+        },
+        {
+          "title": "ONE PIECE EMPERORS IN THE NEW WORLD ENGLISH BOOSTER BOX OP-09 Mint New Sealed Opens in a new window or tab",
+          "price": 679.99,
+          "date": "2026-02-01",
+          "item_id": "326980159482"
+        },
+        {
+          "title": "One Piece TCG OP09 Emperors in the New World Booster Box New English SealedOpens in a new window or tab",
+          "price": 689.99,
+          "date": "2026-01-31",
+          "item_id": "257330253281"
+        },
+        {
+          "title": "Emperors in the New World [OP-09] One Piece TCG Bandai Booster Box Factory SealOpens in a new window or tab",
+          "price": 649.0,
+          "date": "2026-01-31",
+          "item_id": "187987540400"
+        }
+      ]
     }
   ],
   "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": [

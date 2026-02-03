@@ -12,6 +12,7 @@ import { EmailVerificationBanner } from '@/components/auth/EmailVerificationBann
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { LeaderboardSkeleton } from '@/components/leaderboard/LeaderboardSkeleton';
 import { NewReleases } from '@/components/leaderboard/NewReleases';
+import { MarketOverviewBar } from '@/components/dashboard/MarketOverviewBar';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getApiBaseUrl, getAuthToken } from '../../../lib/api/client';
@@ -243,8 +244,15 @@ function DashboardContent() {
 
         {/* Page Content */}
         <main className="container mx-auto px-0 sm:px-6 pt-6 pb-12" style={{ maxWidth: '1400px' }}>
+          {/* Market Overview Stats Bar */}
+          <div style={{ marginTop: '-95px', marginBottom: '1.5rem' }}>
+            {data?.data && data.data.length > 0 && (
+              <MarketOverviewBar boxes={data.data} />
+            )}
+          </div>
+
           {/* New Releases Section */}
-          <div style={{ marginTop: '-95px' }}>
+          <div>
             <NewReleases />
           </div>
 
