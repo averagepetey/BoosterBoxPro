@@ -80,22 +80,64 @@ NOISE_PRODUCTS = [
     "https://www.tcgplayer.com/product/556789/magic-the-gathering-duskmourn-play-booster-box",
 ]
 
-# Browser profiles (pick one per session)
+# Browser profiles (pick one per session) — each profile has internally-consistent
+# User-Agent, viewport, platform, and sec-ch-ua headers so fingerprints don't conflict.
 BROWSER_PROFILES = [
     {
-        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "viewport": {"width": 1920, "height": 1080},
-        "platform": "MacIntel"
+        "platform": "macOS",
+        "sec_ch_ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        "sec_ch_ua_mobile": "?0",
+        "sec_ch_ua_platform": '"macOS"',
     },
     {
-        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
         "viewport": {"width": 1440, "height": 900},
-        "platform": "MacIntel"
+        "platform": "macOS",
+        "sec_ch_ua": '"Google Chrome";v="130", "Chromium";v="130", "Not_A Brand";v="24"',
+        "sec_ch_ua_mobile": "?0",
+        "sec_ch_ua_platform": '"macOS"',
     },
     {
-        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
         "viewport": {"width": 1536, "height": 864},
-        "platform": "MacIntel"
+        "platform": "macOS",
+        "sec_ch_ua": None,  # Safari doesn't send sec-ch-ua
+        "sec_ch_ua_mobile": None,
+        "sec_ch_ua_platform": None,
+    },
+    {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "viewport": {"width": 1920, "height": 1080},
+        "platform": "Windows",
+        "sec_ch_ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        "sec_ch_ua_mobile": "?0",
+        "sec_ch_ua_platform": '"Windows"',
+    },
+    {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "viewport": {"width": 1366, "height": 768},
+        "platform": "Windows",
+        "sec_ch_ua": '"Google Chrome";v="130", "Chromium";v="130", "Not_A Brand";v="24"',
+        "sec_ch_ua_mobile": "?0",
+        "sec_ch_ua_platform": '"Windows"',
+    },
+    {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
+        "viewport": {"width": 1920, "height": 1080},
+        "platform": "Windows",
+        "sec_ch_ua": None,  # Firefox doesn't send sec-ch-ua
+        "sec_ch_ua_mobile": None,
+        "sec_ch_ua_platform": None,
+    },
+    {
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "viewport": {"width": 1920, "height": 1080},
+        "platform": "Linux",
+        "sec_ch_ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        "sec_ch_ua_mobile": "?0",
+        "sec_ch_ua_platform": '"Linux"',
     },
 ]
 
@@ -133,13 +175,32 @@ WITHIN_10PCT_THRESHOLD = 1.10  # Floor × 1.10 (for expected time to sale)
 DELAY_MIN = 5
 DELAY_MAX = 15
 DELAY_MEAN = 8
+# Distraction pause: every N requests, insert a longer pause (like checking another tab)
+DISTRACTION_PAUSE_EVERY = (8, 12)  # random interval between 8-12 requests
+DISTRACTION_PAUSE_RANGE = (20, 45)  # seconds
+
+# Module-level counter for distraction pause scheduling
+_request_count = 0
+_next_distraction_at = random.randint(*DISTRACTION_PAUSE_EVERY)
 
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 
 def human_delay():
-    """Generate human-like delay using normal distribution"""
+    """Generate human-like delay using normal distribution, with occasional
+    longer 'distraction pauses' that mimic a real user switching tabs."""
+    global _request_count, _next_distraction_at
+    _request_count += 1
+
+    # Check if it's time for a distraction pause
+    if _request_count >= _next_distraction_at:
+        _request_count = 0
+        _next_distraction_at = random.randint(*DISTRACTION_PAUSE_EVERY)
+        delay = random.uniform(*DISTRACTION_PAUSE_RANGE)
+        logger.debug(f"Distraction pause: {delay:.1f} seconds (next in ~{_next_distraction_at} requests)")
+        return delay
+
     delay = max(DELAY_MIN, np.random.normal(DELAY_MEAN, 3))
     delay = min(delay, DELAY_MAX)
     logger.debug(f"Waiting {delay:.1f} seconds...")
@@ -1014,9 +1075,23 @@ async def run_scraper(debug_box_id: Optional[str] = None):
         if low_mem:
             viewport = {"width": 1280, "height": 720}
             logger.info("Low-memory mode: using 1280x720 viewport")
+        # Build extra HTTP headers from the profile (sec-ch-ua, language, etc.)
+        extra_headers = {
+            "Accept-Language": "en-US,en;q=0.9",
+            "DNT": "1",
+        }
+        if profile.get("sec_ch_ua"):
+            extra_headers["sec-ch-ua"] = profile["sec_ch_ua"]
+        if profile.get("sec_ch_ua_mobile"):
+            extra_headers["sec-ch-ua-mobile"] = profile["sec_ch_ua_mobile"]
+        if profile.get("sec_ch_ua_platform"):
+            extra_headers["sec-ch-ua-platform"] = profile["sec_ch_ua_platform"]
+
         context = await browser.new_context(
             user_agent=profile['user_agent'],
             viewport=viewport,
+            extra_http_headers=extra_headers,
+            locale="en-US",
         )
 
         page = await context.new_page()
@@ -1166,6 +1241,10 @@ def save_results(results: List[Dict]):
         if existing_today:
             for key in ('boxes_sold_per_day', 'boxes_sold_today', 'bucket_quantity_sold', 'daily_volume_usd', 'market_price_usd', 'current_bucket_start', 'current_bucket_qty', 'delta_boxes_sold_today', 'delta_source'):
                 if existing_today.get(key) is not None and entry.get(key) is None:
+                    entry[key] = existing_today[key]
+            # Preserve all ebay_* fields from Phase 1b (eBay scraper runs before listings scraper)
+            for key in existing_today:
+                if key.startswith("ebay_") and existing_today[key] is not None and entry.get(key) is None:
                     entry[key] = existing_today[key]
 
         # Remove existing entry for today (update mode)

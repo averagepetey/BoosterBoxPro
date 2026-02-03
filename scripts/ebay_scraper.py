@@ -94,9 +94,9 @@ POSITIVE_INDICATORS = [
     "factory sealed", "sealed",
 ]
 
-# Price floor as fraction of TCG market price (70% = reject below 30% discount)
-# Lower than TCGplayer's 81% because eBay prices are typically below TCGplayer
-MIN_PRICE_RATIO = 0.70  # Used for both sold and active listings
+# Price floor as fraction of TCG market price (75% = reject below 25% discount)
+# Slightly lower than TCGplayer's 81% because eBay prices are typically below TCGplayer
+MIN_PRICE_RATIO = 0.75  # Used for both sold and active listings
 
 
 # ============================================================================
@@ -1169,12 +1169,14 @@ def compute_ebay_fields(
     # Roll-forward: when cross-day dedup is active, ALL newly discovered sales
     # count toward today (missed sales from prior days roll into today's numbers
     # rather than being lost). On cold start (new_sales_only is None), fall back
-    # to counting sales from the target date itself.
+    # to counting sales from yesterday (130point has ~1 day delay, so for a Feb 2
+    # refresh the most recent complete day is Feb 1).
     if new_sales_only is not None:
         today_sold = new_sales_only
     else:
-        # Count sales from the target date (the day the refresh is capturing)
-        today_sold = [item for item in sold if item.get("sold_date") == today]
+        # Count sales from yesterday (130point has ~1 day delay)
+        yesterday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+        today_sold = [item for item in sold if item.get("sold_date") == yesterday]
     today_prices = []
     for item in today_sold:
         if item.get("sold_price_cents") is not None:
