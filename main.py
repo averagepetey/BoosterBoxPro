@@ -380,7 +380,7 @@ _leaderboard_cache: dict = {}
 # Leaderboard endpoint - requires authentication and active subscription
 @app.get("/booster-boxes")
 async def get_booster_boxes(
-    sort: str = "unified_volume_7d_ema",  # Primary ranking metric: 7-day EMA volume
+    sort: str = "unified_volume_usd",  # Primary ranking metric: 30-day raw volume
     limit: int = 10,
     offset: int = 0,
     current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
@@ -388,7 +388,7 @@ async def get_booster_boxes(
     """
     Get leaderboard of booster boxes.
     Requires authentication and active subscription (trial or paid).
-    Default sort: unified_volume_7d_ema (7-day EMA volume - most accurate ranking metric)
+    Default sort: unified_volume_usd (30-day raw volume sum)
     """
     """
     Leaderboard endpoint - combines static box info with live database metrics
