@@ -183,116 +183,197 @@ def _random_scroll_pattern() -> List[int]:
 # No "one piece", no "english" - rely on US-only filter + post-filtering.
 # Negative keywords: -case -korean -japanese -display
 
+# Negative keywords always included in searches
+NEGATIVE_KEYWORDS = "-case -korean -japanese -display"
+
+# Optional prefixes to randomly add (makes searches look more human)
+OPTIONAL_PREFIXES = ["one piece", "one piece tcg", "bandai", ""]
+
+# Optional suffixes to randomly add
+OPTIONAL_SUFFIXES = ["english", "sealed", "new", ""]
+
+
+def _generate_random_query(set_code: str, set_name_words: List[str], variant: str = "") -> str:
+    """
+    Generate a randomized search query that looks human but returns same results.
+
+    Always includes: booster box + negative keywords
+    Randomizes: word order, optional prefixes/suffixes
+    """
+    # Core components
+    components = [set_code] + set_name_words
+    if variant:
+        components.append(variant)
+
+    # Shuffle the core components
+    random.shuffle(components)
+
+    # Maybe add a prefix (50% chance)
+    prefix = random.choice(OPTIONAL_PREFIXES) if random.random() > 0.5 else ""
+
+    # Maybe add a suffix (30% chance)
+    suffix = random.choice(OPTIONAL_SUFFIXES) if random.random() > 0.7 else ""
+
+    # Build query: [prefix] [shuffled components] booster box [suffix] [negative keywords]
+    parts = []
+    if prefix:
+        parts.append(prefix)
+    parts.extend(components)
+    parts.append("booster box")
+    if suffix:
+        parts.append(suffix)
+
+    query = " ".join(parts) + " " + NEGATIVE_KEYWORDS
+    return query
+
+
 EBAY_SEARCH_CONFIG: Dict[str, Dict[str, Any]] = {
     # NOTE: max_price should be ~150% of typical market price to catch all valid sales
     # min_price in URL is just to filter junk; actual floor uses MIN_PRICE_RATIO (75%)
+    # "query_parts" used by _generate_random_query for randomized searches
     "860ffe3f-9286-42a9-ad4e-d079a6add6f4": {
         "name": "OP-01 Romance Dawn (Blue)",
-        "query": "romance dawn op-01 booster box blue -case -korean -japanese -display",
+        "set_code": "op-01",
+        "set_name_words": ["romance", "dawn"],
+        "variant": "blue",
         "min_price": 100,
-        "max_price": 8000,  # Floor ~$5773
+        "max_price": 8000,
     },
     "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": {
         "name": "OP-01 Romance Dawn (White)",
-        "query": "romance dawn op-01 booster box white -case -korean -japanese -display",
+        "set_code": "op-01",
+        "set_name_words": ["romance", "dawn"],
+        "variant": "white",
         "min_price": 100,
-        "max_price": 2500,  # Floor ~$1699
+        "max_price": 2500,
     },
     "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": {
         "name": "OP-02 Paramount War",
-        "query": "paramount war op-02 booster box -case -korean -japanese -display",
+        "set_code": "op-02",
+        "set_name_words": ["paramount", "war"],
+        "variant": "",
         "min_price": 50,
-        "max_price": 800,  # Floor ~$531
+        "max_price": 800,
     },
     "d3929fc6-6afa-468a-b7a1-ccc0f392131a": {
         "name": "OP-03 Pillars of Strength",
-        "query": "pillars of strength op-03 booster box -case -korean -japanese -display",
+        "set_code": "op-03",
+        "set_name_words": ["pillars", "of", "strength"],
+        "variant": "",
         "min_price": 100,
-        "max_price": 1200,  # Floor ~$717
+        "max_price": 1200,
     },
     "526c28b7-bc13-449b-a521-e63bdd81811a": {
         "name": "OP-04 Kingdoms of Intrigue",
-        "query": "kingdoms of intrigue op-04 booster box -case -korean -japanese -display",
+        "set_code": "op-04",
+        "set_name_words": ["kingdoms", "of", "intrigue"],
+        "variant": "",
         "min_price": 75,
-        "max_price": 900,  # Floor ~$559
+        "max_price": 900,
     },
     "6ea1659d-7b86-46c5-8fb2-0596262b8e68": {
         "name": "OP-05 Awakening of the New Era",
-        "query": "awakening of the new era op-05 booster box -case -korean -japanese -display",
+        "set_code": "op-05",
+        "set_name_words": ["awakening", "of", "the", "new", "era"],
+        "variant": "",
         "min_price": 150,
-        "max_price": 1600,  # Floor ~$1070
+        "max_price": 1600,
     },
     "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": {
         "name": "OP-06 Wings of the Captain",
-        "query": "wings of the captain op-06 booster box -case -korean -japanese -display",
+        "set_code": "op-06",
+        "set_name_words": ["wings", "of", "the", "captain"],
+        "variant": "",
         "min_price": 50,
-        "max_price": 600,  # Floor ~$338
+        "max_price": 600,
     },
     "9bfebc47-4a92-44b3-b157-8c53d6a6a064": {
         "name": "OP-07 500 Years in the Future",
-        "query": "500 years in the future op-07 booster box -case -korean -japanese -display",
+        "set_code": "op-07",
+        "set_name_words": ["500", "years", "in", "the", "future"],
+        "variant": "",
         "min_price": 50,
-        "max_price": 500,  # Floor ~$296
+        "max_price": 500,
     },
     "d0faf871-a930-4c80-a981-9df8741c90a9": {
         "name": "OP-08 Two Legends",
-        "query": "two legends op-08 booster box -case -korean -japanese -display",
+        "set_code": "op-08",
+        "set_name_words": ["two", "legends"],
+        "variant": "",
         "min_price": 50,
-        "max_price": 400,  # Floor ~$222
+        "max_price": 400,
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
-        "query": "op-09 emperors in the new world booster box -case -korean -japanese",
+        "set_code": "op-09",
+        "set_name_words": ["emperors", "in", "the", "new", "world"],
+        "variant": "",
         "min_price": 100,
-        "max_price": 1000,  # Floor ~$621
+        "max_price": 1000,
     },
     "3429708c-43c3-4ed8-8be3-706db8b062bd": {
         "name": "OP-10 Royal Blood",
-        "query": "royal blood op-10 booster box -case -korean -japanese -display",
+        "set_code": "op-10",
+        "set_name_words": ["royal", "blood"],
+        "variant": "",
         "min_price": 50,
-        "max_price": 400,  # Floor ~$216
+        "max_price": 400,
     },
     "46039dfc-a980-4bbd-aada-8cc1e124b44b": {
         "name": "OP-11 A Fist of Divine Speed",
-        "query": "fist of divine speed op-11 booster box -case -korean -japanese -display",
+        "set_code": "op-11",
+        "set_name_words": ["fist", "of", "divine", "speed"],
+        "variant": "",
         "min_price": 75,
-        "max_price": 700,  # Floor ~$413
+        "max_price": 700,
     },
     "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": {
         "name": "OP-12 Legacy of the Master",
-        "query": "legacy of the master op-12 booster box -case -korean -japanese -display",
+        "set_code": "op-12",
+        "set_name_words": ["legacy", "of", "the", "master"],
+        "variant": "",
         "min_price": 50,
-        "max_price": 400,  # Floor ~$222
+        "max_price": 400,
     },
     "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": {
         "name": "OP-13 Carrying on His Will",
-        "query": "carrying on his will op-13 booster box -case -korean -japanese -display",
+        "set_code": "op-13",
+        "set_name_words": ["carrying", "on", "his", "will"],
+        "variant": "",
         "min_price": 150,
-        "max_price": 1200,  # Floor ~$656
+        "max_price": 1200,
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
-        "query": "memorial collection eb-01 booster box -case -korean -japanese -display",
+        "set_code": "eb-01",
+        "set_name_words": ["memorial", "collection"],
+        "variant": "",
         "min_price": 150,
-        "max_price": 1400,  # Floor ~$840
+        "max_price": 1400,
     },
     "7509a855-f6da-445e-b445-130824d81d04": {
         "name": "EB-02 Anime 25th Collection",
-        "query": "anime 25th collection eb-02 booster box -case -korean -japanese -display",
+        "set_code": "eb-02",
+        "set_name_words": ["anime", "25th", "collection"],
+        "variant": "",
         "min_price": 100,
-        "max_price": 900,  # Floor ~$554
+        "max_price": 900,
     },
     "743bf253-98ca-49d5-93fe-a3eaef9f72c1": {
         "name": "PRB-01 Premium Booster",
-        "query": "premium booster prb-01 box -case -korean -japanese -display",
+        "set_code": "prb-01",
+        "set_name_words": ["premium", "booster"],
+        "variant": "",
         "min_price": 150,
-        "max_price": 1500,  # Floor ~$906
+        "max_price": 1500,
     },
     "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": {
         "name": "PRB-02 Premium Booster Vol. 2",
-        "query": "premium booster vol 2 prb-02 box -case -korean -japanese -display",
+        "set_code": "prb-02",
+        "set_name_words": ["premium", "booster", "vol", "2"],
+        "variant": "",
         "min_price": 75,
-        "max_price": 600,  # Floor ~$352
+        "max_price": 600,
     },
 }
 
@@ -958,7 +1039,7 @@ async def run_ebay_scraper(
 
             for box_idx, (box_id, config) in enumerate(box_items):
                 name = config["name"]
-                query = config["query"]
+                query = _generate_random_query(config["set_code"], config["set_name_words"], config.get("variant", ""))
                 min_price_config = config["min_price"]
                 max_price_config = config["max_price"]
 
@@ -981,6 +1062,7 @@ async def run_ebay_scraper(
                     min_price = min_price_config
 
                 logger.info(f"Scraping {name} (min_price=${min_price:.2f})")
+                logger.debug(f"  Randomized query: {query}")
 
                 # Check for distraction pause
                 pause = _maybe_distraction_pause()
