@@ -1136,6 +1136,27 @@ async def run_ebay_scraper(
                         "ebay_source": "playwright_direct",
                         "ebay_fetch_timestamp": datetime.now(timezone.utc).isoformat(),
                         "_ebay_sold_item_ids": current_item_ids,
+                        # Store today's sold items for verification (title, price, date, url)
+                        "_ebay_sold_today_items": [
+                            {
+                                "title": item["title"],
+                                "price": item["sold_price_usd"],
+                                "date": item.get("sold_date"),
+                                "url": item.get("url", ""),
+                                "item_id": item["ebay_item_id"],
+                            }
+                            for item in today_sold
+                        ],
+                        # Store sample of all filtered items (first 10) for audit
+                        "_ebay_filtered_sample": [
+                            {
+                                "title": item["title"],
+                                "price": item["sold_price_usd"],
+                                "date": item.get("sold_date"),
+                                "item_id": item["ebay_item_id"],
+                            }
+                            for item in filtered_items[:10]
+                        ],
                     }
 
                     # Update historical entries
