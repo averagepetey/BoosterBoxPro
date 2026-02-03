@@ -78,7 +78,7 @@ SUSPICIOUS_KEYWORDS = [
     "missing", "incomplete", "resealed", "no seal", "unsealed",
     "loose packs", "loose pack", "unsealed box", "no box", "packs only",
     "pack only", "empty box", "for display", "display only",
-    "sleeved",
+    "sleeved", "broken seal",
 ]
 
 # Always-exclude keywords — never overridden by positive indicators.
@@ -94,8 +94,9 @@ POSITIVE_INDICATORS = [
     "factory sealed", "sealed",
 ]
 
-# Price floor as fraction of TCG market price (81% = reject below 19% discount)
-ACTIVE_MIN_PRICE_RATIO = 0.81
+# Price floor as fraction of TCG market price (70% = reject below 30% discount)
+# Lower than TCGplayer's 81% because eBay prices are typically below TCGplayer
+MIN_PRICE_RATIO = 0.70  # Used for both sold and active listings
 
 
 # ============================================================================
@@ -226,131 +227,134 @@ def _human_delay() -> float:
 # Price ranges are in USD DOLLARS (not cents). Used to filter out obviously
 # wrong results (singles, packs, cases, bulk lots). Intentionally generous.
 EBAY_SEARCH_CONFIG: Dict[str, Dict[str, Any]] = {
+    # NOTE: "query" (sold listings) omits "sealed" to maximize 130point results.
+    # Quality filtering happens post-fetch via TITLE_EXCLUSIONS and other checks.
+    # "active_query" keeps "sealed" since filter_active_listings requires it in title.
     "860ffe3f-9286-42a9-ad4e-d079a6add6f4": {
         "name": "OP-01 Romance Dawn (Blue)",
-        "query": "One Piece OP-01 Romance Dawn booster box sealed blue",
+        "query": "One Piece OP-01 Romance Dawn booster box blue",
         "active_query": "romance dawn op01 booster box sealed blue",
         "min_price": 20,
-        "max_price": 200,
+        "max_price": 500,  # Raised for multi-box lots
     },
     "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": {
         "name": "OP-01 Romance Dawn (White)",
-        "query": "One Piece OP-01 Romance Dawn booster box sealed white",
+        "query": "One Piece OP-01 Romance Dawn booster box white",
         "active_query": "romance dawn op01 booster box sealed white",
         "min_price": 15,
-        "max_price": 150,
+        "max_price": 400,  # Raised for multi-box lots
     },
     "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": {
         "name": "OP-02 Paramount War",
-        "query": "One Piece OP-02 Paramount War booster box sealed",
+        "query": "One Piece OP-02 Paramount War booster box",
         "active_query": "paramount war op02 booster box sealed",
         "min_price": 15,
-        "max_price": 150,
+        "max_price": 400,  # Raised for multi-box lots
     },
     "d3929fc6-6afa-468a-b7a1-ccc0f392131a": {
         "name": "OP-03 Pillars of Strength",
-        "query": "One Piece OP-03 Pillars of Strength booster box sealed",
+        "query": "One Piece OP-03 Pillars of Strength booster box",
         "active_query": "pillars of strength op03 booster box sealed",
         "min_price": 15,
-        "max_price": 150,
+        "max_price": 400,  # Raised for multi-box lots
     },
     "526c28b7-bc13-449b-a521-e63bdd81811a": {
         "name": "OP-04 Kingdoms of Intrigue",
-        "query": "One Piece OP-04 Kingdoms Intrigue booster box sealed",
+        "query": "One Piece OP-04 Kingdoms Intrigue booster box",
         "active_query": "kingdoms of intrigue op04 booster box sealed",
         "min_price": 15,
-        "max_price": 120,
+        "max_price": 350,  # Raised for multi-box lots
     },
     "6ea1659d-7b86-46c5-8fb2-0596262b8e68": {
         "name": "OP-05 Awakening of the New Era",
-        "query": "One Piece OP-05 Awakening New Era booster box sealed",
+        "query": "One Piece OP-05 Awakening New Era booster box",
         "active_query": "awakening of the new era op05 booster box sealed",
         "min_price": 20,
-        "max_price": 200,
+        "max_price": 500,  # Raised for multi-box lots
     },
     "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": {
         "name": "OP-06 Wings of the Captain",
-        "query": "One Piece OP-06 Wings Captain booster box sealed",
+        "query": "One Piece OP-06 Wings Captain booster box",
         "active_query": "wings of the captain op06 booster box sealed",
         "min_price": 15,
-        "max_price": 120,
+        "max_price": 350,  # Raised for multi-box lots
     },
     "9bfebc47-4a92-44b3-b157-8c53d6a6a064": {
         "name": "OP-07 500 Years in the Future",
-        "query": "One Piece OP-07 500 Years Future booster box sealed",
+        "query": "One Piece OP-07 500 Years Future booster box",
         "active_query": "500 years in the future op07 booster box sealed",
         "min_price": 15,
-        "max_price": 120,
+        "max_price": 350,  # Raised for multi-box lots
     },
     "d0faf871-a930-4c80-a981-9df8741c90a9": {
         "name": "OP-08 Two Legends",
-        "query": "One Piece OP-08 Two Legends booster box sealed",
+        "query": "One Piece OP-08 Two Legends booster box",
         "active_query": "two legends op08 booster box sealed",
         "min_price": 30,
-        "max_price": 250,
+        "max_price": 600,  # Raised for multi-box lots
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
-        "query": "One Piece OP-09 Emperors New World booster box sealed",
+        "query": "One Piece OP-09 Emperors New World booster box",
         "active_query": "emperors in the new world op09 booster box sealed",
         "min_price": 30,
-        "max_price": 250,
+        "max_price": 600,  # Raised for multi-box lots
     },
     "3429708c-43c3-4ed8-8be3-706db8b062bd": {
         "name": "OP-10 Royal Blood",
-        "query": "One Piece OP-10 Royal Blood booster box sealed",
+        "query": "One Piece OP-10 Royal Blood booster box",
         "active_query": "royal blood op10 booster box sealed",
         "min_price": 30,
-        "max_price": 250,
+        "max_price": 600,  # Raised for multi-box lots
     },
     "46039dfc-a980-4bbd-aada-8cc1e124b44b": {
         "name": "OP-11 A Fist of Divine Speed",
-        "query": "One Piece OP-11 Fist Divine Speed booster box sealed",
+        "query": "One Piece OP-11 Fist Divine Speed booster box",
         "active_query": "fist of divine speed op11 booster box sealed",
         "min_price": 40,
-        "max_price": 300,
+        "max_price": 700,  # Raised for multi-box lots
     },
     "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": {
         "name": "OP-12 Legacy of the Master",
-        "query": "One Piece OP-12 Legacy Master booster box sealed",
+        "query": "One Piece OP-12 Legacy Master booster box",
         "active_query": "legacy of the master op12 booster box sealed",
         "min_price": 30,
-        "max_price": 250,
+        "max_price": 600,  # Raised for multi-box lots
     },
     "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": {
         "name": "OP-13 Carrying on His Will",
-        "query": "One Piece OP-13 Carrying His Will booster box sealed",
+        "query": "carrying on his will op-13 booster box",
         "active_query": "carrying on his will op13 booster box sealed",
         "min_price": 200,
-        "max_price": 900,
+        "max_price": 2500,  # Raised to capture multi-box lots (2-3x at ~$400/ea)
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
-        "query": "One Piece EB-01 Memorial Collection booster box sealed",
+        "query": "One Piece EB-01 Memorial Collection booster box",
         "active_query": "memorial collection eb01 booster box sealed",
         "min_price": 40,
-        "max_price": 350,
+        "max_price": 800,  # Raised for multi-box lots
     },
     "7509a855-f6da-445e-b445-130824d81d04": {
         "name": "EB-02 Anime 25th Collection",
-        "query": "One Piece EB-02 Anime 25th booster box sealed",
+        "query": "One Piece EB-02 Anime 25th booster box",
         "active_query": "anime 25th collection eb02 booster box sealed",
         "min_price": 30,
-        "max_price": 250,
+        "max_price": 600,  # Raised for multi-box lots
     },
     "743bf253-98ca-49d5-93fe-a3eaef9f72c1": {
         "name": "PRB-01 Premium Booster",
-        "query": "One Piece PRB-01 Premium Booster box sealed",
+        "query": "One Piece PRB-01 Premium Booster box",
         "active_query": "premium booster prb01 booster box sealed",
         "min_price": 40,
-        "max_price": 350,
+        "max_price": 800,  # Raised for multi-box lots
     },
     "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": {
         "name": "PRB-02 Premium Booster Vol. 2",
-        "query": "One Piece PRB-02 Premium Booster Vol 2 box sealed",
+        "query": "One Piece PRB-02 Premium Booster Vol 2 box",
         "active_query": "premium booster vol 2 prb02 booster box sealed",
         "min_price": 40,
-        "max_price": 250,
+        "max_price": 600,  # Raised for multi-box lots
     },
 }
 
@@ -677,9 +681,11 @@ def _is_suspicious(title: str) -> bool:
         return True
     # Check regular suspicious keywords
     if any(kw in t for kw in SUSPICIOUS_KEYWORDS):
-        # Exception: "booster box" + "sealed" overrides ambiguous keywords
+        # Exception: "booster box" + "sealed" (but NOT "unsealed") overrides ambiguous keywords
         has_positive = any(pos in t for pos in POSITIVE_INDICATORS)
-        if has_positive and "sealed" in t:
+        # Use word boundary check: "sealed" but not "unsealed", "resealed", etc.
+        has_sealed = bool(re.search(r'\bsealed\b', t)) and not re.search(r'\b(un|re)sealed\b', t)
+        if has_positive and has_sealed:
             return False
         return True
     return False
@@ -828,7 +834,7 @@ def filter_active_listings(
 
         # 5. Price floor (81% of TCG market price)
         if price_usd is not None and tcg_floor_price and tcg_floor_price > 0:
-            if price_usd < tcg_floor_price * ACTIVE_MIN_PRICE_RATIO:
+            if price_usd < tcg_floor_price * MIN_PRICE_RATIO:
                 excluded["price_floor"] += 1
                 continue
 
@@ -1037,6 +1043,7 @@ def filter_sold_listings(
     raw: List[Dict[str, Any]],
     min_price_usd: float,
     max_price_usd: float,
+    tcg_market_price: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     """Filter sold listings with TCGplayer-equivalent quality checks.
 
@@ -1044,15 +1051,23 @@ def filter_sold_listings(
     1. Title keyword exclusion
     2. Japanese/Asian exclusion
     3. Suspicious keyword exclusion
-    4. Price range (config min/max)
+    4. Price range (dynamic 81% of TCG market price, or config min/max as fallback)
     5. Dedup by eBay item ID
     6. Secondary dedup by price + normalized title (seller proxy)
 
     Args:
         raw: Parsed listing dicts with sold_price_cents.
-        min_price_usd: Minimum price in USD dollars (e.g. 30 = $30).
+        min_price_usd: Fallback minimum price in USD dollars (e.g. 30 = $30).
         max_price_usd: Maximum price in USD dollars (e.g. 250 = $250).
+        tcg_market_price: TCGplayer market price for dynamic 81% floor calculation.
     """
+    # Dynamic minimum: 81% of TCG market price (matches TCGplayer listings_scraper)
+    if tcg_market_price and tcg_market_price > 0:
+        dynamic_min = tcg_market_price * MIN_PRICE_RATIO
+        effective_min = max(dynamic_min, min_price_usd)  # Use higher of dynamic or config
+        logger.debug(f"Using dynamic min price: ${effective_min:.2f} (81% of ${tcg_market_price:.2f})")
+    else:
+        effective_min = min_price_usd
     seen_ids: set = set()
     seen_title_price: set = set()
     filtered = []
@@ -1093,9 +1108,10 @@ def filter_sold_listings(
             multi_box_count += 1
 
         # 4. Price range (uses per-box price after qty adjustment)
+        # Uses dynamic 81% of TCG market price as minimum (effective_min)
         if price_cents is not None:
             price_usd = price_cents / 100.0
-            if price_usd < min_price_usd or price_usd > max_price_usd:
+            if price_usd < effective_min or price_usd > max_price_usd:
                 excluded["price_range"] += 1
                 continue
         if ebay_id:
@@ -1153,12 +1169,12 @@ def compute_ebay_fields(
     # Roll-forward: when cross-day dedup is active, ALL newly discovered sales
     # count toward today (missed sales from prior days roll into today's numbers
     # rather than being lost). On cold start (new_sales_only is None), fall back
-    # to yesterday-only counting to avoid inflating day 1 with the full 130point window.
+    # to counting sales from the target date itself.
     if new_sales_only is not None:
         today_sold = new_sales_only
     else:
-        yesterday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
-        today_sold = [item for item in sold if item.get("sold_date") == yesterday]
+        # Count sales from the target date (the day the refresh is capturing)
+        today_sold = [item for item in sold if item.get("sold_date") == today]
     today_prices = []
     for item in today_sold:
         if item.get("sold_price_cents") is not None:
@@ -1323,7 +1339,20 @@ async def run_ebay_scraper(
             min_price = config["min_price"]
             max_price = config["max_price"]
 
-            logger.info(f"Scraping sold data for {name}")
+            # Get TCG market price from historical entries for dynamic 81% floor
+            tcg_market_price = None
+            box_entries = hist.get(box_id, [])
+            if box_entries:
+                # Get most recent entry with market_price_usd
+                for entry in sorted(box_entries, key=lambda e: e.get("date", ""), reverse=True):
+                    if entry.get("market_price_usd"):
+                        tcg_market_price = entry["market_price_usd"]
+                        break
+                    elif entry.get("floor_price_usd"):
+                        tcg_market_price = entry["floor_price_usd"]
+                        break
+
+            logger.info(f"Scraping sold data for {name}" + (f" (TCG market: ${tcg_market_price:.2f})" if tcg_market_price else ""))
 
             try:
                 await asyncio.sleep(_human_delay())
@@ -1332,7 +1361,7 @@ async def run_ebay_scraper(
                     session, query, dump_html=dump_html, box_name=name,
                 )
                 raw_sold = parse_sold_listings_html(sold_html)
-                filtered_sold = filter_sold_listings(raw_sold, min_price, max_price)
+                filtered_sold = filter_sold_listings(raw_sold, min_price, max_price, tcg_market_price=tcg_market_price)
                 logger.info(f"  Sold: {len(raw_sold)} raw -> {len(filtered_sold)} filtered")
 
                 sold_data[box_id] = filtered_sold
