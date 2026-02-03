@@ -242,7 +242,7 @@ EBAY_SEARCH_CONFIG: Dict[str, Dict[str, Any]] = {
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
-        "query": "emperors in the new world op-09 booster box -case -korean -japanese -display",
+        "query": "op-09 emperors in the new world booster box -case -korean -japanese",
         "min_price": 100,
         "max_price": 1000,  # Floor ~$621
     },
