@@ -6,16 +6,28 @@
 
 'use client';
 
+import Image from 'next/image';
 import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
 export function OurStorySection() {
   const { openSignup } = useAuthModals();
   return (
-    <section 
+    <section
       id="our-story"
-      className="relative w-full py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-12"
+      className="relative w-full py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-12 overflow-hidden"
     >
-      <div className="max-w-4xl mx-auto">
+      {/* Boot logo - positioned in the right blank area, clear of text */}
+      <div className="hidden xl:block absolute right-8 2xl:right-16 top-8 pointer-events-none select-none" style={{ width: '380px' }}>
+        <Image
+          src="/images/boot trail.png"
+          alt=""
+          width={380}
+          height={380}
+          className="w-full h-auto opacity-25"
+        />
+      </div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Title */}
         <div className="text-center mb-8 sm:mb-10 lg:mb-12">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white mb-4 lg:mb-6 leading-tight">

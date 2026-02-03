@@ -17,7 +17,7 @@ export function HeroSection() {
   const { openSignup } = useAuthModals();
 
   return (
-    <section className="relative min-h-screen flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-12 max-w-7xl mx-auto">
+    <section className="relative min-h-screen flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-16 xl:px-24 py-6 sm:py-8 lg:py-12 max-w-[1600px] mx-auto">
       {/* Left Side - Marketing Content */}
       <div className="w-full lg:w-1/2 mb-6 lg:mb-0 lg:pr-8">
         {/* Live Market Indicator */}

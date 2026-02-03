@@ -2,15 +2,17 @@
 """
 Daily TCGplayer Sales Data Refresh Script
 
-Runs in two phases:
+Runs in multiple phases:
 1. Apify API - Fetches sales data from TCGplayer via Apify
+1b. eBay Scraper - Fetches eBay sales data via 130point.com
 2. Listings Scraper - Scrapes active listings count from TCGplayer
+3. Rolling Metrics - Computes derived metrics and upserts to DB
 
-Schedule: cron at 1pm EST (18:00 UTC). Script adds a random 0–30 min delay so the
-actual run happens at a random time within the 1pm half‑hour (avoids a fixed hit every day).
+Schedule: cron at 10pm EST (03:00 UTC next day). Script adds a random 0–30 min delay
+so the actual run happens at a random time within the 10pm window (captures full day's sales).
 
 Run manually (immediate): python scripts/daily_refresh.py --no-delay
-Run via cron (random around 1pm EST): schedule "0 18 * * *", startCommand "python scripts/daily_refresh.py"
+Run via cron (10pm EST): schedule "0 3 * * *" (or "0 2 * * *" during EDT)
 """
 
 import sys
@@ -96,7 +98,7 @@ def main():
     # Random delay (0–30 min) when run by cron so actual work happens at a random time within the 1pm window
     skip_delay = "--no-delay" in sys.argv
     if not skip_delay:
-        delay_min, delay_max = 0, 30  # minutes (cron fires at 1pm EST; jitter keeps hit time variable)
+        delay_min, delay_max = 0, 30  # minutes (cron fires at 10pm EST; jitter keeps hit time variable)
         delay_sec = random.randint(delay_min * 60, delay_max * 60)
         eta = datetime.now() + timedelta(seconds=delay_sec)
         logger.info(f"🎲 Random delay: sleeping {delay_sec // 60} min (work will start ~{eta.strftime('%H:%M')} local)")
@@ -176,6 +178,34 @@ def main():
         save_completion_status(status)
         return 1
     
+    # Phase 1b: eBay via 130point (non-fatal — failure does NOT block pipeline)
+    skip_ebay = os.environ.get("SKIP_EBAY", "").lower() in ("1", "true", "yes")
+    status["ebay"] = {"completed": False, "error": None, "skipped": False}
+    if skip_ebay:
+        logger.info("")
+        logger.info("=" * 50)
+        logger.info("Phase 1b: eBay Scraper SKIPPED (SKIP_EBAY=1)")
+        logger.info("=" * 50)
+        status["ebay"]["skipped"] = True
+        status["ebay"]["completed"] = True
+    else:
+        logger.info("")
+        logger.info("=" * 50)
+        logger.info("Phase 1b: eBay Scraper via 130point.com")
+        logger.info("=" * 50)
+        try:
+            from scripts.ebay_scraper import run_ebay_scraper
+            ebay_result = asyncio.run(run_ebay_scraper())
+            status["ebay"]["success_count"] = ebay_result.get("results", 0)
+            status["ebay"]["error_count"] = len(ebay_result.get("errors", []))
+            status["ebay"]["completed"] = True
+            logger.info(f"✅ Phase 1b complete: {ebay_result.get('results', 0)} boxes, {len(ebay_result.get('errors', []))} errors")
+        except Exception as e:
+            status["ebay"]["error"] = str(e)
+            logger.warning(f"⚠️  Phase 1b (eBay) failed (non-fatal): {e}")
+            import traceback
+            logger.warning(traceback.format_exc())
+
     # Phase 2: Listings Scraper (skip if SKIP_SCRAPER=1 to stay under 512Mi on Render free cron)
     skip_scraper = os.environ.get("SKIP_SCRAPER", "").lower() in ("1", "true", "yes")
     if skip_scraper:

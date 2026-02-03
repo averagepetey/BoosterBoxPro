@@ -233,7 +233,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 {[
                   { label: 'Liquidity', value: getLiquidityScoreLabel(box.metrics.liquidity_score), valueClass: getLiquidityScoreColor(box.metrics.liquidity_score) },
                   { label: 'Listed to 20%', value: box.metrics.active_listings_count != null ? box.metrics.active_listings_count.toLocaleString() : '--', valueClass: 'text-white' },
-                  { label: 'Sold/Day', value: box.metrics.boxes_sold_30d_avg != null ? (Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10).toString() : box.metrics.boxes_sold_per_day != null ? (Math.round(box.metrics.boxes_sold_per_day * 10) / 10).toString() : '--', valueClass: 'text-white' },
+                  { label: 'Sold Today', value: box.metrics.combined_boxes_sold_today != null ? Math.round(box.metrics.combined_boxes_sold_today).toString() : '--', valueClass: 'text-white' },
                   { label: 'Time to Sale', value: box.metrics.expected_time_to_sale_days != null ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d` : 'N/A', valueClass: 'text-white' },
                   { label: 'Top 10', value: box.metrics.top_10_value_usd != null ? formatCurrency(box.metrics.top_10_value_usd) : '--', valueClass: 'text-white' },
                   { label: 'Daily Vol', value: box.metrics.daily_volume_usd != null ? formatCurrency(box.metrics.daily_volume_usd) : '--', valueClass: 'text-white' },
@@ -534,12 +534,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                     <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
                   </div>
                   <div className="flex flex-col min-h-[5rem]">
-                    <div className="text-white/70 text-sm mb-1">Sold/Day</div>
+                    <div className="text-white/70 text-sm mb-1">Sold Today</div>
                     <div className="text-2xl font-bold text-white">
-                      {box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined
-                        ? (Math.round(box.metrics.boxes_sold_30d_avg * 10) / 10).toString()
-                        : box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                        ? (Math.round(box.metrics.boxes_sold_per_day * 10) / 10).toString()
+                      {box.metrics.combined_boxes_sold_today !== null && box.metrics.combined_boxes_sold_today !== undefined
+                        ? Math.round(box.metrics.combined_boxes_sold_today).toString()
                         : '--'}
                     </div>
                     <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
