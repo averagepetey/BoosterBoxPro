@@ -95,10 +95,12 @@ def main():
             debug_box_id = sys.argv[idx + 1]
             logger.info(f"Debug mode: will only scrape box {debug_box_id}")
 
-    # Random delay (0–30 min) when run by cron so actual work happens at a random time within the 1pm window
+    # Random delay (0–45 min) when run by cron so actual work happens at a random time
+    # Combined with ebay_playwright's 0-15 min internal jitter = 0-60 min total variance
+    # This makes it nearly impossible to predict when scraping actually happens
     skip_delay = "--no-delay" in sys.argv
     if not skip_delay:
-        delay_min, delay_max = 0, 30  # minutes (cron fires at 10pm EST; jitter keeps hit time variable)
+        delay_min, delay_max = 0, 45  # minutes (cron fires at 10pm EST; jitter keeps hit time variable)
         delay_sec = random.randint(delay_min * 60, delay_max * 60)
         eta = datetime.now() + timedelta(seconds=delay_sec)
         logger.info(f"🎲 Random delay: sleeping {delay_sec // 60} min (work will start ~{eta.strftime('%H:%M')} local)")
@@ -178,7 +180,8 @@ def main():
         save_completion_status(status)
         return 1
     
-    # Phase 1b: eBay via 130point (non-fatal — failure does NOT block pipeline)
+    # Phase 1b: eBay sold listings via Playwright (non-fatal — failure does NOT block pipeline)
+    # Uses custom Playwright scraper instead of Apify ($0 operational cost)
     skip_ebay = os.environ.get("SKIP_EBAY", "").lower() in ("1", "true", "yes")
     status["ebay"] = {"completed": False, "error": None, "skipped": False}
     if skip_ebay:
@@ -191,10 +194,10 @@ def main():
     else:
         logger.info("")
         logger.info("=" * 50)
-        logger.info("Phase 1b: eBay Scraper via 130point.com")
+        logger.info("Phase 1b: eBay Sold Listings via Playwright")
         logger.info("=" * 50)
         try:
-            from scripts.ebay_scraper import run_ebay_scraper
+            from scripts.ebay_playwright import run_ebay_scraper
             ebay_result = asyncio.run(run_ebay_scraper())
             status["ebay"]["success_count"] = ebay_result.get("results", 0)
             status["ebay"]["error_count"] = len(ebay_result.get("errors", []))

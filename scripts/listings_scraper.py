@@ -1226,10 +1226,12 @@ def save_results(results: List[Dict]):
         # Build scraper entry; preserve Apify sales/volume from existing today entry if present
         # (Phase 1 Apify runs first and writes sales/volume; we must not wipe them from JSON)
         existing_today = next((e for e in hist[box_id] if e.get('date') == today), None)
+        # NOTE: Don't set floor_price_usd here - that's the market SALE price from Apify.
+        # Store listings floor separately as 'listings_floor_price' for reference.
         entry = {
             'date': today,
             'source': 'tcgplayer_scraper',
-            'floor_price_usd': result.get('floor_price'),
+            'listings_floor_price': result.get('floor_price'),  # Renamed: lowest listing price (not market price)
             'active_listings_count': boxes_within_20pct,
             'listings_within_10pct_floor': result.get('listings_within_10pct_floor'),
             'scrape_timestamp': result.get('scrape_timestamp'),
@@ -1239,7 +1241,8 @@ def save_results(results: List[Dict]):
             'boxes_removed_today': boxes_removed_today,
         }
         if existing_today:
-            for key in ('boxes_sold_per_day', 'boxes_sold_today', 'bucket_quantity_sold', 'daily_volume_usd', 'market_price_usd', 'current_bucket_start', 'current_bucket_qty', 'delta_boxes_sold_today', 'delta_source'):
+            # Preserve Apify data (floor_price_usd is market price from sales, not listings floor)
+            for key in ('floor_price_usd', 'boxes_sold_per_day', 'boxes_sold_today', 'bucket_quantity_sold', 'daily_volume_usd', 'market_price_usd', 'current_bucket_start', 'current_bucket_qty', 'delta_boxes_sold_today', 'delta_source'):
                 if existing_today.get(key) is not None and entry.get(key) is None:
                     entry[key] = existing_today[key]
             # Preserve all ebay_* fields from Phase 1b (eBay scraper runs before listings scraper)
@@ -1258,11 +1261,14 @@ def save_results(results: List[Dict]):
         unified_volume_usd = entry.get('unified_volume_usd') if existing_today else None
 
         # Write to DB using box_id directly (these ARE the DB UUIDs)
+        # NOTE: Do NOT write floor_price_usd here - that comes from Apify (sales data).
+        # Listings scraper's floor is the lowest LISTING price which can be an outlier.
+        # Only write active_listings_count, boxes_added_today from this scraper.
         if upsert_daily_metrics:
             ok = upsert_daily_metrics(
                 booster_box_id=box_id,
                 metric_date=today,
-                floor_price_usd=result.get('floor_price'),
+                floor_price_usd=None,  # Don't overwrite Apify's market price
                 boxes_sold_per_day=boxes_sold_per_day,
                 active_listings_count=boxes_within_20pct,
                 unified_volume_usd=unified_volume_usd,
