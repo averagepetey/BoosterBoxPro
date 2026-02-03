@@ -184,113 +184,115 @@ def _random_scroll_pattern() -> List[int]:
 # Negative keywords: -case -korean -japanese -display
 
 EBAY_SEARCH_CONFIG: Dict[str, Dict[str, Any]] = {
+    # NOTE: max_price should be ~150% of typical market price to catch all valid sales
+    # min_price in URL is just to filter junk; actual floor uses MIN_PRICE_RATIO (75%)
     "860ffe3f-9286-42a9-ad4e-d079a6add6f4": {
         "name": "OP-01 Romance Dawn (Blue)",
         "query": "romance dawn op-01 booster box blue -case -korean -japanese -display",
-        "min_price": 20,
-        "max_price": 500,
+        "min_price": 100,
+        "max_price": 8000,  # Floor ~$5773
     },
     "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": {
         "name": "OP-01 Romance Dawn (White)",
         "query": "romance dawn op-01 booster box white -case -korean -japanese -display",
-        "min_price": 15,
-        "max_price": 400,
+        "min_price": 100,
+        "max_price": 2500,  # Floor ~$1699
     },
     "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": {
         "name": "OP-02 Paramount War",
         "query": "paramount war op-02 booster box -case -korean -japanese -display",
-        "min_price": 15,
-        "max_price": 400,
+        "min_price": 50,
+        "max_price": 800,  # Floor ~$531
     },
     "d3929fc6-6afa-468a-b7a1-ccc0f392131a": {
         "name": "OP-03 Pillars of Strength",
         "query": "pillars of strength op-03 booster box -case -korean -japanese -display",
-        "min_price": 15,
-        "max_price": 400,
+        "min_price": 100,
+        "max_price": 1200,  # Floor ~$717
     },
     "526c28b7-bc13-449b-a521-e63bdd81811a": {
         "name": "OP-04 Kingdoms of Intrigue",
         "query": "kingdoms of intrigue op-04 booster box -case -korean -japanese -display",
-        "min_price": 15,
-        "max_price": 350,
+        "min_price": 75,
+        "max_price": 900,  # Floor ~$559
     },
     "6ea1659d-7b86-46c5-8fb2-0596262b8e68": {
         "name": "OP-05 Awakening of the New Era",
         "query": "awakening of the new era op-05 booster box -case -korean -japanese -display",
-        "min_price": 20,
-        "max_price": 500,
+        "min_price": 150,
+        "max_price": 1600,  # Floor ~$1070
     },
     "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": {
         "name": "OP-06 Wings of the Captain",
         "query": "wings of the captain op-06 booster box -case -korean -japanese -display",
-        "min_price": 15,
-        "max_price": 350,
+        "min_price": 50,
+        "max_price": 600,  # Floor ~$338
     },
     "9bfebc47-4a92-44b3-b157-8c53d6a6a064": {
         "name": "OP-07 500 Years in the Future",
         "query": "500 years in the future op-07 booster box -case -korean -japanese -display",
-        "min_price": 15,
-        "max_price": 350,
+        "min_price": 50,
+        "max_price": 500,  # Floor ~$296
     },
     "d0faf871-a930-4c80-a981-9df8741c90a9": {
         "name": "OP-08 Two Legends",
         "query": "two legends op-08 booster box -case -korean -japanese -display",
-        "min_price": 30,
-        "max_price": 600,
+        "min_price": 50,
+        "max_price": 400,  # Floor ~$222
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
         "query": "emperors in the new world op-09 booster box -case -korean -japanese -display",
-        "min_price": 30,
-        "max_price": 600,
+        "min_price": 100,
+        "max_price": 1000,  # Floor ~$621
     },
     "3429708c-43c3-4ed8-8be3-706db8b062bd": {
         "name": "OP-10 Royal Blood",
         "query": "royal blood op-10 booster box -case -korean -japanese -display",
-        "min_price": 30,
-        "max_price": 600,
+        "min_price": 50,
+        "max_price": 400,  # Floor ~$216
     },
     "46039dfc-a980-4bbd-aada-8cc1e124b44b": {
         "name": "OP-11 A Fist of Divine Speed",
         "query": "fist of divine speed op-11 booster box -case -korean -japanese -display",
-        "min_price": 40,
-        "max_price": 700,
+        "min_price": 75,
+        "max_price": 700,  # Floor ~$413
     },
     "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": {
         "name": "OP-12 Legacy of the Master",
         "query": "legacy of the master op-12 booster box -case -korean -japanese -display",
-        "min_price": 30,
-        "max_price": 600,
+        "min_price": 50,
+        "max_price": 400,  # Floor ~$222
     },
     "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": {
         "name": "OP-13 Carrying on His Will",
         "query": "carrying on his will op-13 booster box -case -korean -japanese -display",
-        "min_price": 200,
-        "max_price": 2500,
+        "min_price": 150,
+        "max_price": 1200,  # Floor ~$656
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
         "query": "memorial collection eb-01 booster box -case -korean -japanese -display",
-        "min_price": 40,
-        "max_price": 800,
+        "min_price": 150,
+        "max_price": 1400,  # Floor ~$840
     },
     "7509a855-f6da-445e-b445-130824d81d04": {
         "name": "EB-02 Anime 25th Collection",
         "query": "anime 25th collection eb-02 booster box -case -korean -japanese -display",
-        "min_price": 30,
-        "max_price": 600,
+        "min_price": 100,
+        "max_price": 900,  # Floor ~$554
     },
     "743bf253-98ca-49d5-93fe-a3eaef9f72c1": {
         "name": "PRB-01 Premium Booster",
         "query": "premium booster prb-01 box -case -korean -japanese -display",
-        "min_price": 40,
-        "max_price": 800,
+        "min_price": 150,
+        "max_price": 1500,  # Floor ~$906
     },
     "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": {
         "name": "PRB-02 Premium Booster Vol. 2",
         "query": "premium booster vol 2 prb-02 box -case -korean -japanese -display",
-        "min_price": 40,
-        "max_price": 600,
+        "min_price": 75,
+        "max_price": 600,  # Floor ~$352
     },
 }
 
@@ -335,12 +337,14 @@ WARMUP_CATEGORIES = [
 # TITLE EXCLUSIONS AND FILTERS (reused from ebay_scraper.py)
 # ============================================================================
 TITLE_EXCLUSIONS = [
-    "japanese", "jp", "single", "card lot", "pack", "bundle",
+    "japanese", "jp", "single", "card lot", "bundle",
     "damaged", "opened", "resealed", "display",
     "playmat", "sleeve", "deck box", "promo",
     "empty", "no cards", "custom", "repack", "break",
     "check description", "check dis", "korean", "chinese",
     "thai", "taiwan", "case",  # case = wholesale multi-box
+    "booster pack",  # single packs, not boxes (but "24 packs" in box titles is OK)
+    "loose pack", "single pack",
 ]
 
 # Country/region exclusions - filter non-US sellers
