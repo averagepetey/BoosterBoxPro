@@ -340,11 +340,14 @@ TITLE_EXCLUSIONS = [
     "japanese", "jp", "single", "card lot", "bundle",
     "damaged", "opened", "resealed", "display",
     "playmat", "sleeve", "deck box", "promo",
-    "empty", "no cards", "custom", "repack", "break",
+    "empty", "no cards", "custom", "repack",
     "check description", "check dis", "korean", "chinese",
     "thai", "taiwan", "case",  # case = wholesale multi-box
     "booster pack",  # single packs, not boxes (but "24 packs" in box titles is OK)
     "loose pack", "single pack",
+    # Live breaks - someone opens box on stream, not a sealed box sale
+    "live break", "box break", "open live", "live open",
+    "break live", "personal break", "random break", "spot break",
 ]
 
 # Country/region exclusions - filter non-US sellers
