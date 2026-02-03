@@ -1,6 +1,6 @@
 # Daily TCGplayer refresh (Apify + Listings Scraper)
-# Runs at 1pm EST (18:00 UTC) with 16GB RAM - no 512Mi limit like Render free cron.
-# Schedule: GitHub runs this at 18:00 UTC daily; re-push this file if scheduled runs stop.
+# Runs at 10pm EST (03:00 UTC next day) with 16GB RAM - no 512Mi limit like Render free cron.
+# Schedule: GitHub runs this at 03:00 UTC daily; re-push this file if scheduled runs stop.
 #
 # Required secrets (Repo → Settings → Secrets and variables → Actions):
 #   DATABASE_URL          - DB for all metrics (Apify + Scraper write here).
@@ -10,15 +10,17 @@
 #
 # What updates what (both phases write to DB; app reads from DB):
 # - Phase 1 (Apify): sales/volume — boxes_sold_per_day, unified_volume_usd, floor_price, boxes_sold_30d_avg.
+# - Phase 1b (eBay): eBay sold + active listings via 130point.com.
 # - Phase 2 (Scraper): listings + price — floor_price_usd, active_listings_count, boxes_added_today (yesterday→today delta).
-# After both phases, the script calls POST {BACKEND_URL}/admin/invalidate-cache so the next leaderboard/box detail request serves fresh data.
+# - Phase 3 (Rolling Metrics): Compute derived metrics (liquidity, days_to_20pct, EMAs) and upsert to DB.
+# After all phases, the script commits updated historical_entries.json back to repo and calls cache invalidation.
 
 name: Daily Refresh (Apify + Scraper)
 
 on:
   schedule:
-    # 1pm EST = 18:00 UTC (adjust if DST: 17:00 or 18:00)
-    - cron: '0 18 * * *'
+    # 10pm EST = 03:00 UTC next day (adjust if DST: 02:00 or 03:00)
+    - cron: '0 3 * * *'
   workflow_dispatch: # allow manual run
 
 jobs:
@@ -61,3 +63,11 @@ jobs:
           else
             python scripts/daily_refresh.py
           fi
+
+      - name: Commit updated historical data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/historical_entries.json
+          git diff --staged --quiet || git commit -m "Daily refresh: update historical data $(date -u +%Y-%m-%d)"
+          git push
