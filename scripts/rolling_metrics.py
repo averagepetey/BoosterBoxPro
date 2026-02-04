@@ -2,8 +2,8 @@
 """
 Phase 3: Rolling Metrics Computation
 -------------------------------------
-After Phase 1 (Apify sales) and Phase 2 (Scraper listings) write raw data,
-this module computes all derived/rolling metrics and stores them in the JSON entry.
+After Phase 1 (Apify sales) and Phase 2 (Scraper listings) write raw data to DB,
+this module computes all derived/rolling metrics from the database.
 
 Run standalone:  python scripts/rolling_metrics.py [--date 2026-01-30]
 Called by daily_refresh.py after Phase 2.
@@ -18,6 +18,8 @@ Metrics computed for each box's target-date entry:
   7. days_to_20pct_increase       – active_listings / (avg_sales - avg_added), cap 180
   8. expected_time_to_sale_days   – supply_10pct / (sales/day - avg_added), cap [1, 365]
   9. unified_volume_7d_ema        – EMA alpha=0.3 on unified_volume_usd (or daily_volume_usd × 30)
+
+Data source: Database (box_metrics_unified + ebay_box_metrics_daily)
 """
 from __future__ import annotations
 
@@ -26,6 +28,7 @@ import logging
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -33,22 +36,96 @@ sys.path.insert(0, str(project_root))
 
 logger = logging.getLogger(__name__)
 
-HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
-
 # Data epoch: only count entries from this date forward toward the 30-day gate.
 # Earlier entries are kept for lookback (EMAs, floor change) but don't count
 # toward data maturity because they used different scraper filters/blending.
 DATA_EPOCH = "2026-02-02"
 
 
-def _load_json() -> dict:
-    with open(HISTORICAL_FILE, "r") as f:
-        return json.load(f)
+def _get_sync_engine():
+    """Get SQLAlchemy sync engine for database queries."""
+    from sqlalchemy import create_engine
+    from app.config import settings
+    url = settings.database_url
+    if "+asyncpg" in url:
+        url = url.replace("postgresql+asyncpg", "postgresql+psycopg2", 1)
+    elif "postgresql://" in url and "+" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
 
 
-def _save_json(data: dict) -> None:
-    with open(HISTORICAL_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+def _get_all_box_ids() -> List[str]:
+    """Get all booster box IDs from the database."""
+    from sqlalchemy import text
+    engine = _get_sync_engine()
+    with engine.connect() as conn:
+        q = text("SELECT id FROM booster_boxes ORDER BY id")
+        rows = conn.execute(q).fetchall()
+    return [str(r[0]) for r in rows]
+
+
+def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
+    """Get TCGplayer historical data from box_metrics_unified."""
+    from sqlalchemy import text
+    engine = _get_sync_engine()
+    with engine.connect() as conn:
+        q = text("""
+            SELECT metric_date, floor_price_usd, boxes_sold_per_day,
+                   active_listings_count, unified_volume_usd, unified_volume_7d_ema,
+                   boxes_sold_30d_avg, boxes_added_today, liquidity_score,
+                   days_to_20pct_increase, avg_boxes_added_per_day,
+                   expected_days_to_sell, floor_price_1d_change_pct
+            FROM box_metrics_unified
+            WHERE booster_box_id = :bid
+            ORDER BY metric_date ASC
+        """)
+        rows = conn.execute(q, {"bid": box_id}).fetchall()
+
+    entries = []
+    for r in rows:
+        d = r._mapping if hasattr(r, "_mapping") else dict(r)
+        metric_date = d.get("metric_date")
+        date_str = metric_date.isoformat() if hasattr(metric_date, "isoformat") else str(metric_date) if metric_date else None
+        entries.append({
+            "date": date_str,
+            "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
+            "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+            "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+            "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
+            "unified_volume_usd": float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None,
+            "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
+        })
+    return entries
+
+
+def _get_ebay_history(box_id: str) -> Dict[str, Dict[str, Any]]:
+    """Get eBay historical data from ebay_box_metrics_daily, keyed by date."""
+    from sqlalchemy import text
+    engine = _get_sync_engine()
+    with engine.connect() as conn:
+        q = text("""
+            SELECT metric_date, ebay_sales_count, ebay_volume_usd,
+                   ebay_units_sold_count, ebay_active_listings_count,
+                   ebay_listings_added_today
+            FROM ebay_box_metrics_daily
+            WHERE booster_box_id = :bid
+            ORDER BY metric_date ASC
+        """)
+        rows = conn.execute(q, {"bid": box_id}).fetchall()
+
+    by_date = {}
+    for r in rows:
+        d = r._mapping if hasattr(r, "_mapping") else dict(r)
+        metric_date = d.get("metric_date")
+        date_str = metric_date.isoformat() if hasattr(metric_date, "isoformat") else str(metric_date) if metric_date else None
+        if date_str:
+            by_date[date_str] = {
+                "ebay_sold_today": float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0,
+                "ebay_daily_volume_usd": float(d["ebay_volume_usd"]) if d.get("ebay_volume_usd") is not None else 0,
+                "ebay_active_listings": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0,
+                "ebay_boxes_added_today": int(d["ebay_listings_added_today"]) if d.get("ebay_listings_added_today") is not None else 0,
+            }
+    return by_date
 
 
 def _get_entry_for_date(entries: list, date_str: str) -> dict | None:
@@ -75,6 +152,7 @@ def _ema(values: list[float], alpha: float) -> float | None:
 def compute_rolling_metrics(target_date: str | None = None) -> dict:
     """
     Compute all derived metrics for each box's entry on target_date.
+    Reads from database, computes metrics, writes back to database.
 
     Args:
         target_date: ISO date string (YYYY-MM-DD). Defaults to today.
@@ -87,12 +165,37 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
 
     logger.info(f"Phase 3: Computing rolling metrics for {target_date}")
 
-    data = _load_json()
+    # Get all box IDs from database
+    box_ids = _get_all_box_ids()
+    logger.info(f"Found {len(box_ids)} boxes in database")
+
     updated = 0
     skipped = 0
+    db_updated = 0
 
-    for box_id, entries in data.items():
-        sorted_ents = _sorted_entries(entries)
+    for box_id in box_ids:
+        # Get TCGplayer history from DB
+        tcg_entries = _get_tcg_history(box_id)
+        if not tcg_entries:
+            skipped += 1
+            continue
+
+        # Get eBay history from DB (keyed by date for easy lookup)
+        ebay_by_date = _get_ebay_history(box_id)
+
+        # Merge eBay data into TCG entries
+        for entry in tcg_entries:
+            date_str = entry.get("date")
+            if date_str and date_str in ebay_by_date:
+                entry.update(ebay_by_date[date_str])
+            else:
+                # Set eBay fields to 0 if no data for this date
+                entry.setdefault("ebay_sold_today", 0)
+                entry.setdefault("ebay_daily_volume_usd", 0)
+                entry.setdefault("ebay_active_listings", 0)
+                entry.setdefault("ebay_boxes_added_today", 0)
+
+        sorted_ents = _sorted_entries(tcg_entries)
         target_entry = _get_entry_for_date(sorted_ents, target_date)
         if target_entry is None:
             skipped += 1
@@ -127,8 +230,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         # Last 30 entries (or fewer) for rolling averages
         recent_30 = history[-30:] if len(history) >= 30 else history
 
-        # Count unique data days from DATA_EPOCH forward (earlier entries used
-        # different scraper filters and don't count toward data maturity)
+        # Count unique data days from DATA_EPOCH forward
         data_days = len(set(
             e.get("date") for e in history
             if e.get("date") and e.get("date") >= DATA_EPOCH
@@ -136,15 +238,10 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         ))
         has_30d_data = data_days >= 30
         days_until_30d = max(0, 30 - data_days)
-        target_entry["data_days_collected"] = data_days
-        target_entry["days_until_30d_metrics"] = days_until_30d
 
         # ── Helper: combined boxes added (TCGplayer + eBay) ───────────
         def _get_combined_added(e):
             return (e.get("boxes_added_today") or 0) + (e.get("ebay_boxes_added_today") or 0)
-
-        # Store combined value on target entry
-        target_entry["combined_boxes_added_today"] = _get_combined_added(target_entry)
 
         # ── 1. avg_boxes_added_per_day (30-day simple avg) ────────────
         boxes_added_vals = [
@@ -158,7 +255,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             else None
         )
         # Gate behind 30 days of data
-        target_entry["avg_boxes_added_per_day"] = avg_boxes_added if has_30d_data else None
+        avg_boxes_added_per_day = avg_boxes_added if has_30d_data else None
 
         # ── 2. boxes_added_7d_ema (alpha=0.25) ───────────────────────
         ba_all = [
@@ -166,45 +263,30 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             for e in history
             if e.get("boxes_added_today") is not None or e.get("ebay_boxes_added_today") is not None
         ]
-        ba_7d_ema = round(_ema(ba_all, 0.25), 2) if ba_all else None
-        target_entry["boxes_added_7d_ema"] = ba_7d_ema
+        boxes_added_7d_ema = round(_ema(ba_all, 0.25), 2) if ba_all else None
 
         # ── 3. boxes_added_30d_ema (alpha=0.065) ─────────────────────
-        ba_30d_ema = round(_ema(ba_all, 0.065), 2) if ba_all else None
-        target_entry["boxes_added_30d_ema"] = ba_30d_ema if has_30d_data else None
+        boxes_added_30d_ema = round(_ema(ba_all, 0.065), 2) if ba_all and has_30d_data else None
 
         # ── 4. floor_price_1d_change_pct ──────────────────────────────
         fp_today = target_entry.get("floor_price_usd")
         fp_prev = prev_entry.get("floor_price_usd") if prev_entry else None
+        floor_price_1d_change_pct = None
         if fp_today and fp_prev and fp_prev > 0:
-            target_entry["floor_price_1d_change_pct"] = round(
-                ((fp_today - fp_prev) / fp_prev) * 100, 2
-            )
-        else:
-            target_entry.setdefault("floor_price_1d_change_pct", None)
+            floor_price_1d_change_pct = round(((fp_today - fp_prev) / fp_prev) * 100, 2)
 
         # ── 5. floor_price_30d_change_pct ─────────────────────────────
         fp_30d = entry_30d_ago.get("floor_price_usd") if entry_30d_ago else None
+        floor_price_30d_change_pct = None
         if fp_today and fp_30d and fp_30d > 0:
-            target_entry["floor_price_30d_change_pct"] = round(
-                ((fp_today - fp_30d) / fp_30d) * 100, 2
-            )
-        else:
-            target_entry.setdefault("floor_price_30d_change_pct", None)
+            floor_price_30d_change_pct = round(((fp_today - fp_30d) / fp_30d) * 100, 2)
 
         # ── Shared inputs for metrics 6-8 ─────────────────────────────
         tcg_active = target_entry.get("active_listings_count") or 0
         ebay_active = target_entry.get("ebay_active_listings") or 0
         active_listings = tcg_active + ebay_active
-        target_entry["combined_active_listings"] = active_listings
-
-        supply_10pct = target_entry.get("listings_within_10pct_floor") or 0
-        ebay_10pct = target_entry.get("ebay_listings_within_10pct_floor") or 0
-        supply = (supply_10pct + ebay_10pct) if (supply_10pct + ebay_10pct) > 0 else active_listings
 
         # 30-day average sales from daily entries
-        # boxes_sold_per_day = 28-day avg from weekly buckets (most reliable)
-        # boxes_sold_today = most recent week's daily rate (more responsive)
         sold_vals = [
             float(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0)
             + float(e.get("ebay_sold_today") or 0)
@@ -214,29 +296,24 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             round(sum(sold_vals) / len(sold_vals), 2) if sold_vals else None
         )
         # Gate behind 30 days of data
-        target_entry["boxes_sold_30d_avg"] = sold_30d_avg_raw if has_30d_data else None
+        boxes_sold_30d_avg = sold_30d_avg_raw if has_30d_data else None
 
-        # avg_added for internal use (use raw value even pre-30d for time-to-sale calc)
+        # avg_added for internal use
         avg_added = avg_boxes_added or 0
 
-        # ── 6. liquidity_label ──────────────────────────────────────
-        # Derived from expected_time_to_sale_days (computed below)
-        # Stored after metric 8
-
         # ── 7. days_to_20pct_increase (needs 30d data) ──────────────
-        if has_30d_data and sold_30d_avg_raw and sold_30d_avg_raw > 0 and active_listings and active_listings > 0:
+        days_to_20pct_increase = None
+        if has_30d_data and sold_30d_avg_raw and sold_30d_avg_raw > 0 and active_listings > 0:
             net_burn = sold_30d_avg_raw - avg_added
             if net_burn > 0.05:
                 d20 = round(active_listings / net_burn, 2)
-                target_entry["days_to_20pct_increase"] = min(d20, 180.0)
+                days_to_20pct_increase = min(d20, 180.0)
             elif net_burn <= 0:
-                target_entry["days_to_20pct_increase"] = None
+                days_to_20pct_increase = None
             else:
-                target_entry["days_to_20pct_increase"] = 180.0
-        else:
-            target_entry["days_to_20pct_increase"] = None
+                days_to_20pct_increase = 180.0
 
-        # ── 8. expected_time_to_sale_days (shows immediately with daily data) ──
+        # ── 8. expected_time_to_sale_days ──────────────────────────────
         tcg_sales = float(
             target_entry.get("boxes_sold_per_day")
             or target_entry.get("boxes_sold_today")
@@ -245,119 +322,79 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         )
         ebay_sales = float(target_entry.get("ebay_sold_today") or 0)
         sales_per_day = tcg_sales + ebay_sales
+
+        # Use active_listings as supply proxy
+        supply = active_listings
+        expected_time_to_sale_days = None
         if supply and supply > 0 and sales_per_day and sales_per_day > 0:
             net_burn = sales_per_day - avg_added
             if net_burn > 0.05:
                 raw_days = supply / net_burn
-                target_entry["expected_time_to_sale_days"] = round(
-                    max(1.0, min(365.0, raw_days)), 2
-                )
-            else:
-                target_entry["expected_time_to_sale_days"] = None
-        else:
-            target_entry.setdefault("expected_time_to_sale_days", None)
+                expected_time_to_sale_days = round(max(1.0, min(365.0, raw_days)), 2)
 
         # ── 6b. liquidity_label (from expected_time_to_sale_days) ────
-        ets = target_entry.get("expected_time_to_sale_days")
-        if ets is not None:
-            if ets < 5:
-                target_entry["liquidity_label"] = "High"
-            elif ets <= 15:
-                target_entry["liquidity_label"] = "Medium"
+        liquidity_label = None
+        if expected_time_to_sale_days is not None:
+            if expected_time_to_sale_days < 5:
+                liquidity_label = "High"
+            elif expected_time_to_sale_days <= 15:
+                liquidity_label = "Medium"
             else:
-                target_entry["liquidity_label"] = "Low"
-        else:
-            target_entry["liquidity_label"] = None
-        # Keep numeric score for backward compat / DB but null when gated
-        target_entry["liquidity_score"] = None
+                liquidity_label = "Low"
 
-        # ── 9. Volume metrics (built from our own daily data) ────────
-        # Daily volume = (TCGplayer sold × price) + eBay daily volume
-        # Then sum over 7d and 30d windows for rolling totals
+        # ── 9. Volume metrics ────────────────────────────────────────
         def _get_daily_vol(e):
             """Blended daily volume: TCGplayer + eBay (additive)."""
             sold = e.get("boxes_sold_today") or e.get("boxes_sold_per_day") or 0
-            price = e.get("market_price_usd") or e.get("floor_price_usd") or 0
+            price = e.get("floor_price_usd") or 0
             sold = float(sold) if sold else 0
             price = float(price) if price else 0
             tcg_vol = sold * price
             ebay_vol = float(e.get("ebay_daily_volume_usd") or 0)
             return tcg_vol + ebay_vol
 
-        # Compute and store today's daily volume (blended TCG + eBay)
-        today_vol = _get_daily_vol(target_entry)
-        target_entry["daily_volume_usd"] = round(today_vol, 2) if today_vol > 0 else None
-
-        # Store breakdown for transparency
-        tcg_sold = float(target_entry.get("boxes_sold_today") or target_entry.get("boxes_sold_per_day") or 0)
-        tcg_price = float(target_entry.get("market_price_usd") or target_entry.get("floor_price_usd") or 0)
-        tcg_daily_vol = tcg_sold * tcg_price
-        ebay_daily_vol = float(target_entry.get("ebay_daily_volume_usd") or 0)
-        target_entry["daily_volume_tcg_usd"] = round(tcg_daily_vol, 2) if tcg_daily_vol > 0 else None
-        target_entry["daily_volume_ebay_usd"] = round(ebay_daily_vol, 2) if ebay_daily_vol > 0 else None
-
-        # Combined boxes sold (TCG + eBay)
-        ebay_sold_today = float(target_entry.get("ebay_sold_today") or 0)
-        if ebay_sold_today > 0:
-            target_entry["combined_boxes_sold_today"] = round(tcg_sold + ebay_sold_today, 2)
-        else:
-            target_entry["combined_boxes_sold_today"] = None
-
-        # 7-day rolling volume: sum daily volumes from last 7 entries
-        target_dt_obj = datetime.strptime(target_date, "%Y-%m-%d")
-        cutoff_7d = (target_dt_obj - timedelta(days=7)).strftime("%Y-%m-%d")
+        # 7-day rolling volume
+        cutoff_7d = (target_dt - timedelta(days=7)).strftime("%Y-%m-%d")
         entries_7d = [e for e in history if (e.get("date") or "") > cutoff_7d]
         vol_7d = sum(_get_daily_vol(e) for e in entries_7d)
-        target_entry["volume_7d"] = round(vol_7d, 2) if vol_7d > 0 else None
+        volume_7d = round(vol_7d, 2) if vol_7d > 0 else None
 
-        # 30-day rolling volume: sum daily volumes from last 30 entries
+        # 30-day rolling volume
         entries_30d = [e for e in history if (e.get("date") or "") > cutoff_30d]
         vol_30d = sum(_get_daily_vol(e) for e in entries_30d)
-        target_entry["unified_volume_usd"] = round(vol_30d, 2) if vol_30d > 0 else None
+        unified_volume_usd = round(vol_30d, 2) if vol_30d > 0 else None
 
         # Volume 7d EMA (smoothed trend)
         daily_vols = [_get_daily_vol(e) for e in history]
         daily_vols = [v for v in daily_vols if v > 0]
-        uv7_ema = round(_ema(daily_vols, 0.3), 2) if daily_vols else None
-        target_entry["unified_volume_7d_ema"] = uv7_ema
+        unified_volume_7d_ema = round(_ema(daily_vols, 0.3), 2) if daily_vols else None
 
         updated += 1
 
-    _save_json(data)
+        # ── Write computed metrics to DB ──────────────────────────────
+        try:
+            from app.services.box_metrics_writer import upsert_daily_metrics
 
-    # Write Phase 3 metrics to DB
-    db_updated = 0
-    try:
-        from app.services.box_metrics_writer import upsert_daily_metrics
-
-        for box_id, entries in data.items():
-            entry = _get_entry_for_date(entries, target_date)
-            if entry is None:
-                continue
-            # box_id in the JSON IS the DB UUID — use directly, don't remap
             ok = upsert_daily_metrics(
                 booster_box_id=box_id,
                 metric_date=target_date,
-                floor_price_usd=entry.get("floor_price_usd"),
-                boxes_sold_per_day=entry.get("boxes_sold_per_day"),
-                active_listings_count=entry.get("active_listings_count"),
-                unified_volume_usd=entry.get("unified_volume_usd"),
-                unified_volume_7d_ema=entry.get("unified_volume_7d_ema"),
-                boxes_sold_30d_avg=entry.get("boxes_sold_30d_avg"),
-                boxes_added_today=entry.get("boxes_added_today"),
-                liquidity_score=entry.get("liquidity_score"),
-                days_to_20pct_increase=entry.get("days_to_20pct_increase"),
-                avg_boxes_added_per_day=entry.get("avg_boxes_added_per_day"),
-                expected_days_to_sell=entry.get("expected_time_to_sale_days"),
-                floor_price_1d_change_pct=entry.get("floor_price_1d_change_pct"),
-                # New fields passed through for API (stored in JSON, not all have DB columns)
+                floor_price_usd=target_entry.get("floor_price_usd"),
+                boxes_sold_per_day=target_entry.get("boxes_sold_per_day"),
+                active_listings_count=target_entry.get("active_listings_count"),
+                unified_volume_usd=unified_volume_usd,
+                unified_volume_7d_ema=unified_volume_7d_ema,
+                boxes_sold_30d_avg=boxes_sold_30d_avg,
+                boxes_added_today=target_entry.get("boxes_added_today"),
+                liquidity_score=None,  # Deprecated, use liquidity_label
+                days_to_20pct_increase=days_to_20pct_increase,
+                avg_boxes_added_per_day=avg_boxes_added_per_day,
+                expected_days_to_sell=expected_time_to_sale_days,
+                floor_price_1d_change_pct=floor_price_1d_change_pct,
             )
-            # Store liquidity_label and days_until_30d in JSON (API reads from JSON cache)
-            # These don't need DB columns — they're derived/display fields
             if ok:
                 db_updated += 1
-    except Exception as e:
-        logger.warning(f"Phase 3 DB write failed (non-fatal): {e}")
+        except Exception as e:
+            logger.warning(f"DB write failed for {box_id}: {e}")
 
     summary = {
         "target_date": target_date,

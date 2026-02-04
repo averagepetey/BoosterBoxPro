@@ -180,8 +180,8 @@ def main():
         save_completion_status(status)
         return 1
     
-    # Phase 1b: eBay sold listings via Playwright (non-fatal — failure does NOT block pipeline)
-    # Uses custom Playwright scraper instead of Apify ($0 operational cost)
+    # Phase 1b: eBay sold listings via Apify (non-fatal — failure does NOT block pipeline)
+    # Uses Epic Scrapers actor ($50/month unlimited) for reliable eBay data
     skip_ebay = os.environ.get("SKIP_EBAY", "").lower() in ("1", "true", "yes")
     status["ebay"] = {"completed": False, "error": None, "skipped": False}
     if skip_ebay:
@@ -194,11 +194,11 @@ def main():
     else:
         logger.info("")
         logger.info("=" * 50)
-        logger.info("Phase 1b: eBay Sold Listings via Playwright")
+        logger.info("Phase 1b: eBay Sold Listings via Apify ($50/mo unlimited)")
         logger.info("=" * 50)
         try:
-            from scripts.ebay_playwright import run_ebay_scraper
-            ebay_result = asyncio.run(run_ebay_scraper())
+            from scripts.ebay_apify import run_ebay_apify_scraper
+            ebay_result = run_ebay_apify_scraper()
             status["ebay"]["success_count"] = ebay_result.get("results", 0)
             status["ebay"]["error_count"] = len(ebay_result.get("errors", []))
             status["ebay"]["completed"] = True

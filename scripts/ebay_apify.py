@@ -2,11 +2,11 @@
 """
 eBay Apify Scraper
 ------------------
-Fetches eBay sold listings via Apify actor (dtrungtin/ebay-items-scraper).
-Replaces 130point.com with real-time eBay data.
+Fetches eBay sold listings via Apify actor (epicscrapers/ebay-search-results-scraper-rental).
+Replaces custom Playwright scraper with reliable Apify-managed scraping.
 
-Cost: ~$0.63 per 1,000 results → ~$18-20/month for 18 boxes daily
-Budget cap: $19.89/month (set in Apify Console → Billing → Limits)
+Cost: $50/month flat rate (unlimited results)
+No per-result counting needed - fetch as many results as available.
 
 Run standalone: python scripts/ebay_apify.py [--debug <box_id>]
 Called by daily_refresh.py as Phase 1b (after TCGplayer Apify).
@@ -36,9 +36,13 @@ HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
 # Price floor as fraction of TCG market price (75% = reject below 25% discount)
 MIN_PRICE_RATIO = 0.75
 
-# Maximum results to fetch per box (controls cost)
-# 50 results × 18 boxes × 30 days = 27,000/month × $0.63/1000 = ~$17/month
-MAX_RESULTS_PER_BOX = 50
+# Maximum results to fetch per box
+# With $50/month unlimited plan, we can fetch generously
+# 200 results should capture all recent sold listings for any box
+MAX_RESULTS_PER_BOX = 200
+
+# Apify actor to use ($50/month unlimited rental)
+APIFY_ACTOR = "epicscrapers/ebay-search-results-scraper-rental"
 
 # eBay search configuration for each box
 # Search terms optimized for eBay (different from 130point queries)
@@ -266,6 +270,59 @@ def filter_listing(item: Dict[str, Any], min_price: float) -> bool:
     return True
 
 
+def _write_ebay_to_db(
+    box_id: str,
+    today: str,
+    ebay_data: Dict[str, Any],
+    filtered_items: List[Dict[str, Any]],
+) -> bool:
+    """Write eBay data to database tables."""
+    try:
+        from app.services.ebay_metrics_writer import upsert_ebay_daily_metrics, insert_ebay_sales_raw
+    except ImportError:
+        logger.warning("ebay_metrics_writer not available, skipping DB write")
+        return False
+
+    try:
+        upsert_ebay_daily_metrics(
+            booster_box_id=box_id,
+            metric_date=today,
+            ebay_sales_count=ebay_data.get("ebay_sold_count", 0),
+            ebay_volume_usd=ebay_data.get("ebay_volume_usd", 0),
+            ebay_median_sold_price_usd=ebay_data.get("ebay_median_price_usd"),
+            ebay_units_sold_count=ebay_data.get("ebay_sold_today", 0),
+            ebay_volume_7d_ema=None,  # Computed in Phase 3
+            ebay_active_listings_count=None,
+            ebay_active_median_price_usd=None,
+            ebay_active_low_price_usd=None,
+            ebay_listings_added_today=None,
+            ebay_listings_removed_today=None,
+        )
+        logger.debug(f"  DB: upserted ebay_box_metrics_daily for {box_id}")
+    except Exception as e:
+        logger.warning(f"eBay daily metrics DB write failed for {box_id}: {e}")
+
+    # Convert filtered items to format expected by insert_ebay_sales_raw
+    sold_items = []
+    for item in filtered_items:
+        sold_items.append({
+            "ebay_item_id": item.get("item_id"),
+            "title": item.get("title", ""),
+            "sold_price_usd": item.get("price"),
+            "sold_date": item.get("sold_date"),
+            "item_url": item.get("url", ""),
+            "sale_type": "sold",
+        })
+
+    try:
+        inserted = insert_ebay_sales_raw(booster_box_id=box_id, sold_items=sold_items)
+        logger.debug(f"  DB: inserted {inserted} rows into ebay_sales_raw for {box_id}")
+    except Exception as e:
+        logger.warning(f"eBay raw sales DB write failed for {box_id}: {e}")
+
+    return True
+
+
 def run_ebay_apify_scraper(
     debug_box_id: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -344,13 +401,13 @@ def run_ebay_apify_scraper(
             ebay_url = build_ebay_sold_url(search, min_price, max_price)
             logger.debug(f"  URL: {ebay_url}")
 
-            # Run Apify actor
+            # Run Apify actor (Epic Scrapers $50/month unlimited)
             run_input = {
                 "startUrls": [{"url": ebay_url}],
                 "maxItems": MAX_RESULTS_PER_BOX,
             }
 
-            run = client.actor("dtrungtin/ebay-items-scraper").call(run_input=run_input)
+            run = client.actor(APIFY_ACTOR).call(run_input=run_input)
             items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
 
             logger.info(f"  Apify returned {len(items)} items")
@@ -427,7 +484,7 @@ def run_ebay_apify_scraper(
                     "ebay_avg_price_usd": round(statistics.mean(prices), 2) if prices else None,
                     "ebay_low_price_usd": round(min(prices), 2) if prices else None,
                     "ebay_high_price_usd": round(max(prices), 2) if prices else None,
-                    "ebay_source": "apify",
+                    "ebay_source": "apify_unlimited",
                     "ebay_fetch_timestamp": datetime.now().isoformat(),
                     "_ebay_sold_item_ids": item_ids,
                 }
@@ -441,10 +498,11 @@ def run_ebay_apify_scraper(
                     "ebay_avg_price_usd": None,
                     "ebay_low_price_usd": None,
                     "ebay_high_price_usd": None,
-                    "ebay_source": "apify",
+                    "ebay_source": "apify_unlimited",
                     "ebay_fetch_timestamp": datetime.now().isoformat(),
                     "_ebay_sold_item_ids": [],
                 }
+                filtered = []  # Empty list for DB write
 
             # Update historical entry
             if box_id not in hist:
@@ -455,6 +513,9 @@ def run_ebay_apify_scraper(
                 today_entry.update(ebay_data)
             else:
                 hist[box_id].append({"date": today, **ebay_data})
+
+            # Write to database
+            _write_ebay_to_db(box_id, today, ebay_data, filtered)
 
             logger.info(f"  ✅ {name}: {ebay_data['ebay_sold_count']} sold, {ebay_data['ebay_sold_today']} today, median=${ebay_data['ebay_median_price_usd']}")
             results_count += 1
