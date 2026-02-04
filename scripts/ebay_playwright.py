@@ -45,6 +45,22 @@ DEBUG_HTML_DIR = project_root / "data" / "debug_html"
 # Each profile is a complete, internally-consistent browser identity.
 # UA string, sec-ch-ua headers, Accept-Language, platform all match.
 
+# Per-box timeout (seconds) - prevents infinite hangs on single box
+PER_BOX_TIMEOUT = 180  # 3 minutes max per box
+
+# Helper function timeout (seconds) - for warmup, noise searches, etc.
+HELPER_TIMEOUT = 45  # 45 seconds for helper operations
+
+# Retry configuration
+MAX_RETRIES_PER_BOX = 2  # Retry failed boxes up to 2 times
+RETRY_DELAY_MIN = 30  # Minimum delay before retry (seconds)
+RETRY_DELAY_MAX = 90  # Maximum delay before retry (seconds)
+
+# Suspicious results threshold - 0 results for popular products may indicate soft block
+MIN_EXPECTED_RESULTS = 3  # If fewer results, flag as suspicious
+
+# Only use Chrome profiles since we're using Chromium browser.
+# Firefox/Safari profiles cause fingerprint mismatch (Chromium behavior + Firefox UA = bot detection)
 BROWSER_PROFILES = [
     {
         "name": "Chrome 131 macOS",
@@ -81,24 +97,6 @@ BROWSER_PROFILES = [
         "sec_ch_ua_platform": '"Windows"',
         "viewport": {"width": 1366, "height": 768},
         "platform": "Windows",
-    },
-    {
-        "name": "Firefox 134 Windows",
-        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-        "sec_ch_ua": None,  # Firefox doesn't send sec-ch-ua
-        "sec_ch_ua_mobile": None,
-        "sec_ch_ua_platform": None,
-        "viewport": {"width": 1920, "height": 1080},
-        "platform": "Windows",
-    },
-    {
-        "name": "Safari 18 macOS",
-        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
-        "sec_ch_ua": None,  # Safari doesn't send sec-ch-ua
-        "sec_ch_ua_mobile": None,
-        "sec_ch_ua_platform": None,
-        "viewport": {"width": 1536, "height": 864},
-        "platform": "macOS",
     },
     {
         "name": "Chrome 131 Linux",
@@ -872,20 +870,59 @@ async def _do_noise_search(page) -> None:
     await asyncio.sleep(random.uniform(1.0, 3.0))
 
 
-async def _detect_captcha_or_block(page) -> bool:
-    """Check if we hit a CAPTCHA or block page."""
+async def _detect_captcha_or_block(page) -> tuple[bool, str]:
+    """
+    Check if we hit a CAPTCHA or block page.
+
+    Returns:
+        (is_blocked, reason) - Tuple of block status and reason string
+    """
     url = page.url.lower()
-    if "captcha" in url or "blocked" in url:
-        return True
+    if "captcha" in url:
+        return True, "URL contains captcha"
+    if "blocked" in url:
+        return True, "URL contains blocked"
+    if "signin" in url and "ebay" in url:
+        return True, "Redirected to sign-in page"
 
-    content = await page.content()
+    try:
+        content = await asyncio.wait_for(page.content(), timeout=10)
+    except asyncio.TimeoutError:
+        return True, "Timeout getting page content"
+
     content_lower = content.lower()
-    if "captcha" in content_lower or "robot" in content_lower:
-        # Check for actual CAPTCHA indicators
-        if "verify you" in content_lower or "are you a human" in content_lower:
-            return True
 
-    return False
+    # CAPTCHA indicators
+    captcha_indicators = [
+        ("verify you", "CAPTCHA - verify you"),
+        ("are you a human", "CAPTCHA - are you human"),
+        ("prove you're not a robot", "CAPTCHA - robot check"),
+        ("unusual traffic", "CAPTCHA - unusual traffic"),
+        ("automated access", "Blocked - automated access detected"),
+        ("access denied", "Blocked - access denied"),
+        ("please enable javascript", "JS disabled detection"),
+        ("browser check", "Blocked - browser check"),
+        ("security check", "Blocked - security check"),
+        ("too many requests", "Rate limited - too many requests"),
+        ("try again later", "Rate limited - try again later"),
+    ]
+
+    for indicator, reason in captcha_indicators:
+        if indicator in content_lower:
+            return True, reason
+
+    # Check for empty/minimal page (soft block shows blank page)
+    # Real eBay pages have >10KB of HTML
+    if len(content) < 5000 and "ebay" in content_lower:
+        return True, "Suspiciously small page (possible soft block)"
+
+    # Check for missing search results structure (eBay always has this on real pages)
+    if "srp-results" not in content_lower and "s-item" not in content_lower and "s-card" not in content_lower:
+        # Could be a block page that renders nothing useful
+        if "ebay" in content_lower:
+            return True, "Missing search results structure"
+
+    return False, ""
 
 
 async def run_ebay_scraper(
@@ -963,6 +1000,9 @@ async def run_ebay_scraper(
     noise_counter = 0
     noise_interval = random.randint(2, 4)  # Do noise search every 2-4 boxes
 
+    # Track retry state for failed boxes
+    retry_queue: List[tuple[str, Dict[str, Any], int]] = []  # (box_id, config, attempt_num)
+
     # SESSION BATCHING: Don't do all 18 boxes in one browser session
     # Split into batches of 4-7 boxes, restart browser between batches
     # This spreads the "one piece booster box" searches across multiple "sessions"
@@ -1026,6 +1066,8 @@ async def run_ebay_scraper(
             timezone_id=timezone_id,
             extra_http_headers=extra_headers,
         )
+        # Set default timeout for ALL operations (prevents infinite hangs)
+        context.set_default_timeout(60000)  # 60 seconds
 
         page = await context.new_page()
 
@@ -1034,8 +1076,11 @@ async def run_ebay_scraper(
             await stealth.apply_stealth_async(page)
 
         try:
-            # Session warming
-            await _warm_session(page, profile)
+            # Session warming (with timeout protection)
+            try:
+                await asyncio.wait_for(_warm_session(page, profile), timeout=HELPER_TIMEOUT * 2)
+            except asyncio.TimeoutError:
+                logger.warning(f"  Session warming timed out, continuing anyway")
 
             for box_idx, (box_id, config) in enumerate(box_items):
                 name = config["name"]
@@ -1074,27 +1119,61 @@ async def run_ebay_scraper(
                 logger.debug(f"  Waiting {delay:.1f}s before search")
                 await asyncio.sleep(delay)
 
-                # Maybe do noise search
+                # Maybe do noise search (with timeout protection)
                 noise_counter += 1
                 if noise_counter >= noise_interval:
                     noise_counter = 0
                     noise_interval = random.randint(3, 4)
-                    await _do_noise_search(page)
+                    try:
+                        await asyncio.wait_for(_do_noise_search(page), timeout=HELPER_TIMEOUT)
+                    except asyncio.TimeoutError:
+                        logger.warning(f"  Noise search timed out, continuing")
                     await asyncio.sleep(_gaussian_delay())
+
+                # Track start time for per-box timeout
+                box_start_time = asyncio.get_event_loop().time()
+
+                def _check_box_timeout():
+                    """Raise TimeoutError if per-box timeout exceeded."""
+                    elapsed = asyncio.get_event_loop().time() - box_start_time
+                    if elapsed > PER_BOX_TIMEOUT:
+                        raise asyncio.TimeoutError(f"Box processing exceeded {PER_BOX_TIMEOUT}s")
 
                 try:
                     # Build URL and navigate
                     url = _build_ebay_url(query, min_price)
                     await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    _check_box_timeout()
 
                     # Check for CAPTCHA/block
-                    if await _detect_captcha_or_block(page):
-                        logger.warning(f"  CAPTCHA/block detected for {name}, skipping")
-                        errors.append(f"{box_id}: CAPTCHA")
+                    is_blocked, block_reason = await _detect_captcha_or_block(page)
+                    if is_blocked:
+                        logger.warning(f"  CAPTCHA/block detected for {name}: {block_reason}")
+                        raise Exception(f"BLOCKED: {block_reason}")
+
+                    # Wait for actual content to load (not just DOM)
+                    # eBay uses JavaScript to render results
+                    try:
+                        await page.wait_for_selector(
+                            '.s-card[data-listingid], .s-item__title',
+                            timeout=15000
+                        )
+                    except Exception:
+                        logger.warning(f"  No results loaded for {name}, page might be blocked")
+                        # Save debug HTML
+                        if not dump_html:
+                            DEBUG_HTML_DIR.mkdir(parents=True, exist_ok=True)
+                            html = await page.content()
+                            safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
+                            path = DEBUG_HTML_DIR / f"ebay_blocked_{safe_name}_{today_str}.html"
+                            path.write_text(html)
+                            logger.warning(f"    Saved debug HTML to {path}")
+                        errors.append(f"{box_id}: NO_CONTENT")
                         continue
 
-                    # Wait for network to settle (variable)
-                    await asyncio.sleep(random.uniform(1.5, 5.0))
+                    # Additional wait for JS to settle
+                    await asyncio.sleep(random.uniform(1.5, 3.0))
+                    _check_box_timeout()
 
                     # Mouse movement to simulate real user
                     await _simulate_mouse_movement(page)
@@ -1103,6 +1182,7 @@ async def run_ebay_scraper(
                     for scroll_y in _random_scroll_pattern():
                         await page.evaluate(f"window.scrollTo(0, {scroll_y})")
                         await asyncio.sleep(random.uniform(0.2, 1.2))
+                    _check_box_timeout()
 
                     # Dump HTML if requested
                     if dump_html:
@@ -1113,8 +1193,11 @@ async def run_ebay_scraper(
                         path.write_text(html)
                         logger.info(f"    Dumped HTML to {path}")
 
-                    # Extract items
-                    raw_items = await _extract_sold_items(page)
+                    # Extract items (this is where hangs often occur)
+                    raw_items = await asyncio.wait_for(
+                        _extract_sold_items(page),
+                        timeout=60  # 60s timeout for extraction specifically
+                    )
                     logger.debug(f"    Raw items extracted: {len(raw_items)}")
 
                     # Filter items (before + after filtering)
@@ -1165,6 +1248,12 @@ async def run_ebay_scraper(
                         })
 
                     logger.info(f"    {len(raw_items)} raw -> {len(filtered_items)} filtered (excl: title={excluded_counts['title']}, country={excluded_counts['country']}, price={excluded_counts['price']})")
+
+                    # Check for suspiciously empty results (possible soft block)
+                    if len(filtered_items) < MIN_EXPECTED_RESULTS:
+                        logger.warning(f"    {name}: Only {len(filtered_items)} results (expected >={MIN_EXPECTED_RESULTS}), queuing for retry")
+                        retry_queue.append((box_id, config, 1))
+                        continue
 
                     # Cross-day deduplication
                     prev_item_ids = set()
@@ -1319,6 +1408,9 @@ async def run_ebay_scraper(
                                 timezone_id=timezone_id,
                                 extra_http_headers=extra_headers,
                             )
+                            # Set default timeout for ALL operations (prevents infinite hangs)
+                            context.set_default_timeout(60000)  # 60 seconds
+
                             page = await context.new_page()
                             if use_stealth:
                                 await stealth.apply_stealth_async(page)
@@ -1332,9 +1424,13 @@ async def run_ebay_scraper(
                             noise_counter = 0
                             noise_interval = random.randint(2, 4)
 
+                except asyncio.TimeoutError as e:
+                    error_msg = f"{name}: TIMEOUT ({e})"
+                    logger.warning(f"    TIMEOUT: {name} - {e}")
+                    # Queue for retry (first attempt)
+                    retry_queue.append((box_id, config, 1))
                 except Exception as e:
                     error_msg = f"{name}: {e}"
-                    errors.append(error_msg)
                     logger.warning(f"    Error: {e}")
 
                     # Check for rate limit
@@ -1342,6 +1438,168 @@ async def run_ebay_scraper(
                     if "429" in err_str or "rate" in err_str or "blocked" in err_str:
                         logger.warning("Rate limited — backing off 5 minutes")
                         await asyncio.sleep(300)
+                        # Queue for retry after backoff
+                        retry_queue.append((box_id, config, 1))
+                    elif "BLOCKED" in str(e):
+                        # Blocked pages should be retried with different timing
+                        retry_queue.append((box_id, config, 1))
+                    else:
+                        # Other errors - still queue for retry
+                        retry_queue.append((box_id, config, 1))
+
+            # ================================================================
+            # RETRY PROCESSING: Process failed boxes with different timing
+            # ================================================================
+            if retry_queue and not debug_box_id:
+                logger.info(f"\n  === RETRY PHASE: {len(retry_queue)} boxes to retry ===")
+
+                # Long pause before retries (different timing pattern)
+                retry_pause = random.uniform(60, 180)
+                logger.info(f"  Waiting {retry_pause:.0f}s before retry phase...")
+                await asyncio.sleep(retry_pause)
+
+                # Process retry queue
+                while retry_queue:
+                    retry_box_id, retry_config, attempt = retry_queue.pop(0)
+                    retry_name = retry_config["name"]
+
+                    if attempt > MAX_RETRIES_PER_BOX:
+                        errors.append(f"{retry_box_id}: FAILED after {MAX_RETRIES_PER_BOX} retries")
+                        logger.warning(f"    {retry_name}: giving up after {MAX_RETRIES_PER_BOX} retries")
+                        continue
+
+                    logger.info(f"  RETRY {attempt}/{MAX_RETRIES_PER_BOX}: {retry_name}")
+
+                    # Delay before retry (longer for subsequent attempts)
+                    retry_delay = random.uniform(
+                        RETRY_DELAY_MIN * attempt,
+                        RETRY_DELAY_MAX * attempt
+                    )
+                    logger.info(f"    Waiting {retry_delay:.0f}s before retry...")
+                    await asyncio.sleep(retry_delay)
+
+                    try:
+                        # Generate a DIFFERENT query variation for retry
+                        query = _generate_random_query(
+                            retry_config["set_code"],
+                            retry_config["set_name_words"],
+                            retry_config.get("variant", "")
+                        )
+                        min_price_config = retry_config["min_price"]
+                        max_price_config = retry_config["max_price"]
+
+                        # Dynamic min price
+                        tcg_market_price = None
+                        box_entries = hist.get(retry_box_id, [])
+                        if box_entries:
+                            for entry in sorted(box_entries, key=lambda e: e.get("date", ""), reverse=True):
+                                if entry.get("market_price_usd"):
+                                    tcg_market_price = entry["market_price_usd"]
+                                    break
+                        min_price = max(tcg_market_price * MIN_PRICE_RATIO, min_price_config) if tcg_market_price else min_price_config
+
+                        url = _build_ebay_url(query, min_price)
+                        await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+
+                        # Check for block
+                        is_blocked, block_reason = await _detect_captcha_or_block(page)
+                        if is_blocked:
+                            raise Exception(f"BLOCKED on retry: {block_reason}")
+
+                        # Wait for content
+                        await page.wait_for_selector(
+                            '.s-card[data-listingid], .s-item__title',
+                            timeout=20000  # Slightly longer timeout for retries
+                        )
+
+                        await asyncio.sleep(random.uniform(2.0, 4.0))
+
+                        # Extract items
+                        raw_items = await asyncio.wait_for(
+                            _extract_sold_items(page),
+                            timeout=60
+                        )
+
+                        # Same filtering logic as main loop
+                        filtered_items = []
+                        for item in raw_items:
+                            title = item.get("title", "")
+                            if _is_excluded_title(title) or _is_non_us_listing(title):
+                                continue
+                            price = _parse_price(item.get("price_text", ""))
+                            if price is None:
+                                continue
+                            quantity = _extract_quantity(title)
+                            if quantity > 1:
+                                price = round(price / quantity, 2)
+                            if price < min_price or price > max_price_config:
+                                continue
+                            sold_date = _parse_end_date(item.get("date_text", ""), today)
+                            filtered_items.append({
+                                "ebay_item_id": item["item_id"],
+                                "title": title,
+                                "sold_price_cents": int(price * 100),
+                                "sold_price_usd": price,
+                                "sold_date": sold_date,
+                                "quantity": quantity,
+                                "url": item.get("url", ""),
+                                "item_url": item.get("url", ""),
+                                "sale_type": "sold",
+                            })
+
+                        # Check for suspiciously empty results
+                        if len(filtered_items) < MIN_EXPECTED_RESULTS:
+                            logger.warning(f"    {retry_name}: Only {len(filtered_items)} results (expected >={MIN_EXPECTED_RESULTS}), may be soft-blocked")
+                            if attempt < MAX_RETRIES_PER_BOX:
+                                retry_queue.append((retry_box_id, retry_config, attempt + 1))
+                                continue
+
+                        # Compute and save metrics (same as main loop)
+                        sold_prices = []
+                        for item in filtered_items:
+                            qty = item.get("quantity", 1)
+                            sold_prices.extend([item["sold_price_usd"]] * qty)
+                        sold_box_count = sum(item.get("quantity", 1) for item in filtered_items)
+                        current_item_ids = [item["ebay_item_id"] for item in filtered_items]
+
+                        ebay_fields = {
+                            "ebay_sold_count": sold_box_count,
+                            "ebay_sold_today": 0,  # Can't determine reliably on retry
+                            "ebay_volume_usd": round(sum(sold_prices), 2) if sold_prices else 0,
+                            "ebay_daily_volume_usd": 0,
+                            "ebay_median_price_usd": round(statistics.median(sold_prices), 2) if sold_prices else None,
+                            "ebay_avg_price_usd": round(statistics.mean(sold_prices), 2) if sold_prices else None,
+                            "ebay_low_price_usd": round(min(sold_prices), 2) if sold_prices else None,
+                            "ebay_high_price_usd": round(max(sold_prices), 2) if sold_prices else None,
+                            "ebay_source": "playwright_direct_retry",
+                            "ebay_fetch_timestamp": datetime.now(timezone.utc).isoformat(),
+                            "_ebay_sold_item_ids": current_item_ids,
+                        }
+
+                        # Update historical entries
+                        if retry_box_id not in hist:
+                            hist[retry_box_id] = []
+                        existing_today = next(
+                            (e for e in hist[retry_box_id] if e.get("date") == today_str), None
+                        )
+                        if existing_today:
+                            for key, val in ebay_fields.items():
+                                existing_today[key] = val
+                        else:
+                            hist[retry_box_id].append({"date": today_str, **ebay_fields})
+
+                        # Write to database
+                        write_ebay_to_db(retry_box_id, today_str, ebay_fields, filtered_items)
+
+                        results_count += 1
+                        logger.info(f"    ✅ RETRY SUCCESS: {retry_name} - {len(filtered_items)} items")
+
+                    except Exception as e:
+                        logger.warning(f"    RETRY {attempt} failed for {retry_name}: {e}")
+                        if attempt < MAX_RETRIES_PER_BOX:
+                            retry_queue.append((retry_box_id, retry_config, attempt + 1))
+                        else:
+                            errors.append(f"{retry_box_id}: FAILED after {MAX_RETRIES_PER_BOX} retries ({e})")
 
         finally:
             await browser.close()
