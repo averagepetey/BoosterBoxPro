@@ -18,7 +18,7 @@ import re
 import statistics
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus, urlencode
 
 from apify_client import ApifyClient
@@ -44,133 +44,152 @@ MAX_RESULTS_PER_BOX = 75
 # Apify actor to use (pay-per-result ~$0.63/1000)
 APIFY_ACTOR = "dtrungtin/ebay-items-scraper"
 
+# URL negative keywords - excluded at eBay level (FREE filtering)
+# Note: -pack and -case omitted to allow "24 packs" and "case fresh" exceptions
+URL_NEGATIVE_KEYWORDS = [
+    "-japanese", "-korean", "-chinese", "-thai", "-jp", "-taiwan",
+    "-display", "-playmat", "-sleeve", "-break", "-repack",
+    "-damaged", "-opened", "-empty", "-custom", "-promo", "-resealed",
+]
+
 # eBay search configuration for each box
-# Search terms optimized for eBay (different from 130point queries)
+# Search terms: no "english" (LH_PrefLoc=1 handles US-only), negatives appended dynamically
 EBAY_BOX_CONFIG: Dict[str, Dict[str, Any]] = {
     "860ffe3f-9286-42a9-ad4e-d079a6add6f4": {
         "name": "OP-01 Romance Dawn (Blue)",
-        "search": "one piece op-01 romance dawn booster box blue english",
+        "search": "one piece op-01 romance dawn booster box blue",
         "max_price": 500,
     },
     "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": {
         "name": "OP-01 Romance Dawn (White)",
-        "search": "one piece op-01 romance dawn booster box white english",
+        "search": "one piece op-01 romance dawn booster box white",
         "max_price": 400,
     },
     "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": {
         "name": "OP-02 Paramount War",
-        "search": "one piece op-02 paramount war booster box english",
+        "search": "one piece op-02 paramount war booster box",
         "max_price": 400,
     },
     "d3929fc6-6afa-468a-b7a1-ccc0f392131a": {
         "name": "OP-03 Pillars of Strength",
-        "search": "one piece op-03 pillars of strength booster box english",
+        "search": "one piece op-03 pillars of strength booster box",
         "max_price": 400,
     },
     "526c28b7-bc13-449b-a521-e63bdd81811a": {
         "name": "OP-04 Kingdoms of Intrigue",
-        "search": "one piece op-04 kingdoms intrigue booster box english",
+        "search": "one piece op-04 kingdoms intrigue booster box",
         "max_price": 350,
     },
     "6ea1659d-7b86-46c5-8fb2-0596262b8e68": {
         "name": "OP-05 Awakening of the New Era",
-        "search": "one piece op-05 awakening new era booster box english",
+        "search": "one piece op-05 awakening new era booster box",
         "max_price": 500,
     },
     "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": {
         "name": "OP-06 Wings of the Captain",
-        "search": "one piece op-06 wings captain booster box english",
+        "search": "one piece op-06 wings captain booster box",
         "max_price": 350,
     },
     "9bfebc47-4a92-44b3-b157-8c53d6a6a064": {
         "name": "OP-07 500 Years in the Future",
-        "search": "one piece op-07 500 years future booster box english",
+        "search": "one piece op-07 500 years future booster box",
         "max_price": 350,
     },
     "d0faf871-a930-4c80-a981-9df8741c90a9": {
         "name": "OP-08 Two Legends",
-        "search": "one piece op-08 two legends booster box english",
+        "search": "one piece op-08 two legends booster box",
         "max_price": 600,
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
-        "search": "one piece op-09 emperors new world booster box english",
+        "search": "one piece op-09 emperors new world booster box",
         "max_price": 600,
     },
     "3429708c-43c3-4ed8-8be3-706db8b062bd": {
         "name": "OP-10 Royal Blood",
-        "search": "one piece op-10 royal blood booster box english",
+        "search": "one piece op-10 royal blood booster box",
         "max_price": 600,
     },
     "46039dfc-a980-4bbd-aada-8cc1e124b44b": {
         "name": "OP-11 A Fist of Divine Speed",
-        "search": "one piece op-11 fist divine speed booster box english",
+        "search": "one piece op-11 fist divine speed booster box",
         "max_price": 700,
     },
     "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": {
         "name": "OP-12 Legacy of the Master",
-        "search": "one piece op-12 legacy master booster box english",
+        "search": "one piece op-12 legacy master booster box",
         "max_price": 600,
     },
     "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": {
         "name": "OP-13 Carrying on His Will",
-        "search": "one piece op-13 carrying his will booster box english",
+        "search": "one piece op-13 carrying his will booster box",
         "max_price": 2500,
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
-        "search": "one piece eb-01 memorial collection booster box english",
+        "search": "one piece eb-01 memorial collection booster box",
         "max_price": 800,
     },
     "7509a855-f6da-445e-b445-130824d81d04": {
         "name": "EB-02 Anime 25th Collection",
-        "search": "one piece eb-02 anime 25th booster box english",
+        "search": "one piece eb-02 anime 25th booster box",
         "max_price": 600,
     },
     "743bf253-98ca-49d5-93fe-a3eaef9f72c1": {
         "name": "PRB-01 Premium Booster",
-        "search": "one piece prb-01 premium booster box english",
+        "search": "one piece prb-01 premium booster box",
         "max_price": 800,
     },
     "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": {
         "name": "PRB-02 Premium Booster Vol. 2",
-        "search": "one piece prb-02 premium booster vol 2 box english",
+        "search": "one piece prb-02 premium booster vol 2 box",
         "max_price": 600,
     },
 }
 
-# Title keywords to exclude (same as old ebay_scraper.py)
+# Title keywords to exclude (Python-level safety net)
+# Many overlap with URL negatives - this catches edge cases
 TITLE_EXCLUSIONS = [
-    "japanese", "jp", "single", "card lot", "pack", "bundle",
+    "japanese", "jp", "korean", "chinese", "thai", "taiwan",
+    "single", "card lot", "bundle",
     "damaged", "opened", "resealed", "display",
-    "playmat", "sleeve", "deck box", "promo", "lot of",
-    "empty", "no cards", "custom", "repack", "break",
+    "playmat", "sleeve", "deck box", "promo",
+    "empty", "no cards", "custom", "repack",
     "check description", "check dis", "broken seal",
     "unsealed", "no seal", "incomplete",
+    # Note: "pack", "case", "break" handled separately with exceptions
 ]
 
-# Non-US/non-English indicators
+# Non-US/non-English indicators (backup for LH_PrefLoc=1)
 NON_US_KEYWORDS = [
     "uk sealed", "uk version", "uk stock", "uk edition",
     "europe", "european", "australia", "australian",
     "canada", "canadian", "italy", "german", "france", "french",
+    "spain", "spanish", "netherlands", "dutch", "mexico", "mexican",
+    "asia", "asian",
 ]
 
 
 def build_ebay_sold_url(search_term: str, min_price: int, max_price: int) -> str:
     """
-    Build eBay search URL with sold items filter and price range.
+    Build eBay search URL with sold items filter, price range, and negative keywords.
 
     eBay URL parameters:
     - LH_Complete=1 & LH_Sold=1: Sold items only
+    - LH_PrefLoc=1: US sellers only (FREE filtering)
     - _udlo / _udhi: Price range
     - _sop=13: Sort by end date (most recent first)
+    - Negative keywords appended to search (FREE filtering)
     """
+    # Append negative keywords to search term
+    search_with_negatives = search_term + " " + " ".join(URL_NEGATIVE_KEYWORDS)
+
     base_url = "https://www.ebay.com/sch/i.html"
     params = {
-        "_nkw": search_term,
+        "_nkw": search_with_negatives,
         "LH_Complete": "1",      # Completed listings
         "LH_Sold": "1",          # Sold items only
+        "LH_PrefLoc": "1",       # US sellers only (NEW)
         "_udlo": str(min_price), # Min price
         "_udhi": str(max_price), # Max price
         "_sop": "13",            # Sort by end date (newest first)
@@ -241,33 +260,101 @@ def is_case_listing(title: str) -> bool:
     return bool(re.search(r'\bcase\b', t))
 
 
-def filter_listing(item: Dict[str, Any], min_price: float) -> bool:
+def is_pack_listing(title: str) -> bool:
     """
-    Filter a single listing. Returns True if listing should be KEPT.
+    Check if listing is packs (not a sealed box).
+    Exception: "24 packs" is valid because a booster box contains 24 packs.
+    """
+    t = title.lower()
+    # Exception: "24 packs" is a valid booster box description
+    if re.search(r'\b24\s*packs?\b', t):
+        return False
+    # Any other pack reference is likely loose packs
+    return bool(re.search(r'\bpacks?\b', t))
+
+
+def is_break_listing(title: str) -> bool:
+    """Check if listing is a break/rip (not a sealed box)."""
+    t = title.lower()
+    return bool(re.search(r'\b(break|rip|live)\b', t))
+
+
+def detect_lot_quantity(title: str) -> int:
+    """
+    Detect if listing is a multi-box lot and return quantity.
+    Returns 1 for single box, >1 for lots.
+
+    Patterns: "x2", "x 2", "lot of 2", "2x", "2 x", "qty 2", "quantity 2"
+    """
+    t = title.lower()
+
+    # Pattern: "x2", "x 2", "x3" etc at end or with space
+    match = re.search(r'\bx\s*(\d+)\b', t)
+    if match:
+        return int(match.group(1))
+
+    # Pattern: "2x", "2 x", "3x" etc
+    match = re.search(r'\b(\d+)\s*x\b', t)
+    if match:
+        return int(match.group(1))
+
+    # Pattern: "lot of 2", "lot of 3"
+    match = re.search(r'\blot\s+of\s+(\d+)\b', t)
+    if match:
+        return int(match.group(1))
+
+    # Pattern: "qty 2", "quantity 2"
+    match = re.search(r'\b(?:qty|quantity)\s*(\d+)\b', t)
+    if match:
+        return int(match.group(1))
+
+    return 1
+
+
+def filter_listing(item: Dict[str, Any], min_price: float) -> Tuple[bool, int]:
+    """
+    Filter a single listing.
+
+    Returns:
+        tuple: (keep: bool, quantity: int)
+        - keep: True if listing should be KEPT
+        - quantity: Number of boxes in lot (for price normalization)
     """
     title = item.get("title", "")
     price = item.get("price")
 
     if not title or price is None:
-        return False
+        return False, 1
 
-    # Price check (dynamic minimum)
-    if price < min_price:
-        return False
-
-    # Title exclusions
+    # Title exclusions (general keywords)
     if is_excluded_title(title):
-        return False
+        return False, 1
 
     # Non-US check
     if is_non_us(title):
-        return False
+        return False, 1
 
-    # Case check
+    # Case check (with "case fresh" exception)
     if is_case_listing(title):
-        return False
+        return False, 1
 
-    return True
+    # Pack check (with "24 packs" exception)
+    if is_pack_listing(title):
+        return False, 1
+
+    # Break/rip check (backup for URL negatives)
+    if is_break_listing(title):
+        return False, 1
+
+    # Detect lot quantity for price normalization
+    quantity = detect_lot_quantity(title)
+
+    # Price check (dynamic minimum) - check per-unit price for lots
+    unit_price = price / quantity if quantity > 1 else price
+    if unit_price < min_price:
+        return False, 1
+
+    return True, quantity
 
 
 def _write_ebay_to_db(
@@ -442,7 +529,15 @@ def run_ebay_apify_scraper(
                 normalized["item_id"] = extract_item_id(item.get("url", "")) or item.get("itemId")
 
                 # Apply filters
-                if filter_listing(normalized, min_price):
+                keep, quantity = filter_listing(normalized, min_price)
+                if keep:
+                    # Normalize price for multi-box lots (divide by quantity)
+                    if quantity > 1 and normalized["price"]:
+                        original_price = normalized["price"]
+                        normalized["price"] = round(original_price / quantity, 2)
+                        normalized["lot_quantity"] = quantity
+                        normalized["lot_total_price"] = original_price
+                        logger.debug(f"    Lot detected: '{normalized['title'][:50]}...' - ${original_price} / {quantity} = ${normalized['price']}")
                     filtered.append(normalized)
 
             logger.info(f"  Filtered to {len(filtered)} items")
