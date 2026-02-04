@@ -181,7 +181,7 @@ def main():
         return 1
     
     # Phase 1b: eBay sold listings via Apify (non-fatal — failure does NOT block pipeline)
-    # Uses Epic Scrapers actor ($50/month unlimited) for reliable eBay data
+    # Uses dtrungtin actor (~$0.63/1000 results, ~$20-25/month) for reliable eBay data
     skip_ebay = os.environ.get("SKIP_EBAY", "").lower() in ("1", "true", "yes")
     status["ebay"] = {"completed": False, "error": None, "skipped": False}
     if skip_ebay:
@@ -194,7 +194,7 @@ def main():
     else:
         logger.info("")
         logger.info("=" * 50)
-        logger.info("Phase 1b: eBay Sold Listings via Apify ($50/mo unlimited)")
+        logger.info("Phase 1b: eBay Sold Listings via Apify")
         logger.info("=" * 50)
         try:
             from scripts.ebay_apify import run_ebay_apify_scraper

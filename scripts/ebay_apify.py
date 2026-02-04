@@ -2,11 +2,11 @@
 """
 eBay Apify Scraper
 ------------------
-Fetches eBay sold listings via Apify actor (epicscrapers/ebay-search-results-scraper-rental).
+Fetches eBay sold listings via Apify actor (dtrungtin/ebay-items-scraper).
 Replaces custom Playwright scraper with reliable Apify-managed scraping.
 
-Cost: $50/month flat rate (unlimited results)
-No per-result counting needed - fetch as many results as available.
+Cost: ~$0.63 per 1,000 results (pay-per-result)
+Estimated ~$17-25/month for 18 boxes daily.
 
 Run standalone: python scripts/ebay_apify.py [--debug <box_id>]
 Called by daily_refresh.py as Phase 1b (after TCGplayer Apify).
@@ -36,13 +36,13 @@ HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
 # Price floor as fraction of TCG market price (75% = reject below 25% discount)
 MIN_PRICE_RATIO = 0.75
 
-# Maximum results to fetch per box
-# With $50/month unlimited plan, we can fetch generously
-# 200 results should capture all recent sold listings for any box
-MAX_RESULTS_PER_BOX = 200
+# Maximum results to fetch per box (controls cost)
+# 100 results × 18 boxes × 30 days = 54,000/month × $0.63/1000 = ~$34/month
+# Use 75 for more conservative spend (~$25/month)
+MAX_RESULTS_PER_BOX = 75
 
-# Apify actor to use ($50/month unlimited rental)
-APIFY_ACTOR = "epicscrapers/ebay-search-results-scraper-rental"
+# Apify actor to use (pay-per-result ~$0.63/1000)
+APIFY_ACTOR = "dtrungtin/ebay-items-scraper"
 
 # eBay search configuration for each box
 # Search terms optimized for eBay (different from 130point queries)
@@ -484,7 +484,7 @@ def run_ebay_apify_scraper(
                     "ebay_avg_price_usd": round(statistics.mean(prices), 2) if prices else None,
                     "ebay_low_price_usd": round(min(prices), 2) if prices else None,
                     "ebay_high_price_usd": round(max(prices), 2) if prices else None,
-                    "ebay_source": "apify_unlimited",
+                    "ebay_source": "apify",
                     "ebay_fetch_timestamp": datetime.now().isoformat(),
                     "_ebay_sold_item_ids": item_ids,
                 }
@@ -498,7 +498,7 @@ def run_ebay_apify_scraper(
                     "ebay_avg_price_usd": None,
                     "ebay_low_price_usd": None,
                     "ebay_high_price_usd": None,
-                    "ebay_source": "apify_unlimited",
+                    "ebay_source": "apify",
                     "ebay_fetch_timestamp": datetime.now().isoformat(),
                     "_ebay_sold_item_ids": [],
                 }
