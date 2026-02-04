@@ -16,6 +16,7 @@ import json
 import logging
 import re
 import statistics
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -45,6 +46,10 @@ RESULTS_LIMIT_SLOW = 15
 
 # Apify actor to use ($6.99/month rental + $0.25/1000 results)
 APIFY_ACTOR = "3x1t/ebay-scraper"
+
+# Retry settings (74% success rate → 99.5% with 3 retries)
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = [5, 15, 30]  # Exponential backoff: 5s, 15s, 30s
 
 # URL negative keywords - excluded at eBay level (FREE filtering)
 # Note: -pack and -case omitted to allow "24 packs" and "case fresh" exceptions
@@ -521,14 +526,31 @@ def run_ebay_apify_scraper(
             ebay_url = build_ebay_sold_url(search, min_price, max_price)
             logger.debug(f"  URL: {ebay_url}")
 
-            # Run Apify actor (3x1t PPR - pay per result)
+            # Run Apify actor with retry logic (3x1t rental)
             run_input = {
                 "startUrls": [ebay_url],
                 "maxItems": max_results,
             }
 
-            run = client.actor(APIFY_ACTOR).call(run_input=run_input)
-            items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+            items = None
+            last_error = None
+            for attempt in range(MAX_RETRIES + 1):
+                try:
+                    run = client.actor(APIFY_ACTOR).call(run_input=run_input)
+                    items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+                    break  # Success, exit retry loop
+                except Exception as retry_err:
+                    last_error = retry_err
+                    if attempt < MAX_RETRIES:
+                        wait_time = RETRY_BACKOFF_SECONDS[attempt]
+                        logger.warning(f"  ⚠️ Attempt {attempt + 1} failed: {retry_err}. Retrying in {wait_time}s...")
+                        time.sleep(wait_time)
+                    else:
+                        logger.error(f"  ❌ All {MAX_RETRIES + 1} attempts failed for {name}")
+                        raise last_error
+
+            if items is None:
+                raise last_error or Exception("No items returned")
 
             logger.info(f"  Apify returned {len(items)} items")
 
