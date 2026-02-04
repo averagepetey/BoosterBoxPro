@@ -2,11 +2,11 @@
 """
 eBay Apify Scraper
 ------------------
-Fetches eBay sold listings via Apify actor (3x1t/ebay-scraper).
+Fetches eBay sold listings via Apify actor (3x1t/ebay-scraper-ppr).
 Replaces custom Playwright scraper with reliable Apify-managed scraping.
 
-Cost: $6.99/month rental + ~$0.25 per 1,000 results
-Estimated ~$10-15/month total for 18 boxes daily.
+Cost: Pay-per-result at $0.99 per 1,000 results (~$24/month for 18 boxes daily)
+Tiered limits: hot=85, medium=50, slow=10 results per box
 
 Run standalone: python scripts/ebay_apify.py [--debug <box_id>]
 Called by daily_refresh.py as Phase 1b (after TCGplayer Apify).
@@ -36,14 +36,15 @@ HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
 # Price floor as fraction of TCG market price (75% = reject below 25% discount)
 MIN_PRICE_RATIO = 0.75
 
-# Maximum results to fetch per box (controls cost)
-# 75 results × 18 boxes × 30 days = 40,500/month × $0.25/1000 = ~$10/month usage
-# Plus $6.99/month rental = ~$17/month total
-MAX_RESULTS_PER_BOX = 75
+# Tiered result limits by box activity level (controls cost)
+# Hot: 5 boxes × 85 = 425/day, Medium: 6 × 50 = 300/day, Slow: 7 × 10 = 70/day
+# Total: 795/day × 30 = 23,850/month × $0.99/1000 = ~$24/month
+RESULTS_LIMIT_HOT = 85
+RESULTS_LIMIT_MEDIUM = 50
+RESULTS_LIMIT_SLOW = 10
 
-# Apify actor to use ($6.99/month rental + ~$0.25/1000 results)
-# 3x1t/ebay-scraper accepts eBay search URLs directly
-APIFY_ACTOR = "3x1t/ebay-scraper"
+# Apify actor to use (PPR = Pay Per Result, $0.99/1000, >99% success rate)
+APIFY_ACTOR = "3x1t/ebay-scraper-ppr"
 
 # URL negative keywords - excluded at eBay level (FREE filtering)
 # Note: -pack and -case omitted to allow "24 packs" and "case fresh" exceptions
@@ -55,96 +56,115 @@ URL_NEGATIVE_KEYWORDS = [
 
 # eBay search configuration for each box
 # Search terms: no "english" (LH_PrefLoc=1 handles US-only), negatives appended dynamically
+# Tier: "hot" (newest/high demand), "medium" (established), "slow" (older sets)
 EBAY_BOX_CONFIG: Dict[str, Dict[str, Any]] = {
     "860ffe3f-9286-42a9-ad4e-d079a6add6f4": {
         "name": "OP-01 Romance Dawn (Blue)",
         "search": "one piece op-01 romance dawn booster box blue",
         "max_price": 500,
+        "tier": "slow",
     },
     "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": {
         "name": "OP-01 Romance Dawn (White)",
         "search": "one piece op-01 romance dawn booster box white",
         "max_price": 400,
+        "tier": "slow",
     },
     "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": {
         "name": "OP-02 Paramount War",
         "search": "one piece op-02 paramount war booster box",
         "max_price": 400,
+        "tier": "slow",
     },
     "d3929fc6-6afa-468a-b7a1-ccc0f392131a": {
         "name": "OP-03 Pillars of Strength",
         "search": "one piece op-03 pillars of strength booster box",
         "max_price": 400,
+        "tier": "slow",
     },
     "526c28b7-bc13-449b-a521-e63bdd81811a": {
         "name": "OP-04 Kingdoms of Intrigue",
         "search": "one piece op-04 kingdoms intrigue booster box",
         "max_price": 350,
+        "tier": "slow",
     },
     "6ea1659d-7b86-46c5-8fb2-0596262b8e68": {
         "name": "OP-05 Awakening of the New Era",
         "search": "one piece op-05 awakening new era booster box",
         "max_price": 500,
+        "tier": "medium",
     },
     "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": {
         "name": "OP-06 Wings of the Captain",
         "search": "one piece op-06 wings captain booster box",
         "max_price": 350,
+        "tier": "medium",
     },
     "9bfebc47-4a92-44b3-b157-8c53d6a6a064": {
         "name": "OP-07 500 Years in the Future",
         "search": "one piece op-07 500 years future booster box",
         "max_price": 350,
+        "tier": "medium",
     },
     "d0faf871-a930-4c80-a981-9df8741c90a9": {
         "name": "OP-08 Two Legends",
         "search": "one piece op-08 two legends booster box",
         "max_price": 600,
+        "tier": "medium",
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
         "search": "one piece op-09 emperors new world booster box",
         "max_price": 600,
+        "tier": "hot",
     },
     "3429708c-43c3-4ed8-8be3-706db8b062bd": {
         "name": "OP-10 Royal Blood",
         "search": "one piece op-10 royal blood booster box",
         "max_price": 600,
+        "tier": "hot",
     },
     "46039dfc-a980-4bbd-aada-8cc1e124b44b": {
         "name": "OP-11 A Fist of Divine Speed",
         "search": "one piece op-11 fist divine speed booster box",
         "max_price": 700,
+        "tier": "hot",
     },
     "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": {
         "name": "OP-12 Legacy of the Master",
         "search": "one piece op-12 legacy master booster box",
         "max_price": 600,
+        "tier": "hot",
     },
     "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": {
         "name": "OP-13 Carrying on His Will",
         "search": "one piece op-13 carrying his will booster box",
         "max_price": 2500,
+        "tier": "hot",
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
         "search": "one piece eb-01 memorial collection booster box",
         "max_price": 800,
+        "tier": "medium",
     },
     "7509a855-f6da-445e-b445-130824d81d04": {
         "name": "EB-02 Anime 25th Collection",
         "search": "one piece eb-02 anime 25th booster box",
         "max_price": 600,
+        "tier": "medium",
     },
     "743bf253-98ca-49d5-93fe-a3eaef9f72c1": {
         "name": "PRB-01 Premium Booster",
         "search": "one piece prb-01 premium booster box",
         "max_price": 800,
+        "tier": "slow",
     },
     "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": {
         "name": "PRB-02 Premium Booster Vol. 2",
         "search": "one piece prb-02 premium booster vol 2 box",
         "max_price": 600,
+        "tier": "slow",
     },
 }
 
@@ -171,6 +191,16 @@ NON_US_KEYWORDS = [
 ]
 
 
+def get_max_results(tier: str) -> int:
+    """Get max results limit based on box tier."""
+    if tier == "hot":
+        return RESULTS_LIMIT_HOT
+    elif tier == "medium":
+        return RESULTS_LIMIT_MEDIUM
+    else:
+        return RESULTS_LIMIT_SLOW
+
+
 def build_ebay_sold_url(search_term: str, min_price: int, max_price: int) -> str:
     """
     Build eBay search URL with sold items filter, price range, and negative keywords.
@@ -195,7 +225,7 @@ def build_ebay_sold_url(search_term: str, min_price: int, max_price: int) -> str
         "_udhi": str(max_price), # Max price
         "_sop": "13",            # Sort by end date (newest first)
         "LH_ItemCondition": "1000",  # New condition
-        "_ipg": str(MAX_RESULTS_PER_BOX),  # Results per page
+        "_ipg": "240",  # Results per page (eBay max)
     }
     return f"{base_url}?{urlencode(params)}"
 
@@ -464,6 +494,8 @@ def run_ebay_apify_scraper(
         name = config["name"]
         search = config["search"]
         max_price = config["max_price"]
+        tier = config.get("tier", "medium")
+        max_results = get_max_results(tier)
 
         # Get TCG market price for dynamic minimum
         tcg_market_price = None
@@ -482,17 +514,17 @@ def run_ebay_apify_scraper(
         else:
             min_price = 50  # Fallback minimum
 
-        logger.info(f"Scraping {name} (min=${min_price}, max=${max_price})")
+        logger.info(f"Scraping {name} [{tier}] (min=${min_price}, max=${max_price}, limit={max_results})")
 
         try:
             # Build eBay URL with filters
             ebay_url = build_ebay_sold_url(search, min_price, max_price)
             logger.debug(f"  URL: {ebay_url}")
 
-            # Run Apify actor (3x1t $6.99/month rental)
+            # Run Apify actor (3x1t PPR - pay per result)
             run_input = {
                 "startUrls": [ebay_url],
-                "maxItems": MAX_RESULTS_PER_BOX,
+                "maxItems": max_results,
             }
 
             run = client.actor(APIFY_ACTOR).call(run_input=run_input)
