@@ -14,6 +14,7 @@ Called by daily_refresh.py as Phase 1b (after TCGplayer Apify).
 
 import json
 import logging
+import random
 import re
 import statistics
 import time
@@ -49,7 +50,11 @@ APIFY_ACTOR = "3x1t/ebay-scraper"
 
 # Retry settings (74% success rate → 99.5% with 3 retries)
 MAX_RETRIES = 3
-RETRY_BACKOFF_SECONDS = [5, 15, 30]  # Exponential backoff: 5s, 15s, 30s
+RETRY_BACKOFF_SECONDS = [10, 30, 60]  # Exponential backoff for rate limits
+
+# Delay between boxes to avoid rate limiting (randomized)
+MIN_DELAY_BETWEEN_BOXES = 3  # seconds
+MAX_DELAY_BETWEEN_BOXES = 8  # seconds
 
 # URL negative keywords - excluded at eBay level (FREE filtering)
 # Note: -pack and -case omitted to allow "24 packs" and "case fresh" exceptions
@@ -541,9 +546,23 @@ def run_ebay_apify_scraper(
                     break  # Success, exit retry loop
                 except Exception as retry_err:
                     last_error = retry_err
+                    err_str = str(retry_err).lower()
+
+                    # Classify error for smarter retry
+                    is_rate_limit = "429" in err_str or "rate limit" in err_str
+                    is_blocked = "403" in err_str or "forbidden" in err_str
+                    is_timeout = "timeout" in err_str
+
                     if attempt < MAX_RETRIES:
-                        wait_time = RETRY_BACKOFF_SECONDS[attempt]
-                        logger.warning(f"  ⚠️ Attempt {attempt + 1} failed: {retry_err}. Retrying in {wait_time}s...")
+                        # Use longer wait for rate limits/blocks
+                        base_wait = RETRY_BACKOFF_SECONDS[attempt]
+                        if is_rate_limit or is_blocked:
+                            wait_time = base_wait * 2  # Double wait for rate limits
+                        else:
+                            wait_time = base_wait
+
+                        error_type = "RATE_LIMIT" if is_rate_limit else "BLOCKED" if is_blocked else "TIMEOUT" if is_timeout else "ERROR"
+                        logger.warning(f"  ⚠️ Attempt {attempt + 1} [{error_type}]: {retry_err}. Retrying in {wait_time}s...")
                         time.sleep(wait_time)
                     else:
                         logger.error(f"  ❌ All {MAX_RETRIES + 1} attempts failed for {name}")
@@ -671,8 +690,27 @@ def run_ebay_apify_scraper(
             results_count += 1
 
         except Exception as e:
-            logger.error(f"  ❌ {name}: {e}")
-            errors.append(f"{name}: {e}")
+            # Classify error for better debugging
+            err_str = str(e).lower()
+            if "429" in err_str or "rate limit" in err_str:
+                error_type = "RATE_LIMIT"
+            elif "403" in err_str or "forbidden" in err_str or "blocked" in err_str:
+                error_type = "BLOCKED"
+            elif "timeout" in err_str or "timed out" in err_str:
+                error_type = "TIMEOUT"
+            elif "captcha" in err_str:
+                error_type = "CAPTCHA"
+            else:
+                error_type = "UNKNOWN"
+
+            logger.error(f"  ❌ {name} [{error_type}]: {e}")
+            errors.append(f"{name} [{error_type}]: {e}")
+
+        # Delay between boxes to avoid rate limiting (skip delay for last box or debug mode)
+        if len(box_items) > 1 and box_id != box_items[-1][0]:
+            delay = random.uniform(MIN_DELAY_BETWEEN_BOXES, MAX_DELAY_BETWEEN_BOXES)
+            logger.debug(f"  Waiting {delay:.1f}s before next box...")
+            time.sleep(delay)
 
     # Save historical data
     with open(HISTORICAL_FILE, "w") as f:
