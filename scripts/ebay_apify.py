@@ -2,11 +2,11 @@
 """
 eBay Apify Scraper
 ------------------
-Fetches eBay sold listings via Apify actor (3x1t/ebay-scraper-ppr).
+Fetches eBay sold listings via Apify actor (3x1t/ebay-scraper).
 Replaces custom Playwright scraper with reliable Apify-managed scraping.
 
-Cost: Pay-per-result at $0.99 per 1,000 results (~$24/month for 18 boxes daily)
-Tiered limits: hot=85, medium=50, slow=10 results per box
+Cost: $6.99/month rental + $0.25 per 1,000 results (~$13/month total)
+Tiered limits: hot=85, medium=50, slow=15 results per box
 
 Run standalone: python scripts/ebay_apify.py [--debug <box_id>]
 Called by daily_refresh.py as Phase 1b (after TCGplayer Apify).
@@ -38,13 +38,13 @@ MIN_PRICE_RATIO = 0.75
 
 # Tiered result limits by box activity level (controls cost)
 # Hot: 5 boxes × 85 = 425/day, Medium: 6 × 50 = 300/day, Slow: 7 × 15 = 105/day
-# Total: 830/day × 30 = 24,900/month × $0.99/1000 = ~$25/month
+# Total: 830/day × 30 = 24,900/month × $0.25/1000 = ~$6 usage + $6.99 rental = ~$13/month
 RESULTS_LIMIT_HOT = 85
 RESULTS_LIMIT_MEDIUM = 50
 RESULTS_LIMIT_SLOW = 15
 
-# Apify actor to use (PPR = Pay Per Result, $0.99/1000, >99% success rate)
-APIFY_ACTOR = "3x1t/ebay-scraper-ppr"
+# Apify actor to use ($6.99/month rental + $0.25/1000 results)
+APIFY_ACTOR = "3x1t/ebay-scraper"
 
 # URL negative keywords - excluded at eBay level (FREE filtering)
 # Note: -pack and -case omitted to allow "24 packs" and "case fresh" exceptions
