@@ -37,11 +37,11 @@ HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
 MIN_PRICE_RATIO = 0.75
 
 # Tiered result limits by box activity level (controls cost)
-# Hot: 5 boxes × 85 = 425/day, Medium: 6 × 50 = 300/day, Slow: 7 × 10 = 70/day
-# Total: 795/day × 30 = 23,850/month × $0.99/1000 = ~$24/month
+# Hot: 5 boxes × 85 = 425/day, Medium: 6 × 50 = 300/day, Slow: 7 × 15 = 105/day
+# Total: 830/day × 30 = 24,900/month × $0.99/1000 = ~$25/month
 RESULTS_LIMIT_HOT = 85
 RESULTS_LIMIT_MEDIUM = 50
-RESULTS_LIMIT_SLOW = 10
+RESULTS_LIMIT_SLOW = 15
 
 # Apify actor to use (PPR = Pay Per Result, $0.99/1000, >99% success rate)
 APIFY_ACTOR = "3x1t/ebay-scraper-ppr"
