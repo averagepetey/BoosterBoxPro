@@ -2,11 +2,11 @@
 """
 eBay Apify Scraper
 ------------------
-Fetches eBay sold listings via Apify actor (dtrungtin/ebay-items-scraper).
+Fetches eBay sold listings via Apify actor (3x1t/ebay-scraper).
 Replaces custom Playwright scraper with reliable Apify-managed scraping.
 
-Cost: ~$0.63 per 1,000 results (pay-per-result)
-Estimated ~$17-25/month for 18 boxes daily.
+Cost: $6.99/month rental + ~$0.25 per 1,000 results
+Estimated ~$10-15/month total for 18 boxes daily.
 
 Run standalone: python scripts/ebay_apify.py [--debug <box_id>]
 Called by daily_refresh.py as Phase 1b (after TCGplayer Apify).
@@ -37,12 +37,13 @@ HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
 MIN_PRICE_RATIO = 0.75
 
 # Maximum results to fetch per box (controls cost)
-# 100 results × 18 boxes × 30 days = 54,000/month × $0.63/1000 = ~$34/month
-# Use 75 for more conservative spend (~$25/month)
+# 75 results × 18 boxes × 30 days = 40,500/month × $0.25/1000 = ~$10/month usage
+# Plus $6.99/month rental = ~$17/month total
 MAX_RESULTS_PER_BOX = 75
 
-# Apify actor to use (pay-per-result ~$0.63/1000)
-APIFY_ACTOR = "dtrungtin/ebay-items-scraper"
+# Apify actor to use ($6.99/month rental + ~$0.25/1000 results)
+# 3x1t/ebay-scraper accepts eBay search URLs directly
+APIFY_ACTOR = "3x1t/ebay-scraper"
 
 # URL negative keywords - excluded at eBay level (FREE filtering)
 # Note: -pack and -case omitted to allow "24 packs" and "case fresh" exceptions
@@ -488,9 +489,9 @@ def run_ebay_apify_scraper(
             ebay_url = build_ebay_sold_url(search, min_price, max_price)
             logger.debug(f"  URL: {ebay_url}")
 
-            # Run Apify actor (Epic Scrapers $50/month unlimited)
+            # Run Apify actor (3x1t $6.99/month rental)
             run_input = {
-                "startUrls": [{"url": ebay_url}],
+                "startUrls": [ebay_url],
                 "maxItems": MAX_RESULTS_PER_BOX,
             }
 
