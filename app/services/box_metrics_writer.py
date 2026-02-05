@@ -1,7 +1,7 @@
 """
 Write one day of metrics into box_metrics_unified.
-Used by listings_scraper, tcgplayer_apify, historical_data_manager so new data
-shows on the live site without commits.
+Single source of truth for all daily metrics.
+Called by rolling_metrics.py after all data is collected and calculated.
 """
 
 from typing import Optional
@@ -18,10 +18,13 @@ _upsert_sql = text("""
         boxes_sold_30d_avg, boxes_added_today,
         liquidity_score, days_to_20pct_increase,
         avg_boxes_added_per_day, expected_days_to_sell,
-        floor_price_1d_change_pct
+        floor_price_1d_change_pct,
+        daily_volume_usd, tcg_daily_volume_usd, ebay_daily_volume_usd,
+        ebay_units_sold_count, ebay_active_listings_count
     ) VALUES (
         CAST(:bid AS uuid), CAST(:md AS date), :fp, :bspd, :alc, :uvu, :uv7, :bs30, :bat,
-        :liq, :d20, :abapd, :edts, :fp1d
+        :liq, :d20, :abapd, :edts, :fp1d,
+        :dv, :tcg_dv, :ebay_dv, :ebay_sold, :ebay_listings
     )
     ON CONFLICT (booster_box_id, metric_date)
     DO UPDATE SET
@@ -37,6 +40,11 @@ _upsert_sql = text("""
         avg_boxes_added_per_day = COALESCE(EXCLUDED.avg_boxes_added_per_day, box_metrics_unified.avg_boxes_added_per_day),
         expected_days_to_sell = COALESCE(EXCLUDED.expected_days_to_sell, box_metrics_unified.expected_days_to_sell),
         floor_price_1d_change_pct = COALESCE(EXCLUDED.floor_price_1d_change_pct, box_metrics_unified.floor_price_1d_change_pct),
+        daily_volume_usd = COALESCE(EXCLUDED.daily_volume_usd, box_metrics_unified.daily_volume_usd),
+        tcg_daily_volume_usd = COALESCE(EXCLUDED.tcg_daily_volume_usd, box_metrics_unified.tcg_daily_volume_usd),
+        ebay_daily_volume_usd = COALESCE(EXCLUDED.ebay_daily_volume_usd, box_metrics_unified.ebay_daily_volume_usd),
+        ebay_units_sold_count = COALESCE(EXCLUDED.ebay_units_sold_count, box_metrics_unified.ebay_units_sold_count),
+        ebay_active_listings_count = COALESCE(EXCLUDED.ebay_active_listings_count, box_metrics_unified.ebay_active_listings_count),
         updated_at = NOW()
 """)
 
@@ -56,6 +64,12 @@ def upsert_daily_metrics(
     avg_boxes_added_per_day: Optional[float] = None,
     expected_days_to_sell: Optional[float] = None,
     floor_price_1d_change_pct: Optional[float] = None,
+    # New columns for actual daily volume
+    daily_volume_usd: Optional[float] = None,
+    tcg_daily_volume_usd: Optional[float] = None,
+    ebay_daily_volume_usd: Optional[float] = None,
+    ebay_units_sold_count: Optional[float] = None,
+    ebay_active_listings_count: Optional[int] = None,
 ) -> bool:
     """Upsert one row into box_metrics_unified. Returns True on success, False on FK/error."""
     try:
@@ -77,6 +91,11 @@ def upsert_daily_metrics(
                     "abapd": avg_boxes_added_per_day,
                     "edts": expected_days_to_sell,
                     "fp1d": floor_price_1d_change_pct,
+                    "dv": daily_volume_usd,
+                    "tcg_dv": tcg_daily_volume_usd,
+                    "ebay_dv": ebay_daily_volume_usd,
+                    "ebay_sold": ebay_units_sold_count,
+                    "ebay_listings": ebay_active_listings_count,
                 })
         return True
     except Exception:

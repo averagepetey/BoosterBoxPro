@@ -47,8 +47,9 @@ def _row_to_entry(row: Any) -> Dict[str, Any]:
     fp = float(floor_price_usd) if floor_price_usd is not None else None
     unified_volume_usd = d.get("unified_volume_usd")
     uv = float(unified_volume_usd) if unified_volume_usd is not None else None
-    # daily_volume_usd: treat unified_volume_usd as 30d volume, so daily = vol/30
-    daily_volume_usd = (uv / 30.0) if uv else None
+    # Read daily_volume_usd directly from DB - no calculation
+    daily_vol = d.get("daily_volume_usd")
+    daily_volume_usd = float(daily_vol) if daily_vol is not None else None
     def _f(v, cast=float):
         if v is None:
             return None
@@ -133,7 +134,7 @@ def get_all_boxes_historical_entries_from_db(box_ids: List[str]) -> Dict[str, Li
                 "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
                 "unified_volume_usd": uv,
                 "unified_volume_7d_ema": float(d["unified_volume_7d_ema"]) if d.get("unified_volume_7d_ema") is not None else None,
-                "daily_volume_usd": (uv / 30.0) if uv is not None else None,
+                "daily_volume_usd": float(d["daily_volume_usd"]) if d.get("daily_volume_usd") is not None else None,
                 "boxes_sold_30d_avg": float(d["boxes_sold_30d_avg"]) if d.get("boxes_sold_30d_avg") is not None else None,
                 "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
             }

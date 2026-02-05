@@ -352,8 +352,24 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 liquidity_label = "Low"
 
         # ── 9. Volume metrics ────────────────────────────────────────
+        # TCG daily volume = boxes_sold × floor_price (estimated, we don't have actual sale prices)
+        tcg_sold = float(target_entry.get("boxes_sold_per_day") or target_entry.get("boxes_sold_today") or 0)
+        tcg_price = float(target_entry.get("floor_price_usd") or 0)
+        tcg_daily_volume_usd = round(tcg_sold * tcg_price, 2) if tcg_sold and tcg_price else 0
+
+        # eBay daily volume = sum of actual sold prices (we have real sale prices)
+        ebay_daily_volume_usd = float(target_entry.get("ebay_daily_volume_usd") or 0)
+
+        # Total daily volume = TCG estimated + eBay actual
+        daily_volume_usd = round(tcg_daily_volume_usd + ebay_daily_volume_usd, 2)
+
+        # eBay units sold and active listings for today
+        ebay_units_sold_count = float(target_entry.get("ebay_sold_today") or 0)
+        ebay_active_listings_count = int(target_entry.get("ebay_active_listings") or 0)
+
+        # Helper for historical volume calculations
         def _get_daily_vol(e):
-            """Blended daily volume: TCGplayer + eBay (additive)."""
+            """Blended daily volume: TCGplayer (estimated) + eBay (actual)."""
             sold = e.get("boxes_sold_today") or e.get("boxes_sold_per_day") or 0
             price = e.get("floor_price_usd") or 0
             sold = float(sold) if sold else 0
@@ -399,6 +415,12 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 avg_boxes_added_per_day=avg_boxes_added_per_day,
                 expected_days_to_sell=expected_time_to_sale_days,
                 floor_price_1d_change_pct=floor_price_1d_change_pct,
+                # New: actual daily volume columns
+                daily_volume_usd=daily_volume_usd,
+                tcg_daily_volume_usd=tcg_daily_volume_usd,
+                ebay_daily_volume_usd=ebay_daily_volume_usd,
+                ebay_units_sold_count=ebay_units_sold_count,
+                ebay_active_listings_count=ebay_active_listings_count,
             )
             if ok:
                 db_updated += 1

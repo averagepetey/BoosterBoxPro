@@ -447,18 +447,10 @@ async def get_booster_boxes(
         mres = await db.execute(mstmt)
         metrics_list = mres.scalars().all()
         metrics_by_box = {str(m.booster_box_id): m for m in metrics_list}
-        
-        # 3) Batch historical snapshot for all boxes (one DB hit)
-        try:
-            from app.services.historical_data import get_all_boxes_latest_for_leaderboard
-            box_ids = [str(b.id) for b in db_boxes]
-            hist_by_box = get_all_boxes_latest_for_leaderboard(box_ids)
-        except Exception:
-            hist_by_box = {}
-        
+
         result_boxes = []
         seen_product_names = set()
-        
+
         for db_box in db_boxes:
             if "(Test)" in db_box.product_name or "Test Box" in db_box.product_name:
                 continue
@@ -468,9 +460,8 @@ async def get_booster_boxes(
             if db_box.product_name in seen_product_names:
                 continue
             seen_product_names.add(db_box.product_name)
-            
+
             latest_metrics = metrics_by_box.get(str(db_box.id))
-            hist = hist_by_box.get(str(db_box.id), {})
             
             # Start with JSON data if available (exact product_name), else match by set code (OP-07, PRB-01, etc.)
             json_box = json_boxes_by_name.get(db_box.product_name, {})
@@ -492,166 +483,56 @@ async def get_booster_boxes(
                 "metrics": {}
             }
             
-            # Use database metrics if available, otherwise fall back to JSON
+            # Use database metrics - single source of truth
             if latest_metrics:
                 box_data["metric_date"] = latest_metrics.metric_date.isoformat() if latest_metrics.metric_date else None
-                
-                # Calculate daily_volume_usd - prefer from historical data, or estimate from 30d volume
-                # NOTE: Do NOT use unified_volume_7d_ema to calculate daily volume - EMA is not a sum!
-                daily_vol = None
-                # First try to get from historical data (most accurate)
-                # If not available, estimate from unified_volume_usd (which is typically daily * 30)
-                if latest_metrics.unified_volume_usd:
-                    # unified_volume_usd is typically calculated as daily_volume_usd * 30
-                    daily_vol = float(latest_metrics.unified_volume_usd) / 30
-                
+
+                # Read all metrics directly from DB - no calculations here
                 box_data["metrics"] = {
-                    "floor_price_usd": float(latest_metrics.floor_price_usd) if latest_metrics.floor_price_usd else json_box.get("metrics", {}).get("floor_price_usd"),
+                    # Price
+                    "floor_price_usd": float(latest_metrics.floor_price_usd) if latest_metrics.floor_price_usd else None,
                     "floor_price_1d_change_pct": float(latest_metrics.floor_price_1d_change_pct) if latest_metrics.floor_price_1d_change_pct else 0.0,
-                    "daily_volume_usd": daily_vol if daily_vol else json_box.get("metrics", {}).get("daily_volume_usd"),
-                    "unified_volume_usd": float(latest_metrics.unified_volume_usd) if latest_metrics.unified_volume_usd else json_box.get("metrics", {}).get("unified_volume_usd"),
-                    "unified_volume_7d_ema": float(latest_metrics.unified_volume_7d_ema) if latest_metrics.unified_volume_7d_ema else json_box.get("metrics", {}).get("unified_volume_7d_ema"),
-                    "active_listings_count": latest_metrics.active_listings_count if latest_metrics.active_listings_count else json_box.get("metrics", {}).get("active_listings_count"),
-                    "liquidity_score": float(latest_metrics.liquidity_score) if latest_metrics.liquidity_score else json_box.get("metrics", {}).get("liquidity_score"),
-                    "days_to_20pct_increase": float(latest_metrics.days_to_20pct_increase) if latest_metrics.days_to_20pct_increase else json_box.get("metrics", {}).get("days_to_20pct_increase"),
-                    "boxes_sold_per_day": float(latest_metrics.boxes_sold_per_day) if latest_metrics.boxes_sold_per_day else json_box.get("metrics", {}).get("boxes_sold_per_day"),
-                    "boxes_added_today": latest_metrics.boxes_added_today if latest_metrics.boxes_added_today else json_box.get("metrics", {}).get("boxes_added_today"),
-                    "boxes_sold_30d_avg": float(latest_metrics.boxes_sold_30d_avg) if latest_metrics.boxes_sold_30d_avg else json_box.get("metrics", {}).get("boxes_sold_30d_avg"),
+                    # Volume - read directly, no /30 calculation
+                    "daily_volume_usd": float(latest_metrics.daily_volume_usd) if latest_metrics.daily_volume_usd else None,
+                    "tcg_daily_volume_usd": float(latest_metrics.tcg_daily_volume_usd) if latest_metrics.tcg_daily_volume_usd else None,
+                    "ebay_daily_volume_usd": float(latest_metrics.ebay_daily_volume_usd) if latest_metrics.ebay_daily_volume_usd else None,
+                    "unified_volume_usd": float(latest_metrics.unified_volume_usd) if latest_metrics.unified_volume_usd else None,
+                    "unified_volume_7d_ema": float(latest_metrics.unified_volume_7d_ema) if latest_metrics.unified_volume_7d_ema else None,
+                    # Sales
+                    "boxes_sold_per_day": float(latest_metrics.boxes_sold_per_day) if latest_metrics.boxes_sold_per_day else None,
+                    "ebay_units_sold_count": float(latest_metrics.ebay_units_sold_count) if latest_metrics.ebay_units_sold_count else None,
+                    "boxes_sold_30d_avg": float(latest_metrics.boxes_sold_30d_avg) if latest_metrics.boxes_sold_30d_avg else None,
+                    # Listings
+                    "active_listings_count": latest_metrics.active_listings_count,
+                    "ebay_active_listings_count": latest_metrics.ebay_active_listings_count,
+                    "boxes_added_today": latest_metrics.boxes_added_today,
+                    # Derived
+                    "liquidity_score": float(latest_metrics.liquidity_score) if latest_metrics.liquidity_score else None,
+                    "days_to_20pct_increase": float(latest_metrics.days_to_20pct_increase) if latest_metrics.days_to_20pct_increase else None,
                 }
-            elif json_box.get("metrics"):
-                box_data["metrics"] = json_box["metrics"]
-                box_data["metric_date"] = json_box.get("metric_date")
-                
-                # Ensure daily_volume_usd exists - calculate from available metrics
-                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a sum
-                if not box_data["metrics"].get("daily_volume_usd"):
-                    if box_data["metrics"].get("unified_volume_usd"):
-                        # unified_volume_usd is typically daily_volume_usd * 30
-                        box_data["metrics"]["daily_volume_usd"] = float(box_data["metrics"]["unified_volume_usd"]) / 30
-                
-                # Ensure unified_volume_usd exists - calculate from available metrics
-                if not box_data["metrics"].get("unified_volume_usd"):
-                    if box_data["metrics"].get("daily_volume_usd"):
-                        box_data["metrics"]["unified_volume_usd"] = float(box_data["metrics"]["daily_volume_usd"]) * 30
             else:
+                # No metrics in DB - skip this box
                 continue
             
-            # Overlay batch historical snapshot (floor_price, volumes, 30d change, etc.)
-            if hist:
-                if hist.get("floor_price_1d_change_pct") is not None:
-                    box_data["metrics"]["floor_price_1d_change_pct"] = float(hist["floor_price_1d_change_pct"])
-                if hist.get("floor_price_30d_change_pct") is not None:
-                    box_data["metrics"]["floor_price_30d_change_pct"] = hist["floor_price_30d_change_pct"]
-                if hist.get("volume_1d_change_pct") is not None:
-                    box_data["metrics"]["volume_1d_change_pct"] = float(hist["volume_1d_change_pct"])
-                if hist.get("volume_7d_change_pct") is not None:
-                    box_data["metrics"]["volume_7d_change_pct"] = float(hist["volume_7d_change_pct"])
-                if hist.get("volume_30d_change_pct") is not None:
-                    box_data["metrics"]["volume_30d_change_pct"] = float(hist["volume_30d_change_pct"])
-                if hist.get("boxes_sold_30d_avg") is not None:
-                    box_data["metrics"]["boxes_sold_30d_avg"] = hist["boxes_sold_30d_avg"]
-                if hist.get("volume_7d") is not None:
-                    box_data["metrics"]["volume_7d"] = float(hist["volume_7d"])
-                if hist.get("volume_30d") is not None:
-                    box_data["metrics"]["volume_30d"] = float(hist["volume_30d"])
-                # Prefer historical floor/volume when present (Apify/market data)
-                if hist.get("floor_price_usd") and hist["floor_price_usd"] > 0:
-                    box_data["metrics"]["floor_price_usd"] = hist["floor_price_usd"]
-                if hist.get("unified_volume_7d_ema") and hist["unified_volume_7d_ema"] > 0:
-                    box_data["metrics"]["unified_volume_7d_ema"] = hist["unified_volume_7d_ema"]
-                if hist.get("daily_volume_usd") and hist["daily_volume_usd"] > 0:
-                    box_data["metrics"]["daily_volume_usd"] = hist["daily_volume_usd"]
-                if hist.get("unified_volume_usd") and hist["unified_volume_usd"] > 0:
-                    box_data["metrics"]["unified_volume_usd"] = hist["unified_volume_usd"]
-                if hist.get("boxes_sold_per_day") is not None:
-                    box_data["metrics"]["boxes_sold_per_day"] = hist["boxes_sold_per_day"]
-                if hist.get("boxes_added_today") is not None:
-                    box_data["metrics"]["boxes_added_today"] = hist["boxes_added_today"]
-                if hist.get("active_listings_count") is not None:
-                    box_data["metrics"]["active_listings_count"] = hist["active_listings_count"]
-            
-            # volume_30d from hist is the rolling total (sum of daily floor×sold over last 30d); use as-is.
-            # Ramp formula was for sparse data; with daily refreshes we use rolling totals only.
-            
-            # OP-13 manual overrides: reprint risk High, liquidity High (90)
-            if "OP-13" in (box_data.get("product_name") or ""):
-                box_data["reprint_risk"] = "HIGH"
-                box_data["metrics"]["liquidity_score"] = 90
-            
-            # Manual liquidity and reprint risk by set (overrides DB/calculated values)
+            # Manual overrides for reprint risk and top 10 value
             manual_liq, manual_reprint = get_manual_liquidity_reprint(db_box.product_name)
-            if manual_liq is not None:
-                box_data["metrics"]["liquidity_score"] = manual_liq
             if manual_reprint is not None:
                 box_data["reprint_risk"] = manual_reprint
-            # Manual community sentiment by set
-            manual_sentiment = get_manual_community_sentiment(db_box.product_name)
-            if manual_sentiment is not None:
-                box_data["metrics"]["community_sentiment"] = manual_sentiment
 
-            # Top 10 cards value (manual data from spreadsheet; match by product_name or set code)
             top_10 = get_top_10_value_usd(db_box.product_name)
             if top_10 is not None:
                 box_data["metrics"]["top_10_value_usd"] = top_10
-            # If still missing and we have json_box metrics, use JSON top_10
-            if top_10 is None and json_box.get("metrics", {}).get("top_10_value_usd") is not None:
-                box_data["metrics"]["top_10_value_usd"] = float(json_box["metrics"]["top_10_value_usd"])
-            # If still missing, ensure days_to_20pct from JSON is used when DB didn't provide it
-            if json_box.get("metrics", {}).get("days_to_20pct_increase") is not None and box_data["metrics"].get("days_to_20pct_increase") is None:
-                box_data["metrics"]["days_to_20pct_increase"] = float(json_box["metrics"]["days_to_20pct_increase"])
-            
+
             result_boxes.append(box_data)
     
-    # Sort by the requested field (default: unified_volume_7d_ema)
+    # Sort by the requested field (default: daily_volume_usd)
     def get_sort_value(box):
+        """Simple sort - just use the value from DB, no calculations."""
         val = box.get("metrics", {}).get(sort)
-        if val is None or val == 0:
-            # If the sort field is missing, try to calculate from available metrics
-            metrics = box.get("metrics", {})
-            if sort == "daily_volume_usd":
-                # Try to calculate from 30d volume (NOT from EMA - EMA is not a sum)
-                if metrics.get("unified_volume_usd"):
-                    return float(metrics["unified_volume_usd"]) / 30
-                elif metrics.get("volume_7d"):
-                    # If we have 7d sum, estimate daily from that
-                    return float(metrics["volume_7d"]) / 7
-            elif sort == "unified_volume_usd":
-                # Try to calculate from daily volume or 7d sum
-                if metrics.get("daily_volume_usd"):
-                    return float(metrics["daily_volume_usd"]) * 30
-                elif metrics.get("volume_7d"):
-                    # Estimate 30d from 7d sum
-                    return float(metrics["volume_7d"]) * (30 / 7)
-                elif metrics.get("volume_30d"):
-                    # Use actual 30d sum if available
-                    return float(metrics["volume_30d"])
-            elif sort == "unified_volume_7d_ema":
-                # unified_volume_7d_ema is an EMA (smoothed average), not a sum
-                # For sorting purposes, use the actual EMA value if available
-                # Fallback to calculated estimates if needed
-                if metrics.get("unified_volume_7d_ema"):
-                    return float(metrics["unified_volume_7d_ema"])
-                elif metrics.get("volume_7d"):
-                    # If we have the actual 7d sum, use it (better than EMA for sorting)
-                    return float(metrics["volume_7d"])
-                elif metrics.get("daily_volume_usd"):
-                    # Estimate: daily * 7 (but this is a sum, not an EMA)
-                    return float(metrics["daily_volume_usd"]) * 7
-                elif metrics.get("unified_volume_usd"):
-                    return float(metrics["unified_volume_usd"]) * (7 / 30)
-            elif sort == "volume_7d":
-                # For volume_7d, prefer the actual rolling sum, fallback to calculated values
-                # NOTE: Do NOT use unified_volume_7d_ema - it's an EMA, not a 7-day sum
-                if metrics.get("volume_7d"):
-                    return float(metrics["volume_7d"])
-                elif metrics.get("daily_volume_usd"):
-                    return float(metrics["daily_volume_usd"]) * 7
-                elif metrics.get("unified_volume_usd"):
-                    return float(metrics["unified_volume_usd"]) * (7 / 30)
-            return 0  # Put None/zero values at the end (0 sorts last when reverse=True)
+        if val is None:
+            return 0
         try:
-            float_val = float(val) if isinstance(val, (int, float, str)) else 0
-            return float_val if float_val > 0 else 0  # Ensure positive values for sorting
+            return float(val)
         except (ValueError, TypeError):
             return 0
     

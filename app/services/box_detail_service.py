@@ -350,7 +350,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
                 "floor_price_usd": float(latest_db_metric.floor_price_usd) if latest_db_metric.floor_price_usd else None,
                 "floor_price_1d_change_pct": float(latest_db_metric.floor_price_1d_change_pct) if latest_db_metric.floor_price_1d_change_pct else None,
                 "active_listings_count": alc,
-                "daily_volume_usd": float(latest_db_metric.unified_volume_usd) / 30 if latest_db_metric.unified_volume_usd else None,
+                "daily_volume_usd": float(latest_db_metric.daily_volume_usd) if latest_db_metric.daily_volume_usd else None,
                 "volume_7d": None,
                 "volume_30d": float(latest_db_metric.unified_volume_usd) if latest_db_metric.unified_volume_usd else None,
                 "unified_volume_usd": float(latest_db_metric.unified_volume_usd) if latest_db_metric.unified_volume_usd else None,
