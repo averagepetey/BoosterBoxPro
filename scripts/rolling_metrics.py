@@ -42,16 +42,21 @@ logger = logging.getLogger(__name__)
 DATA_EPOCH = "2026-02-02"
 
 
+_engine = None
+
 def _get_sync_engine():
-    """Get SQLAlchemy sync engine for database queries."""
-    from sqlalchemy import create_engine
-    from app.config import settings
-    url = settings.database_url
-    if "+asyncpg" in url:
-        url = url.replace("postgresql+asyncpg", "postgresql+psycopg2", 1)
-    elif "postgresql://" in url and "+" not in url:
-        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
-    return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
+    """Get SQLAlchemy sync engine for database queries (singleton)."""
+    global _engine
+    if _engine is None:
+        from sqlalchemy import create_engine
+        from app.config import settings
+        url = settings.database_url
+        if "+asyncpg" in url:
+            url = url.replace("postgresql+asyncpg", "postgresql+psycopg2", 1)
+        elif "postgresql://" in url and "+" not in url:
+            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        _engine = create_engine(url, pool_pre_ping=True, pool_recycle=3600, pool_size=3, max_overflow=2)
+    return _engine
 
 
 def _get_all_box_ids() -> List[str]:
@@ -112,7 +117,7 @@ def _get_ebay_history(box_id: str) -> Dict[str, Dict[str, Any]]:
             # ebay_active_listings_count may not exist in older schemas
             q = text("""
                 SELECT metric_date, ebay_sales_count, ebay_volume_usd,
-                       ebay_units_sold_count, ebay_listings_added_today
+                       ebay_units_sold_count
                 FROM ebay_box_metrics_daily
                 WHERE booster_box_id = :bid
                 ORDER BY metric_date ASC
@@ -128,8 +133,7 @@ def _get_ebay_history(box_id: str) -> Dict[str, Dict[str, Any]]:
                 by_date[date_str] = {
                     "ebay_sold_today": float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0,
                     "ebay_daily_volume_usd": float(d["ebay_volume_usd"]) if d.get("ebay_volume_usd") is not None else 0,
-                    "ebay_active_listings": 0,  # Not available until DB migration adds column
-                    "ebay_boxes_added_today": int(d["ebay_listings_added_today"]) if d.get("ebay_listings_added_today") is not None else 0,
+                    "ebay_active_listings": 0,
                 }
         return by_date
     except Exception as e:
