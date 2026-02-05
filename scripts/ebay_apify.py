@@ -2,10 +2,11 @@
 """
 eBay Apify Scraper
 ------------------
-Fetches eBay sold listings via Apify actor (3x1t/ebay-scraper).
+Fetches eBay sold listings via Apify actor (caffein.dev/ebay-sold-listings).
 Replaces custom Playwright scraper with reliable Apify-managed scraping.
 
-Cost: $6.99/month rental + $0.25 per 1,000 results (~$13/month total)
+Cost: $2 per 1,000 results (~$1.66/day = ~$50/month for all 18 boxes)
+Note: Exceeds $29 starter plan - consider reducing tiers or upgrading plan
 Tiered limits: hot=85, medium=50, slow=15 results per box
 
 Run standalone: python scripts/ebay_apify.py [--debug <box_id>]
@@ -34,19 +35,26 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 HISTORICAL_FILE = project_root / "data" / "historical_entries.json"
+PASS_RATE_FILE = project_root / "data" / "ebay_pass_rates.json"
 
-# Price floor as fraction of TCG market price (75% = reject below 25% discount)
-MIN_PRICE_RATIO = 0.75
+# Price floor as fraction of TCG market price (65% = reject below 35% discount)
+MIN_PRICE_RATIO = 0.65
 
-# Tiered result limits by box activity level (controls cost)
+# Tiered result limits by box activity level (fallback when no pass rate data)
 # Hot: 5 boxes × 85 = 425/day, Medium: 6 × 50 = 300/day, Slow: 7 × 15 = 105/day
-# Total: 830/day × 30 = 24,900/month × $0.25/1000 = ~$6 usage + $6.99 rental = ~$13/month
+# Total: 830/day × 30 = 24,900/month × $2/1000 = ~$50/month
 RESULTS_LIMIT_HOT = 85
 RESULTS_LIMIT_MEDIUM = 50
 RESULTS_LIMIT_SLOW = 15
 
-# Apify actor to use ($6.99/month rental + $0.25/1000 results)
-APIFY_ACTOR = "3x1t/ebay-scraper"
+# Dynamic allocation settings (used when pass rate data available)
+DAILY_RESULTS_BUDGET = 830  # Total results/day across all boxes
+MIN_RESULTS_PER_BOX = 10    # Minimum to catch rare sales
+MAX_RESULTS_PER_BOX = 120   # Maximum per box (diminishing returns)
+MIN_DAYS_FOR_DYNAMIC = 3    # Days of data needed before using dynamic allocation
+
+# Apify actor to use ($2 per 1,000 results - pay-per-result, no rental)
+APIFY_ACTOR = "caffein.dev/ebay-sold-listings"
 
 # Retry settings (74% success rate → 99.5% with 3 retries)
 MAX_RETRIES = 3
@@ -67,112 +75,116 @@ URL_NEGATIVE_KEYWORDS = [
 # eBay search configuration for each box
 # Search terms: no "english" (LH_PrefLoc=1 handles US-only), negatives appended dynamically
 # Tier: "hot" (newest/high demand), "medium" (established), "slow" (older sets)
+# eBay search configuration for each box
+# "searches" is a list of 2 queries - results are deduped by item URL
+# Search 1: No-hyphen set code (matches both OP13 and OP-13)
+# Search 2: Set name without code (catches listings where code is at end or missing)
 EBAY_BOX_CONFIG: Dict[str, Dict[str, Any]] = {
     "860ffe3f-9286-42a9-ad4e-d079a6add6f4": {
         "name": "OP-01 Romance Dawn (Blue)",
-        "search": "one piece op-01 romance dawn booster box blue",
+        "searches": ["OP01 romance dawn booster box blue", "romance dawn booster box blue english"],
         "max_price": 500,
         "tier": "slow",
     },
     "18ade4d4-512b-4261-a119-2b6cfaf1fa2a": {
         "name": "OP-01 Romance Dawn (White)",
-        "search": "one piece op-01 romance dawn booster box white",
+        "searches": ["OP01 romance dawn booster box white", "romance dawn booster box white english"],
         "max_price": 400,
         "tier": "slow",
     },
     "f8d8f3ee-2020-4aa9-bcf0-2ef4ec815320": {
         "name": "OP-02 Paramount War",
-        "search": "one piece op-02 paramount war booster box",
+        "searches": ["OP02 paramount war booster box", "paramount war booster box english"],
         "max_price": 400,
         "tier": "slow",
     },
     "d3929fc6-6afa-468a-b7a1-ccc0f392131a": {
         "name": "OP-03 Pillars of Strength",
-        "search": "one piece op-03 pillars of strength booster box",
+        "searches": ["OP03 pillars strength booster box", "pillars of strength booster box english"],
         "max_price": 400,
         "tier": "slow",
     },
     "526c28b7-bc13-449b-a521-e63bdd81811a": {
         "name": "OP-04 Kingdoms of Intrigue",
-        "search": "one piece op-04 kingdoms intrigue booster box",
+        "searches": ["OP04 kingdoms intrigue booster box", "kingdoms intrigue booster box english"],
         "max_price": 350,
         "tier": "slow",
     },
     "6ea1659d-7b86-46c5-8fb2-0596262b8e68": {
         "name": "OP-05 Awakening of the New Era",
-        "search": "one piece op-05 awakening new era booster box",
+        "searches": ["OP05 awakening new era booster box", "awakening new era booster box english"],
         "max_price": 500,
         "tier": "medium",
     },
     "b4e3c7bf-3d55-4b25-80ca-afaecb1df3fa": {
         "name": "OP-06 Wings of the Captain",
-        "search": "one piece op-06 wings captain booster box",
+        "searches": ["OP06 wings captain booster box", "wings of the captain booster box english"],
         "max_price": 350,
         "tier": "medium",
     },
     "9bfebc47-4a92-44b3-b157-8c53d6a6a064": {
         "name": "OP-07 500 Years in the Future",
-        "search": "one piece op-07 500 years future booster box",
+        "searches": ["OP07 500 years future booster box", "500 years in the future booster box english"],
         "max_price": 350,
         "tier": "medium",
     },
     "d0faf871-a930-4c80-a981-9df8741c90a9": {
         "name": "OP-08 Two Legends",
-        "search": "one piece op-08 two legends booster box",
+        "searches": ["OP08 two legends booster box", "two legends booster box english"],
         "max_price": 600,
         "tier": "medium",
     },
     "c035aa8b-6bec-4237-aff5-1fab1c0f53ce": {
         "name": "OP-09 Emperors in the New World",
-        "search": "one piece op-09 emperors new world booster box",
-        "max_price": 600,
+        "searches": ["OP09 emperors new world booster box", "emperors new world booster box english"],
+        "max_price": 800,
         "tier": "hot",
     },
     "3429708c-43c3-4ed8-8be3-706db8b062bd": {
         "name": "OP-10 Royal Blood",
-        "search": "one piece op-10 royal blood booster box",
+        "searches": ["OP10 royal blood booster box", "royal blood booster box english"],
         "max_price": 600,
         "tier": "hot",
     },
     "46039dfc-a980-4bbd-aada-8cc1e124b44b": {
         "name": "OP-11 A Fist of Divine Speed",
-        "search": "one piece op-11 fist divine speed booster box",
+        "searches": ["OP11 fist divine speed booster box", "fist of divine speed booster box english"],
         "max_price": 700,
         "tier": "hot",
     },
     "b7ae78ec-3ea4-488b-8470-e05f80fdb2dc": {
         "name": "OP-12 Legacy of the Master",
-        "search": "one piece op-12 legacy master booster box",
+        "searches": ["OP12 legacy master booster box", "legacy of the master booster box english"],
         "max_price": 600,
         "tier": "hot",
     },
     "2d7d2b54-596d-4c80-a02f-e2eeefb45a34": {
         "name": "OP-13 Carrying on His Will",
-        "search": "one piece op-13 carrying his will booster box",
+        "searches": ["OP13 carrying his will booster box", "carrying on his will booster box english"],
         "max_price": 2500,
         "tier": "hot",
     },
     "3b17b708-b35b-4008-971e-240ade7afc9c": {
         "name": "EB-01 Memorial Collection",
-        "search": "one piece eb-01 memorial collection booster box",
+        "searches": ["EB01 memorial collection booster box", "memorial collection booster box english"],
         "max_price": 800,
         "tier": "medium",
     },
     "7509a855-f6da-445e-b445-130824d81d04": {
         "name": "EB-02 Anime 25th Collection",
-        "search": "one piece eb-02 anime 25th booster box",
+        "searches": ["EB02 anime 25th booster box", "anime 25th collection booster box english"],
         "max_price": 600,
         "tier": "medium",
     },
     "743bf253-98ca-49d5-93fe-a3eaef9f72c1": {
         "name": "PRB-01 Premium Booster",
-        "search": "one piece prb-01 premium booster box",
+        "searches": ["PRB01 premium booster box", "one piece premium booster box"],
         "max_price": 800,
         "tier": "slow",
     },
     "3bda2acb-a55c-4a6e-ae93-dff5bad27e62": {
         "name": "PRB-02 Premium Booster Vol. 2",
-        "search": "one piece prb-02 premium booster vol 2 box",
+        "searches": ["PRB02 premium booster box", "one piece premium booster vol 2 box"],
         "max_price": 600,
         "tier": "slow",
     },
@@ -202,13 +214,103 @@ NON_US_KEYWORDS = [
 
 
 def get_max_results(tier: str) -> int:
-    """Get max results limit based on box tier."""
+    """Get max results limit based on box tier (fallback when no pass rate data)."""
     if tier == "hot":
         return RESULTS_LIMIT_HOT
     elif tier == "medium":
         return RESULTS_LIMIT_MEDIUM
     else:
         return RESULTS_LIMIT_SLOW
+
+
+def calculate_dynamic_allocation(pass_rates: Dict[str, Any], box_configs: Dict[str, Any]) -> Dict[str, int]:
+    """
+    Calculate optimal results allocation based on historical pass rates.
+
+    Boxes with higher pass rates (more daily sales) get more results allocated.
+    This minimizes waste by not over-fetching for low-volume boxes.
+
+    Args:
+        pass_rates: Historical pass rate data from ebay_pass_rates.json
+        box_configs: EBAY_BOX_CONFIG with tier info
+
+    Returns:
+        Dict mapping box_id to allocated results count
+    """
+    # Collect pass rates from last N days
+    all_dates = sorted(pass_rates.keys(), reverse=True)[:MIN_DAYS_FOR_DYNAMIC * 2]  # Look at recent dates
+
+    if len(all_dates) < MIN_DAYS_FOR_DYNAMIC:
+        logger.info(f"  Only {len(all_dates)} days of pass rate data, need {MIN_DAYS_FOR_DYNAMIC}. Using tier-based allocation.")
+        return {}  # Not enough data, use tier-based fallback
+
+    # Calculate average pass rate per box
+    box_avg_pass_rates: Dict[str, float] = {}
+    box_avg_passed: Dict[str, float] = {}
+
+    for box_id in box_configs.keys():
+        rates = []
+        passed_counts = []
+        for date in all_dates:
+            if date in pass_rates and box_id in pass_rates[date]:
+                box_data = pass_rates[date][box_id]
+                rates.append(box_data.get("pass_rate", 0))
+                passed_counts.append(box_data.get("passed", 0))
+
+        if rates:
+            box_avg_pass_rates[box_id] = sum(rates) / len(rates)
+            box_avg_passed[box_id] = sum(passed_counts) / len(passed_counts)
+        else:
+            # No data for this box, use tier-based estimate
+            tier = box_configs[box_id].get("tier", "medium")
+            box_avg_pass_rates[box_id] = 0.05 if tier == "hot" else 0.03 if tier == "medium" else 0.01
+            box_avg_passed[box_id] = 2 if tier == "hot" else 1 if tier == "medium" else 0.5
+
+    # Calculate allocation based on expected daily sales (passed count)
+    # Boxes that find more sales get proportionally more budget
+    total_expected = sum(box_avg_passed.values()) or 1
+
+    allocation: Dict[str, int] = {}
+    remaining_budget = DAILY_RESULTS_BUDGET
+
+    # First pass: allocate proportionally
+    for box_id, avg_passed in box_avg_passed.items():
+        # Base allocation proportional to historical sales found
+        proportion = avg_passed / total_expected
+        base_alloc = int(DAILY_RESULTS_BUDGET * proportion)
+
+        # Also factor in pass rate - low pass rate means we need more results to find sales
+        pass_rate = box_avg_pass_rates[box_id]
+        if pass_rate > 0:
+            # If pass rate is 5%, we need ~20 results per expected sale
+            # If pass rate is 10%, we need ~10 results per expected sale
+            efficiency_factor = min(2.0, 0.05 / pass_rate) if pass_rate < 0.05 else 1.0
+            adjusted_alloc = int(base_alloc * efficiency_factor)
+        else:
+            adjusted_alloc = base_alloc
+
+        # Clamp to min/max
+        allocation[box_id] = max(MIN_RESULTS_PER_BOX, min(MAX_RESULTS_PER_BOX, adjusted_alloc))
+
+    # Normalize to fit budget
+    total_allocated = sum(allocation.values())
+    if total_allocated > DAILY_RESULTS_BUDGET:
+        scale = DAILY_RESULTS_BUDGET / total_allocated
+        for box_id in allocation:
+            allocation[box_id] = max(MIN_RESULTS_PER_BOX, int(allocation[box_id] * scale))
+
+    # Log allocation summary
+    total_final = sum(allocation.values())
+    logger.info(f"  Dynamic allocation: {total_final} results across {len(allocation)} boxes")
+
+    # Show top allocations
+    sorted_alloc = sorted(allocation.items(), key=lambda x: x[1], reverse=True)
+    for box_id, count in sorted_alloc[:3]:
+        name = box_configs[box_id]["name"]
+        pass_rate = box_avg_pass_rates.get(box_id, 0) * 100
+        logger.info(f"    {name}: {count} results (avg pass rate: {pass_rate:.1f}%)")
+
+    return allocation
 
 
 def build_ebay_sold_url(search_term: str, min_price: int, max_price: int) -> str:
@@ -245,13 +347,16 @@ def parse_date(date_str: str) -> Optional[str]:
     if not date_str:
         return None
 
-    # Try common eBay date formats
+    # Try common date formats including ISO timestamps
     for fmt in (
-        "%b %d, %Y",      # "Jan 15, 2026"
-        "%B %d, %Y",      # "January 15, 2026"
-        "%Y-%m-%d",       # "2026-01-15"
-        "%m/%d/%Y",       # "01/15/2026"
-        "%d %b %Y",       # "15 Jan 2026"
+        "%Y-%m-%dT%H:%M:%S.%fZ",  # "2026-02-03T00:00:00.000Z" (ISO with ms)
+        "%Y-%m-%dT%H:%M:%SZ",      # "2026-02-03T00:00:00Z" (ISO)
+        "%Y-%m-%dT%H:%M:%S",       # "2026-02-03T00:00:00" (ISO no Z)
+        "%Y-%m-%d",                # "2026-01-15"
+        "%b %d, %Y",               # "Jan 15, 2026"
+        "%B %d, %Y",               # "January 15, 2026"
+        "%m/%d/%Y",                # "01/15/2026"
+        "%d %b %Y",                # "15 Jan 2026"
     ):
         try:
             dt = datetime.strptime(date_str.strip(), fmt)
@@ -350,6 +455,101 @@ def detect_lot_quantity(title: str) -> int:
         return int(match.group(1))
 
     return 1
+
+
+def parse_ended_at(date_str: str) -> Optional[datetime]:
+    """
+    Parse caffein.dev endedAt timestamp to datetime object.
+
+    Handles formats like:
+    - "2026-02-04T15:30:00.000Z" (ISO format)
+    - "2026-02-04T15:30:00Z"
+    - "Feb 4, 2026" (fallback to date-only)
+    """
+    if not date_str:
+        return None
+
+    # Try ISO format with milliseconds
+    for fmt in (
+        "%Y-%m-%dT%H:%M:%S.%fZ",  # "2026-02-04T15:30:00.000Z"
+        "%Y-%m-%dT%H:%M:%SZ",      # "2026-02-04T15:30:00Z"
+        "%Y-%m-%dT%H:%M:%S",       # "2026-02-04T15:30:00"
+        "%Y-%m-%d",                # "2026-02-04"
+    ):
+        try:
+            return datetime.strptime(date_str.strip(), fmt)
+        except ValueError:
+            continue
+
+    # Fallback: try parse_date and convert to datetime at midnight
+    date_only = parse_date(date_str)
+    if date_only:
+        return datetime.strptime(date_only, "%Y-%m-%d")
+
+    return None
+
+
+def filter_to_yesterday(
+    items: List[Dict[str, Any]],
+    target_date: str
+) -> Tuple[List[Dict[str, Any]], int]:
+    """
+    Filter items to only those with endedAt matching the target date.
+
+    Designed for midnight scraping: run at 12:05am, count yesterday's sales.
+    The caffein.dev API returns dates as midnight timestamps (e.g., 2026-02-03T00:00:00.000Z),
+    so we compare by date string only.
+
+    Args:
+        items: List of normalized items with 'sold_date' field (YYYY-MM-DD)
+        target_date: The date to match (usually yesterday), format YYYY-MM-DD
+
+    Returns:
+        tuple: (filtered_items, rejected_count)
+    """
+    filtered = []
+    rejected = 0
+
+    for item in items:
+        sold_date = item.get("sold_date")
+        if sold_date == target_date:
+            filtered.append(item)
+        else:
+            rejected += 1
+
+    return filtered, rejected
+
+
+def load_pass_rates() -> Dict[str, Any]:
+    """Load pass rate history from JSON file."""
+    if PASS_RATE_FILE.exists():
+        with open(PASS_RATE_FILE) as f:
+            return json.load(f)
+    return {}
+
+
+def save_pass_rates(data: Dict[str, Any]) -> None:
+    """Save pass rate history to JSON file."""
+    with open(PASS_RATE_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def log_pass_rate(
+    pass_rates: Dict[str, Any],
+    date: str,
+    box_id: str,
+    fetched: int,
+    passed: int
+) -> None:
+    """Record pass rate for a box on a given date."""
+    if date not in pass_rates:
+        pass_rates[date] = {}
+
+    pass_rates[date][box_id] = {
+        "fetched": fetched,
+        "passed": passed,
+        "pass_rate": round(passed / fetched, 3) if fetched > 0 else 0
+    }
 
 
 def filter_listing(item: Dict[str, Any], min_price: float) -> Tuple[bool, int]:
@@ -463,8 +663,11 @@ def run_ebay_apify_scraper(
     Returns:
         Summary dict with results count, errors, and date.
     """
-    today = datetime.now().strftime("%Y-%m-%d")
+    reference_time = datetime.now()
+    today = reference_time.strftime("%Y-%m-%d")
+    yesterday = (reference_time - timedelta(days=1)).strftime("%Y-%m-%d")
     logger.info(f"Phase 1b: eBay Apify scraper starting for {today}")
+    logger.info(f"  Counting sales from: {yesterday} (yesterday)")
 
     # Initialize Apify client
     api_token = settings.apify_api_token
@@ -473,6 +676,17 @@ def run_ebay_apify_scraper(
         return {"results": 0, "errors": ["APIFY_API_TOKEN not set"], "date": today}
 
     client = ApifyClient(api_token)
+
+    # Load pass rate history for tracking
+    pass_rates = load_pass_rates()
+    total_fetched = 0  # Track total API results for cost logging
+
+    # Calculate dynamic allocation based on historical pass rates
+    dynamic_allocation = calculate_dynamic_allocation(pass_rates, EBAY_BOX_CONFIG)
+    if dynamic_allocation:
+        logger.info("  Using dynamic allocation based on pass rate history")
+    else:
+        logger.info("  Using tier-based allocation (insufficient pass rate data)")
 
     # Load historical data
     hist = {}
@@ -502,10 +716,18 @@ def run_ebay_apify_scraper(
 
     for box_id, config in box_items:
         name = config["name"]
-        search = config["search"]
+        # Support both old "search" (string) and new "searches" (list) format
+        searches = config.get("searches") or [config.get("search", "")]
         max_price = config["max_price"]
         tier = config.get("tier", "medium")
-        max_results = get_max_results(tier)
+
+        # Use dynamic allocation if available, otherwise fall back to tier-based
+        if dynamic_allocation and box_id in dynamic_allocation:
+            max_results = dynamic_allocation[box_id]
+            allocation_type = "dynamic"
+        else:
+            max_results = get_max_results(tier)
+            allocation_type = "tier"
 
         # Get TCG market price for dynamic minimum
         tcg_market_price = None
@@ -518,63 +740,79 @@ def run_ebay_apify_scraper(
                 tcg_market_price = entry["floor_price_usd"]
                 break
 
-        # Calculate dynamic minimum price (75% of TCG market)
+        # Calculate dynamic minimum price (65% of TCG market)
         if tcg_market_price and tcg_market_price > 0:
             min_price = int(tcg_market_price * MIN_PRICE_RATIO)
         else:
             min_price = 50  # Fallback minimum
 
-        logger.info(f"Scraping {name} [{tier}] (min=${min_price}, max=${max_price}, limit={max_results})")
+        logger.info(f"Scraping {name} [{tier}/{allocation_type}] (min=${min_price}, max=${max_price}, limit={max_results})")
 
         try:
-            # Build eBay URL with filters
-            ebay_url = build_ebay_sold_url(search, min_price, max_price)
-            logger.debug(f"  URL: {ebay_url}")
+            # Run multiple searches and dedupe by item URL
+            all_items_by_url: Dict[str, Dict] = {}
+            results_per_search = max(10, max_results // len(searches))  # Split limit between searches
 
-            # Run Apify actor with retry logic (3x1t rental)
-            run_input = {
-                "startUrls": [ebay_url],
-                "maxItems": max_results,
-            }
+            for search_idx, search in enumerate(searches):
+                logger.debug(f"  Search {search_idx + 1}/{len(searches)}: {search}")
 
-            items = None
-            last_error = None
-            for attempt in range(MAX_RETRIES + 1):
-                try:
-                    run = client.actor(APIFY_ACTOR).call(run_input=run_input)
-                    items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
-                    break  # Success, exit retry loop
-                except Exception as retry_err:
-                    last_error = retry_err
-                    err_str = str(retry_err).lower()
+                run_input = {
+                    "keyword": search,
+                    "count": results_per_search,
+                    "minPrice": min_price,
+                    "maxPrice": max_price,
+                }
 
-                    # Classify error for smarter retry
-                    is_rate_limit = "429" in err_str or "rate limit" in err_str
-                    is_blocked = "403" in err_str or "forbidden" in err_str
-                    is_timeout = "timeout" in err_str
+                search_items = None
+                last_error = None
+                for attempt in range(MAX_RETRIES + 1):
+                    try:
+                        run = client.actor(APIFY_ACTOR).call(run_input=run_input)
+                        search_items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+                        break  # Success, exit retry loop
+                    except Exception as retry_err:
+                        last_error = retry_err
+                        err_str = str(retry_err).lower()
 
-                    if attempt < MAX_RETRIES:
-                        # Use longer wait for rate limits/blocks
-                        base_wait = RETRY_BACKOFF_SECONDS[attempt]
-                        if is_rate_limit or is_blocked:
-                            wait_time = base_wait * 2  # Double wait for rate limits
+                        # Classify error for smarter retry
+                        is_rate_limit = "429" in err_str or "rate limit" in err_str
+                        is_blocked = "403" in err_str or "forbidden" in err_str
+                        is_timeout = "timeout" in err_str
+
+                        if attempt < MAX_RETRIES:
+                            base_wait = RETRY_BACKOFF_SECONDS[attempt]
+                            if is_rate_limit or is_blocked:
+                                wait_time = base_wait * 2
+                            else:
+                                wait_time = base_wait
+
+                            error_type = "RATE_LIMIT" if is_rate_limit else "BLOCKED" if is_blocked else "TIMEOUT" if is_timeout else "ERROR"
+                            logger.warning(f"  ⚠️ Attempt {attempt + 1} [{error_type}]: {retry_err}. Retrying in {wait_time}s...")
+                            time.sleep(wait_time)
                         else:
-                            wait_time = base_wait
+                            logger.error(f"  ❌ All {MAX_RETRIES + 1} attempts failed for {name} search {search_idx + 1}")
+                            raise last_error
 
-                        error_type = "RATE_LIMIT" if is_rate_limit else "BLOCKED" if is_blocked else "TIMEOUT" if is_timeout else "ERROR"
-                        logger.warning(f"  ⚠️ Attempt {attempt + 1} [{error_type}]: {retry_err}. Retrying in {wait_time}s...")
-                        time.sleep(wait_time)
-                    else:
-                        logger.error(f"  ❌ All {MAX_RETRIES + 1} attempts failed for {name}")
-                        raise last_error
+                if search_items:
+                    # Dedupe by URL (unique per listing)
+                    for item in search_items:
+                        url = item.get("url", "")
+                        if url and url not in all_items_by_url:
+                            all_items_by_url[url] = item
 
-            if items is None:
-                raise last_error or Exception("No items returned")
+                # Small delay between searches to avoid rate limits
+                if search_idx < len(searches) - 1:
+                    time.sleep(random.uniform(1, 3))
 
-            logger.info(f"  Apify returned {len(items)} items")
+            items = list(all_items_by_url.values())
+            if not items:
+                raise last_error or Exception("No items returned from any search")
+
+            logger.info(f"  Apify returned {len(items)} unique items from {len(searches)} searches")
 
             # Filter items
             filtered = []
+            rejected_count = 0
             for item in items:
                 # Normalize item structure
                 normalized = {
@@ -585,8 +823,8 @@ def run_ebay_apify_scraper(
                     "url": item.get("url", ""),
                 }
 
-                # Extract price
-                price_str = item.get("price", "")
+                # Extract price (caffein.dev uses soldPrice, others use price)
+                price_str = item.get("soldPrice") or item.get("price", "")
                 if isinstance(price_str, (int, float)):
                     normalized["price"] = float(price_str)
                 elif isinstance(price_str, str):
@@ -595,67 +833,64 @@ def run_ebay_apify_scraper(
                     if match:
                         normalized["price"] = float(match.group())
 
-                # Extract date
-                date_str = item.get("soldDate") or item.get("endDate") or item.get("date")
+                # Extract date (caffein.dev uses endedAt, others use soldDate/endDate)
+                date_str = item.get("endedAt") or item.get("soldDate") or item.get("endDate") or item.get("date")
                 normalized["sold_date"] = parse_date(str(date_str)) if date_str else None
+                # Also store as datetime for 24-hour filtering
+                normalized["ended_at_dt"] = parse_ended_at(str(date_str)) if date_str else None
 
-                # Extract item ID
-                normalized["item_id"] = extract_item_id(item.get("url", "")) or item.get("itemId")
+                # Extract item ID (caffein.dev uses itemId, fallback to URL extraction)
+                normalized["item_id"] = item.get("itemId") or extract_item_id(item.get("url", ""))
+
+                # Skip items without price
+                if normalized["price"] is None:
+                    rejected_count += 1
+                    continue
 
                 # Apply filters
                 keep, quantity = filter_listing(normalized, min_price)
-                if keep:
-                    # Normalize price for multi-box lots (divide by quantity)
-                    if quantity > 1 and normalized["price"]:
-                        original_price = normalized["price"]
-                        normalized["price"] = round(original_price / quantity, 2)
-                        normalized["lot_quantity"] = quantity
-                        normalized["lot_total_price"] = original_price
-                        logger.debug(f"    Lot detected: '{normalized['title'][:50]}...' - ${original_price} / {quantity} = ${normalized['price']}")
-                    filtered.append(normalized)
+                if not keep:
+                    rejected_count += 1
+                    continue
 
-            logger.info(f"  Filtered to {len(filtered)} items")
+                # Normalize price for multi-box lots (divide by quantity)
+                if quantity > 1 and normalized["price"]:
+                    original_price = normalized["price"]
+                    normalized["price"] = round(original_price / quantity, 2)
+                    normalized["lot_quantity"] = quantity
+                    normalized["lot_total_price"] = original_price
+                    logger.debug(f"    Lot detected: '{normalized['title'][:50]}...' - ${original_price} / {quantity} = ${normalized['price']}")
+                filtered.append(normalized)
 
-            # Calculate metrics
-            if filtered:
-                prices = [item["price"] for item in filtered if item["price"]]
-                item_ids = [item["item_id"] for item in filtered if item["item_id"]]
+            logger.info(f"  Quality filtered to {len(filtered)} items ({rejected_count} rejected)")
 
-                # Get previous day's item IDs for "sold today" calculation
-                prev_item_ids = set()
-                yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-                for entry in hist.get(box_id, []):
-                    if entry.get("date") == yesterday:
-                        prev_item_ids = set(entry.get("_ebay_sold_item_ids", []))
-                        break
+            # Track total fetched for cost logging
+            total_fetched += len(items)
 
-                # New sales = items not in yesterday's list
-                new_item_ids = [iid for iid in item_ids if iid not in prev_item_ids]
-                new_sales = [item for item in filtered if item["item_id"] in new_item_ids]
-                new_prices = [item["price"] for item in new_sales if item["price"]]
+            # Apply date filter - only count sales from yesterday
+            items_yesterday, rejected_date = filter_to_yesterday(filtered, yesterday)
+            pass_rate = len(items_yesterday) / len(items) if items else 0
 
-                # If no previous tracking, count by date
-                if not prev_item_ids:
-                    # Count sales from yesterday (most recent complete day)
-                    yesterday_sales = [item for item in filtered if item["sold_date"] == yesterday]
-                    sold_today = len(yesterday_sales)
-                    daily_volume = sum(item["price"] for item in yesterday_sales if item["price"])
-                else:
-                    sold_today = len(new_sales)
-                    daily_volume = sum(new_prices) if new_prices else 0
+            logger.info(f"  Date filter: {len(items_yesterday)} from {yesterday}, {rejected_date} other dates (pass rate: {pass_rate:.1%})")
+
+            # Log pass rate for future optimization
+            log_pass_rate(pass_rates, today, box_id, len(items), len(items_yesterday))
+
+            # Calculate metrics from yesterday's sales only
+            if items_yesterday:
+                prices_yesterday = [item["price"] for item in items_yesterday if item["price"]]
 
                 ebay_data = {
-                    "ebay_sold_count": len(filtered),
-                    "ebay_sold_today": sold_today,
-                    "ebay_volume_usd": round(sum(prices), 2) if prices else 0,
-                    "ebay_daily_volume_usd": round(daily_volume, 2),
-                    "ebay_median_price_usd": round(statistics.median(prices), 2) if prices else None,
-                    "ebay_avg_price_usd": round(statistics.mean(prices), 2) if prices else None,
-                    "ebay_low_price_usd": round(min(prices), 2) if prices else None,
-                    "ebay_high_price_usd": round(max(prices), 2) if prices else None,
-                    "ebay_source": "apify",
-                    "ebay_fetch_timestamp": datetime.now().isoformat(),
-                    "_ebay_sold_item_ids": item_ids,
+                    "ebay_sold_count": len(items_yesterday),  # Sales on target date
+                    "ebay_sold_today": len(items_yesterday),  # Same - this IS the daily count
+                    "ebay_volume_usd": round(sum(prices_yesterday), 2) if prices_yesterday else 0,
+                    "ebay_daily_volume_usd": round(sum(prices_yesterday), 2) if prices_yesterday else 0,
+                    "ebay_median_price_usd": round(statistics.median(prices_yesterday), 2) if prices_yesterday else None,
+                    "ebay_avg_price_usd": round(statistics.mean(prices_yesterday), 2) if prices_yesterday else None,
+                    "ebay_low_price_usd": round(min(prices_yesterday), 2) if prices_yesterday else None,
+                    "ebay_high_price_usd": round(max(prices_yesterday), 2) if prices_yesterday else None,
+                    "ebay_source": "apify_caffein",
+                    "ebay_fetch_timestamp": reference_time.isoformat(),
                 }
             else:
                 ebay_data = {
@@ -667,26 +902,25 @@ def run_ebay_apify_scraper(
                     "ebay_avg_price_usd": None,
                     "ebay_low_price_usd": None,
                     "ebay_high_price_usd": None,
-                    "ebay_source": "apify",
-                    "ebay_fetch_timestamp": datetime.now().isoformat(),
-                    "_ebay_sold_item_ids": [],
+                    "ebay_source": "apify_caffein",
+                    "ebay_fetch_timestamp": reference_time.isoformat(),
                 }
-                filtered = []  # Empty list for DB write
+                items_yesterday = []  # Empty list for DB write
 
-            # Update historical entry
+            # Update historical entry for yesterday's date
             if box_id not in hist:
                 hist[box_id] = []
 
-            today_entry = next((e for e in hist[box_id] if e.get("date") == today), None)
-            if today_entry:
-                today_entry.update(ebay_data)
+            yesterday_entry = next((e for e in hist[box_id] if e.get("date") == yesterday), None)
+            if yesterday_entry:
+                yesterday_entry.update(ebay_data)
             else:
-                hist[box_id].append({"date": today, **ebay_data})
+                hist[box_id].append({"date": yesterday, **ebay_data})
 
-            # Write to database
-            _write_ebay_to_db(box_id, today, ebay_data, filtered)
+            # Write to database for yesterday's date
+            _write_ebay_to_db(box_id, yesterday, ebay_data, items_yesterday)
 
-            logger.info(f"  ✅ {name}: {ebay_data['ebay_sold_count']} sold, {ebay_data['ebay_sold_today']} today, median=${ebay_data['ebay_median_price_usd']}")
+            logger.info(f"  ✅ {name}: {ebay_data['ebay_sold_count']} sold on {yesterday}, median=${ebay_data['ebay_median_price_usd']}")
             results_count += 1
 
         except Exception as e:
@@ -716,12 +950,21 @@ def run_ebay_apify_scraper(
     with open(HISTORICAL_FILE, "w") as f:
         json.dump(hist, f, indent=2)
 
+    # Save pass rates for future optimization
+    save_pass_rates(pass_rates)
+
+    # Log cost summary
+    est_cost = total_fetched * 0.002  # $2 per 1000 results
+    monthly_projection = est_cost * 30
     logger.info(f"Phase 1b complete: {results_count}/{len(box_items)} boxes, {len(errors)} errors")
+    logger.info(f"  💰 Cost: {total_fetched} results fetched, est. ${est_cost:.2f} today, ~${monthly_projection:.2f}/month projected")
 
     return {
         "results": results_count,
         "errors": errors,
         "date": today,
+        "total_fetched": total_fetched,
+        "est_cost_usd": round(est_cost, 2),
     }
 
 

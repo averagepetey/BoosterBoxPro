@@ -111,13 +111,13 @@ export function MarketOverviewBar({ boxes }: MarketOverviewBarProps) {
   if (!stats) return null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6 px-3 sm:px-0">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6 px-3 sm:px-0">
       {/* Total Market Volume Today */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4">
-        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 min-h-[120px] flex flex-col items-center justify-center">
+        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2 text-center">
           Market Volume Today
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex items-baseline gap-2 justify-center">
           <span className="text-white text-xl font-bold">{formatUsd(stats.totalVolToday)}</span>
           {stats.volChangePct !== null && (
             <span className={`text-xs font-medium ${stats.volChangePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -125,15 +125,15 @@ export function MarketOverviewBar({ boxes }: MarketOverviewBarProps) {
             </span>
           )}
         </div>
-        <div className="text-white/30 text-[10px] mt-1">vs 7d daily avg</div>
+        <div className="text-white/30 text-[10px] mt-1 text-center">vs 7d daily avg</div>
       </div>
 
       {/* Total Market Cap */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4">
-        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 min-h-[120px] flex flex-col items-center justify-center">
+        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2 text-center">
           Total Market Cap
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex items-baseline gap-2 justify-center">
           <span className="text-white text-xl font-bold">{formatUsd(stats.totalMarketCap)}</span>
           {stats.mcapChangePct !== null && (
             <span className={`text-xs font-medium ${stats.mcapChangePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -141,24 +141,24 @@ export function MarketOverviewBar({ boxes }: MarketOverviewBarProps) {
             </span>
           )}
         </div>
-        <div className="text-white/30 text-[10px] mt-1">floor x active listings</div>
+        <div className="text-white/30 text-[10px] mt-1 text-center">floor x active listings</div>
       </div>
 
       {/* Fear & Greed Index */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 flex flex-col items-center justify-center">
-        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-1">
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 min-h-[120px] flex flex-col items-center justify-center">
+        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-1 text-center">
           Fear & Greed Index
         </div>
         <FearGreedGauge value={stats.fearGreedIndex} size={110} />
       </div>
 
       {/* Total Manga Price - Placeholder */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 flex flex-col items-center justify-center">
-        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 min-h-[120px] flex flex-col items-center justify-center">
+        <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2 text-center">
           Total Manga Price
         </div>
-        <div className="text-white/20 text-sm font-medium">Coming Soon</div>
-        <div className="text-white/15 text-[10px] mt-1">Manga market tracking</div>
+        <div className="text-white/20 text-sm font-medium text-center">Coming Soon</div>
+        <div className="text-white/15 text-[10px] mt-1 text-center">Manga market tracking</div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 # Daily TCGplayer refresh (Apify + Listings Scraper)
-# Runs at 10pm EST (03:00 UTC next day) with 16GB RAM - no 512Mi limit like Render free cron.
-# Schedule: GitHub runs this at 03:00 UTC daily; re-push this file if scheduled runs stop.
+# Runs at 12:05am EST (05:05 UTC) to count previous day's complete sales.
+# Schedule: GitHub runs this at 05:05 UTC daily; re-push this file if scheduled runs stop.
 #
 # Required secrets (Repo → Settings → Secrets and variables → Actions):
 #   DATABASE_URL          - DB for all metrics (Apify + Scraper write here).
@@ -19,8 +19,8 @@ name: Daily Refresh (Apify + Scraper)
 
 on:
   schedule:
-    # 10pm EST = 03:00 UTC next day (adjust if DST: 02:00 or 03:00)
-    - cron: '0 3 * * *'
+    # 12:05am EST = 05:05 UTC (adjust if DST: 04:05 or 05:05)
+    - cron: '5 5 * * *'
   workflow_dispatch: # allow manual run
 
 jobs:
