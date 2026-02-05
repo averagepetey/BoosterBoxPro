@@ -72,6 +72,6 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add data/historical_entries.json
+          git add data/historical_entries.json data/ebay_pass_rates.json
           git diff --staged --quiet || git commit -m "Daily refresh: update historical data $(date -u +%Y-%m-%d)"
           git push
