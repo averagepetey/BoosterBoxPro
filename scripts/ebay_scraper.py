@@ -1630,11 +1630,19 @@ async def run_ebay_active_scraper(
                 logger.info(f"  {name}: 0 active listings found")
                 continue
 
-            # Get TCG floor price from existing JSON for price floor check
-            existing_today = next(
-                (e for e in hist.get(box_id, []) if e.get("date") == today), None
-            )
-            tcg_floor = existing_today.get("floor_price_usd") if existing_today else None
+            # Get TCG floor price from most recent entry (not just today)
+            tcg_floor = None
+            box_entries = hist.get(box_id, [])
+            for entry in sorted(box_entries, key=lambda e: e.get("date", ""), reverse=True):
+                if entry.get("floor_price_usd"):
+                    tcg_floor = entry["floor_price_usd"]
+                    break
+                elif entry.get("market_price_usd"):
+                    tcg_floor = entry["market_price_usd"]
+                    break
+
+            if tcg_floor:
+                logger.info(f"    Using TCG floor ${tcg_floor:.2f} for price filtering")
 
             # Filter active listings
             filtered = filter_active_listings(
@@ -1658,8 +1666,10 @@ async def run_ebay_active_scraper(
             active_box_count = sum(item.get("quantity", 1) for item in filtered)
             ebay_low = round(min(active_prices), 2) if active_prices else None
 
-            # Calculate 20%/10% floor window counts
+            # Calculate 20%/10% floor window counts (use TCG floor as reference)
             ref_floor = tcg_floor if tcg_floor and tcg_floor > 0 else ebay_low
+            if ref_floor:
+                logger.debug(f"    Reference floor for window: ${ref_floor:.2f}")
             if ref_floor and ref_floor > 0:
                 threshold_20pct = ref_floor * 1.20
                 threshold_10pct = ref_floor * 1.10
@@ -1701,6 +1711,9 @@ async def run_ebay_active_scraper(
             if box_id not in hist:
                 hist[box_id] = []
 
+            existing_today = next(
+                (e for e in hist.get(box_id, []) if e.get("date") == today), None
+            )
             if existing_today:
                 for key, val in active_fields.items():
                     existing_today[key] = val
