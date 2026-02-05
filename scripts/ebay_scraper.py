@@ -1573,6 +1573,191 @@ async def run_ebay_scraper(
 
 
 # ============================================================================
+# ACTIVE-ONLY SCRAPER (for daily refresh - sold handled by Apify)
+# ============================================================================
+
+async def run_ebay_active_scraper(
+    debug_box_id: Optional[str] = None,
+    dump_html: bool = False,
+) -> Dict[str, Any]:
+    """
+    Scrape 130point for eBay ACTIVE listings only (sold handled by Apify).
+
+    This is called by daily_refresh.py as Phase 1b-B after the Apify sold
+    listings phase completes.
+
+    Args:
+        debug_box_id: If set, only scrape this box.
+        dump_html: If True, save raw HTML responses to data/debug_html/.
+
+    Returns:
+        Summary dict: {results: int, errors: list, date: str}
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    logger.info(f"Phase 1b-B: eBay active listings (130point) starting for {today}")
+
+    # Load historical entries
+    with open(HISTORICAL_FILE, "r") as f:
+        hist = json.load(f)
+
+    # Determine which boxes to scrape
+    if debug_box_id:
+        if debug_box_id not in EBAY_SEARCH_CONFIG:
+            logger.error(f"Box {debug_box_id} not in EBAY_SEARCH_CONFIG")
+            return {"results": 0, "errors": [f"Unknown box: {debug_box_id}"], "date": today}
+        box_items = [(debug_box_id, EBAY_SEARCH_CONFIG[debug_box_id])]
+    else:
+        # Randomize box order each run (anti-detection)
+        box_items = list(EBAY_SEARCH_CONFIG.items())
+        random.shuffle(box_items)
+        logger.info(f"Shuffled box order for this run ({len(box_items)} boxes)")
+
+    results_count = 0
+    errors = []
+
+    # Scrape active listings via Playwright
+    try:
+        raw_active = await scrape_active_listings_browser(
+            box_items, dump_html=dump_html,
+        )
+
+        # Apply quality filters and update JSON/DB for each box
+        for box_id, config in box_items:
+            raw = raw_active.get(box_id, [])
+            name = config["name"]
+
+            if not raw:
+                logger.info(f"  {name}: 0 active listings found")
+                continue
+
+            # Get TCG floor price from existing JSON for price floor check
+            existing_today = next(
+                (e for e in hist.get(box_id, []) if e.get("date") == today), None
+            )
+            tcg_floor = existing_today.get("floor_price_usd") if existing_today else None
+
+            # Filter active listings
+            filtered = filter_active_listings(
+                raw,
+                min_price_usd=config["min_price"],
+                max_price_usd=config["max_price"],
+                tcg_floor_price=tcg_floor,
+            )
+            logger.info(f"  {name}: {len(raw)} raw -> {len(filtered)} filtered active listings")
+
+            if not filtered:
+                continue
+
+            # Calculate active listing metrics
+            active_prices = []
+            for item in filtered:
+                if item.get("price_usd") is not None:
+                    qty = item.get("quantity", 1)
+                    active_prices.extend([item["price_usd"]] * qty)
+
+            active_box_count = sum(item.get("quantity", 1) for item in filtered)
+            ebay_low = round(min(active_prices), 2) if active_prices else None
+
+            # Calculate 20%/10% floor window counts
+            ref_floor = tcg_floor if tcg_floor and tcg_floor > 0 else ebay_low
+            if ref_floor and ref_floor > 0:
+                threshold_20pct = ref_floor * 1.20
+                threshold_10pct = ref_floor * 1.10
+                within_20pct = sum(1 for p in active_prices if p <= threshold_20pct)
+                within_10pct = sum(1 for p in active_prices if p <= threshold_10pct)
+            else:
+                within_20pct = active_box_count
+                within_10pct = None
+
+            # Build active listing fields
+            active_fields = {
+                "ebay_active_listings": within_20pct,
+                "ebay_active_listings_total": active_box_count,
+                "ebay_listings_within_10pct_floor": within_10pct,
+                "ebay_floor_price_usd": ebay_low,
+                "ebay_active_median_price": round(statistics.median(active_prices), 2) if active_prices else None,
+                "ebay_active_low_price": round(min(active_prices), 2) if active_prices else None,
+            }
+
+            # Calculate delta from yesterday
+            yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            yesterday_entry = next(
+                (e for e in hist.get(box_id, []) if e.get("date") == yesterday_str), None
+            )
+            yesterday_ebay_active = (
+                yesterday_entry.get("ebay_active_listings")
+                if yesterday_entry else None
+            )
+
+            if yesterday_ebay_active is not None and within_20pct is not None:
+                delta = within_20pct - yesterday_ebay_active
+                active_fields["ebay_boxes_added_today"] = delta
+                active_fields["ebay_boxes_removed_today"] = max(0, -delta)
+            else:
+                active_fields["ebay_boxes_added_today"] = None
+                active_fields["ebay_boxes_removed_today"] = None
+
+            # Update historical entry
+            if box_id not in hist:
+                hist[box_id] = []
+
+            if existing_today:
+                for key, val in active_fields.items():
+                    existing_today[key] = val
+            else:
+                hist[box_id].append({"date": today, **active_fields})
+
+            # Write to DB
+            try:
+                from app.services.ebay_metrics_writer import upsert_ebay_daily_metrics
+                upsert_ebay_daily_metrics(
+                    booster_box_id=box_id,
+                    metric_date=today,
+                    ebay_active_listings_count=within_20pct,
+                    ebay_active_median_price_usd=active_fields.get("ebay_active_median_price"),
+                    ebay_active_low_price_usd=ebay_low,
+                    ebay_listings_added_today=active_fields.get("ebay_boxes_added_today"),
+                    ebay_listings_removed_today=active_fields.get("ebay_boxes_removed_today"),
+                )
+            except Exception as e:
+                logger.warning(f"DB write failed for {name}: {e}")
+
+            results_count += 1
+
+            logger.info(
+                f"    active={within_20pct}, floor=${ebay_low}, "
+                f"delta={active_fields.get('ebay_boxes_added_today', 'N/A')}"
+            )
+
+    except Exception as e:
+        logger.error(f"Active listings scraping failed: {e}")
+        errors.append(str(e))
+        import traceback
+        logger.error(traceback.format_exc())
+
+    # Save updated historical entries
+    with open(HISTORICAL_FILE, "w") as f:
+        json.dump(hist, f, indent=2)
+    logger.info(f"Saved eBay active data to {HISTORICAL_FILE}")
+
+    summary = {
+        "results": results_count,
+        "errors": errors,
+        "date": today,
+    }
+    logger.info(f"Phase 1b-B complete: {results_count} boxes with active listings, {len(errors)} errors")
+    return summary
+
+
+def run_ebay_active_scraper_sync(
+    debug_box_id: Optional[str] = None,
+    dump_html: bool = False,
+) -> Dict[str, Any]:
+    """Synchronous wrapper for run_ebay_active_scraper (for daily_refresh.py)."""
+    return asyncio.run(run_ebay_active_scraper(debug_box_id=debug_box_id, dump_html=dump_html))
+
+
+# ============================================================================
 # CLI
 # ============================================================================
 

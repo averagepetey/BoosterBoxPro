@@ -4,7 +4,8 @@ Daily TCGplayer Sales Data Refresh Script
 
 Runs in multiple phases:
 1. Apify API - Fetches sales data from TCGplayer via Apify
-1b. eBay Scraper - Fetches eBay sales data via 130point.com
+1b. eBay Sold Listings - Fetches eBay sold data via Apify (caffein.dev)
+1b-B. eBay Active Listings - Fetches eBay for-sale listings via 130point.com
 2. Listings Scraper - Scrapes active listings count from TCGplayer
 3. Rolling Metrics - Computes derived metrics and upserts to DB
 
@@ -206,6 +207,35 @@ def main():
         except Exception as e:
             status["ebay"]["error"] = str(e)
             logger.warning(f"⚠️  Phase 1b (eBay) failed (non-fatal): {e}")
+            import traceback
+            logger.warning(traceback.format_exc())
+
+    # Phase 1b-B: eBay active listings via 130point (non-fatal)
+    # Provides real-time eBay inventory: active listings count, floor price, supply delta
+    skip_ebay_active = os.environ.get("SKIP_EBAY_ACTIVE", "").lower() in ("1", "true", "yes")
+    status["ebay_active"] = {"completed": False, "error": None, "skipped": False}
+    if skip_ebay or skip_ebay_active:
+        logger.info("")
+        logger.info("=" * 50)
+        logger.info("Phase 1b-B: eBay Active Listings SKIPPED")
+        logger.info("=" * 50)
+        status["ebay_active"]["skipped"] = True
+        status["ebay_active"]["completed"] = True
+    else:
+        logger.info("")
+        logger.info("=" * 50)
+        logger.info("Phase 1b-B: eBay Active Listings via 130point")
+        logger.info("=" * 50)
+        try:
+            from scripts.ebay_scraper import run_ebay_active_scraper_sync
+            ebay_active_result = run_ebay_active_scraper_sync()
+            status["ebay_active"]["success_count"] = ebay_active_result.get("results", 0)
+            status["ebay_active"]["error_count"] = len(ebay_active_result.get("errors", []))
+            status["ebay_active"]["completed"] = True
+            logger.info(f"✅ Phase 1b-B complete: {ebay_active_result.get('results', 0)} boxes with active listings")
+        except Exception as e:
+            status["ebay_active"]["error"] = str(e)
+            logger.warning(f"⚠️  Phase 1b-B (eBay Active) failed (non-fatal): {e}")
             import traceback
             logger.warning(traceback.format_exc())
 
