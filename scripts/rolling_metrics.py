@@ -99,33 +99,42 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
 
 
 def _get_ebay_history(box_id: str) -> Dict[str, Dict[str, Any]]:
-    """Get eBay historical data from ebay_box_metrics_daily, keyed by date."""
-    from sqlalchemy import text
-    engine = _get_sync_engine()
-    with engine.connect() as conn:
-        q = text("""
-            SELECT metric_date, ebay_sales_count, ebay_volume_usd,
-                   ebay_units_sold_count, ebay_active_listings_count,
-                   ebay_listings_added_today
-            FROM ebay_box_metrics_daily
-            WHERE booster_box_id = :bid
-            ORDER BY metric_date ASC
-        """)
-        rows = conn.execute(q, {"bid": box_id}).fetchall()
+    """Get eBay historical data from ebay_box_metrics_daily, keyed by date.
 
-    by_date = {}
-    for r in rows:
-        d = r._mapping if hasattr(r, "_mapping") else dict(r)
-        metric_date = d.get("metric_date")
-        date_str = metric_date.isoformat() if hasattr(metric_date, "isoformat") else str(metric_date) if metric_date else None
-        if date_str:
-            by_date[date_str] = {
-                "ebay_sold_today": float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0,
-                "ebay_daily_volume_usd": float(d["ebay_volume_usd"]) if d.get("ebay_volume_usd") is not None else 0,
-                "ebay_active_listings": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0,
-                "ebay_boxes_added_today": int(d["ebay_listings_added_today"]) if d.get("ebay_listings_added_today") is not None else 0,
-            }
-    return by_date
+    Note: Handles missing columns gracefully (e.g., ebay_active_listings_count
+    may not exist if DB migration hasn't been run).
+    """
+    from sqlalchemy import text
+    try:
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            # Query only columns that are guaranteed to exist
+            # ebay_active_listings_count may not exist in older schemas
+            q = text("""
+                SELECT metric_date, ebay_sales_count, ebay_volume_usd,
+                       ebay_units_sold_count, ebay_listings_added_today
+                FROM ebay_box_metrics_daily
+                WHERE booster_box_id = :bid
+                ORDER BY metric_date ASC
+            """)
+            rows = conn.execute(q, {"bid": box_id}).fetchall()
+
+        by_date = {}
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            metric_date = d.get("metric_date")
+            date_str = metric_date.isoformat() if hasattr(metric_date, "isoformat") else str(metric_date) if metric_date else None
+            if date_str:
+                by_date[date_str] = {
+                    "ebay_sold_today": float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0,
+                    "ebay_daily_volume_usd": float(d["ebay_volume_usd"]) if d.get("ebay_volume_usd") is not None else 0,
+                    "ebay_active_listings": 0,  # Not available until DB migration adds column
+                    "ebay_boxes_added_today": int(d["ebay_listings_added_today"]) if d.get("ebay_listings_added_today") is not None else 0,
+                }
+        return by_date
+    except Exception as e:
+        logger.warning(f"Failed to get eBay history for {box_id}: {e}")
+        return {}
 
 
 def _get_entry_for_date(entries: list, date_str: str) -> dict | None:
