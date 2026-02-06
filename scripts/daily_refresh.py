@@ -101,7 +101,7 @@ def main():
     # This makes it nearly impossible to predict when scraping actually happens
     skip_delay = "--no-delay" in sys.argv
     if not skip_delay:
-        delay_min, delay_max = 0, 45  # minutes (cron fires at 10pm EST; jitter keeps hit time variable)
+        delay_min, delay_max = 0, 15  # minutes (jitter keeps hit time variable; kept short to save GHA minutes)
         delay_sec = random.randint(delay_min * 60, delay_max * 60)
         eta = datetime.now() + timedelta(seconds=delay_sec)
         logger.info(f"🎲 Random delay: sleeping {delay_sec // 60} min (work will start ~{eta.strftime('%H:%M')} local)")
