@@ -766,6 +766,7 @@ def filter_active_listings(
     min_price_usd: float,
     max_price_usd: float,
     tcg_floor_price: Optional[float] = None,
+    price_floor_ratio: float = 0.79,
 ) -> List[Dict[str, Any]]:
     """Filter active listings with TCGplayer-equivalent quality checks.
 
@@ -774,7 +775,7 @@ def filter_active_listings(
     2. Japanese/Asian exclusion
     3. Suspicious keywords (damaged, opened, resealed, etc.)
     4. Price range (config min/max)
-    5. Price floor (81% of TCG market price if available)
+    5. Price floor (default 79% of TCG market price for active listings)
     6. Dedup by eBay item ID
     """
     seen_ids: set = set()
@@ -832,9 +833,9 @@ def filter_active_listings(
                 excluded["price_range"] += 1
                 continue
 
-        # 5. Price floor (81% of TCG market price)
+        # 5. Price floor (% of TCG market price — active uses 79%, sold uses 75%)
         if price_usd is not None and tcg_floor_price and tcg_floor_price > 0:
-            if price_usd < tcg_floor_price * MIN_PRICE_RATIO:
+            if price_usd < tcg_floor_price * price_floor_ratio:
                 excluded["price_floor"] += 1
                 continue
 
@@ -1226,6 +1227,13 @@ def compute_ebay_fields(
     else:
         within_20pct = None
         within_10pct = None
+
+    # Apply 10% foreign seller discount (no seller location data from 130point)
+    FOREIGN_DISCOUNT = 0.90
+    if within_20pct is not None:
+        within_20pct = int(within_20pct * FOREIGN_DISCOUNT)
+    if within_10pct is not None:
+        within_10pct = int(within_10pct * FOREIGN_DISCOUNT)
 
     active_box_count_total = sum(item.get("quantity", 1) for item in active) if active else None
 
@@ -1695,6 +1703,15 @@ async def run_ebay_active_scraper(
             else:
                 within_20pct = active_box_count
                 within_10pct = None
+
+            # Apply 10% foreign seller discount — 130point has no seller
+            # location data, so we assume ~10% of listings passing keyword
+            # filters are non-US sellers who didn't mention region in title.
+            FOREIGN_DISCOUNT = 0.90
+            if within_20pct is not None:
+                within_20pct = int(within_20pct * FOREIGN_DISCOUNT)
+            if within_10pct is not None:
+                within_10pct = int(within_10pct * FOREIGN_DISCOUNT)
 
             # Build active listing fields
             active_fields = {
