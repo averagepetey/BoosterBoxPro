@@ -1255,5 +1255,9 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
             'combined_boxes_sold_today': latest.get('combined_boxes_sold_today'),
             'daily_volume_tcg_usd': latest.get('daily_volume_tcg_usd'),
             'daily_volume_ebay_usd': latest.get('daily_volume_ebay_usd'),
+            # Derived metrics (from Phase 3 rolling_metrics)
+            'liquidity_score': latest.get('liquidity_score'),
+            'days_to_20pct_increase': latest.get('days_to_20pct_increase'),
+            'expected_days_to_sell': latest.get('expected_days_to_sell'),
         }
     return out
