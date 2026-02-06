@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     # Environment
     environment: str = "development"
-    debug: bool = True
+    debug: bool = False
     
     # Admin API Key (simple auth for manual entry endpoints)
     admin_api_key: Optional[str] = None

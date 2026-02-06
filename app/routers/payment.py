@@ -208,14 +208,16 @@ async def create_checkout_session(
         )
         
     except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating checkout: {str(e)}")
         raise HTTPException(
             status_code=400,
-            detail=f"Stripe error: {str(e)}"
+            detail="Payment processing error. Please try again."
         )
     except Exception as e:
+        logger.error(f"Failed to create checkout session: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to create checkout session: {str(e)}"
+            detail="Failed to create checkout session. Please try again."
         )
 
 

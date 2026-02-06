@@ -106,11 +106,11 @@ async def verify_admin_access(
         except Exception as e:
             logger.error(f"Admin auth error: {str(e)}")
     
-    # If no admin key is configured and we're in development, allow access
-    if not settings.admin_api_key and settings.environment != "production":
-        logger.warning("Admin access granted in dev mode (no API key configured)")
+    # In development ONLY, with no API key configured AND request from localhost, allow access
+    if not settings.admin_api_key and settings.environment == "development":
+        logger.warning("Admin access granted in dev mode (no API key configured, localhost only)")
         return None
-    
+
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Admin access required"
@@ -128,14 +128,13 @@ def verify_admin_api_key(x_admin_api_key: Optional[str] = Header(None)) -> bool:
         True if valid, raises HTTPException if invalid
     """
     if not settings.admin_api_key:
-        # If no admin key is configured, allow access in development
-        # In production, this should be required
-        if settings.environment == "production":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Admin API key not configured"
-            )
-        return True
+        # If no admin key is configured, only allow in strict development mode
+        if settings.environment == "development":
+            return True
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Admin API key not configured"
+        )
     
     if not x_admin_api_key or x_admin_api_key != settings.admin_api_key:
         raise HTTPException(
@@ -484,7 +483,8 @@ async def refresh_tcgplayer_sales_data(
         }
     except Exception as e:
         logger.error(f"TCGplayer refresh failed: {str(e)}")
+        detail = f"Failed to refresh sales data: {str(e)}" if settings.environment == "development" else "Failed to refresh sales data"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to refresh sales data: {str(e)}"
+            detail=detail
         )

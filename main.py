@@ -10,7 +10,7 @@ Security Features:
 - Docs disabled in production
 """
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -23,6 +23,21 @@ import time
 
 from app.config import settings
 from app.database import init_db
+
+# Rate limiter - import at module level for use as decorators on endpoints
+try:
+    from app.middleware.rate_limit import limiter, RateLimits
+except ImportError:
+    class _DummyLimiter:
+        def limit(self, *a, **kw):
+            def decorator(func):
+                return func
+            return decorator
+    limiter = _DummyLimiter()
+    class RateLimits:
+        LEADERBOARD = "60/minute"
+        BOX_DETAIL = "120/minute"
+        TIME_SERIES = "30/minute"
 
 # Configure logging
 logging.basicConfig(
@@ -116,9 +131,9 @@ if settings.environment == "development":
 else:
     cors_origins = settings.cors_origins_list
     cors_credentials = True
-    # Allow any https *.vercel.app so Vercel production + preview URLs work without listing each one
-    cors_origin_regex = r"https://.*\.vercel\.app"
-    logger.info(f"🔒 CORS: Production - origins: {cors_origins}, regex: *.vercel.app")
+    # Allow BoosterBoxPro Vercel deployments (production + preview)
+    cors_origin_regex = r"https://boosterboxpro[a-z0-9-]*\.vercel\.app"
+    logger.info(f"🔒 CORS: Production - origins: {cors_origins}, regex: boosterboxpro*.vercel.app")
     if not cors_origins:
         logger.warning("⚠️  CORS_ORIGINS is empty - *.vercel.app still allowed via regex. Add CORS_ORIGINS for custom domains.")
 
@@ -223,7 +238,7 @@ async def admin_invalidate_cache(request: Request):
     Invalidate all API caches so leaderboard and box detail serve fresh data.
     Called by the daily refresh job when it completes. Requires INVALIDATE_CACHE_SECRET.
     """
-    secret = request.headers.get("X-Invalidate-Secret") or request.query_params.get("secret")
+    secret = request.headers.get("X-Invalidate-Secret")
     if not settings.invalidate_cache_secret or secret != settings.invalidate_cache_secret:
         return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
     # Clear in-memory leaderboard cache (defined below in this module)
@@ -286,8 +301,12 @@ async def global_exception_handler(request: Request, exc: Exception):
     
     # Add CORS headers manually if needed (CORS middleware should handle this, but ensure it)
     origin = request.headers.get("origin")
-    if origin or settings.environment == "development":
-        response.headers["Access-Control-Allow-Origin"] = "*" if settings.environment == "development" else origin
+    if origin:
+        import re
+        if settings.environment == "development":
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        elif origin in settings.cors_origins_list or re.match(r"https://boosterboxpro[a-z0-9-]*\.vercel\.app$", origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
     
@@ -328,12 +347,6 @@ try:
 except ImportError:
     pass  # Admin router not available
 
-# Import chat data entry router
-try:
-    from app.routers import chat_data_entry
-    app.include_router(chat_data_entry.router)
-except ImportError:
-    pass  # Chat data entry router not available
 
 # Import payment router
 try:
@@ -373,10 +386,12 @@ _leaderboard_cache: dict = {}
 
 # Leaderboard endpoint - requires authentication and active subscription
 @app.get("/booster-boxes")
+@limiter.limit(RateLimits.LEADERBOARD)
 async def get_booster_boxes(
+    request: Request,
     sort: str = "unified_volume_usd",  # Primary ranking metric: 30-day raw volume
-    limit: int = 10,
-    offset: int = 0,
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
 ):
     """
@@ -387,6 +402,14 @@ async def get_booster_boxes(
     """
     Leaderboard endpoint - combines static box info with live database metrics
     """
+    ALLOWED_SORT_FIELDS = {
+        "unified_volume_usd", "unified_volume_7d_ema", "daily_volume_usd",
+        "floor_price_usd", "floor_price_1d_change_pct", "boxes_sold_per_day",
+        "boxes_sold_30d_avg", "active_listings_count", "liquidity_score",
+        "days_to_20pct_increase", "tcg_daily_volume_usd", "ebay_daily_volume_usd",
+    }
+    if sort not in ALLOWED_SORT_FIELDS:
+        sort = "unified_volume_usd"
     cache_key = (sort, limit, offset)
     now_ts = time.time()
     if cache_key in _leaderboard_cache:
@@ -558,7 +581,9 @@ async def get_booster_boxes(
 
 # Box detail endpoint - requires authentication and active subscription
 @app.get("/booster-boxes/{box_id}")
+@limiter.limit(RateLimits.BOX_DETAIL)
 async def get_box_detail(
+    request: Request,
     box_id: str,
     current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
 ):
@@ -629,10 +654,12 @@ async def get_box_detail(
 
 # Historical time-series data endpoint - requires authentication and active subscription
 @app.get("/booster-boxes/{box_id}/time-series")
+@limiter.limit(RateLimits.TIME_SERIES)
 async def get_box_time_series(
+    request: Request,
     box_id: str,
-    metric: str = "floor_price",
-    days: int = 30,
+    metric: str = Query(default="floor_price"),
+    days: int = Query(default=30, ge=1, le=365),
     one_per_month: bool = False,
     current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
 ):

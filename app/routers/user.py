@@ -158,8 +158,10 @@ async def cancel_user_subscription(
             cancel_at_period_end=not cancel_immediately
         )
     except StripeServiceError as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to cancel subscription: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel subscription: {str(e)}"
+            detail="Failed to cancel subscription. Please try again or contact support."
         )
 

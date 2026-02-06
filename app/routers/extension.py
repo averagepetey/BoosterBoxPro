@@ -5,7 +5,7 @@ Uses same source of truth as box detail: app.services.box_detail_service.build_b
 """
 
 import os
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Query, HTTPException, Depends, Request
 from typing import Optional, List
 from sqlalchemy import select, desc
 from app.database import AsyncSessionLocal
@@ -13,11 +13,26 @@ from app.models.booster_box import BoosterBox
 from app.models.unified_box_metrics import UnifiedBoxMetrics
 from app.services.box_detail_service import build_box_detail_data
 
+try:
+    from app.middleware.rate_limit import limiter
+except ImportError:
+    class _DummyLimiter:
+        def limit(self, *a, **kw):
+            def decorator(func):
+                return func
+            return decorator
+    limiter = _DummyLimiter()
+
 # Extension endpoints work without auth so the Chrome extension can fetch data.
 async def optional_extension_user():
     return None
 
 router = APIRouter(prefix="/extension", tags=["Extension"])
+
+
+def _escape_like(value: str) -> str:
+    """Escape SQL LIKE metacharacters to prevent pattern injection."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def _normalize_set_code(set_code: str) -> str:
@@ -35,7 +50,8 @@ def _normalize_set_code(set_code: str) -> str:
 async def _get_extension_box_response(db, set_code: str, listing_price: Optional[float] = None):
     """Internal: fetch box by set_code using shared box detail service. Returns extension response shape."""
     set_code = _normalize_set_code(set_code)
-    stmt = select(BoosterBox).where(BoosterBox.product_name.ilike(f"%{set_code}%")).limit(1)
+    safe_code = _escape_like(set_code)
+    stmt = select(BoosterBox).where(BoosterBox.product_name.ilike(f"%{safe_code}%")).limit(1)
     result = await db.execute(stmt)
     db_box = result.scalar_one_or_none()
     if not db_box:
@@ -73,7 +89,9 @@ async def _get_extension_box_response(db, set_code: str, listing_price: Optional
 
 
 @router.get("/box/{set_code}")
+@limiter.limit("60/minute")
 async def get_box_by_set_code(
+    request: Request,
     set_code: str,
     listing_price: Optional[float] = Query(None, description="Current marketplace listing price"),
     current_user=Depends(optional_extension_user),
@@ -87,7 +105,9 @@ async def get_box_by_set_code(
 
 
 @router.get("/compare")
+@limiter.limit("30/minute")
 async def compare_boxes(
+    request: Request,
     box1: str = Query(..., description="First box set code"),
     box2: str = Query(..., description="Second box set code"),
     current_user=Depends(optional_extension_user),
@@ -137,16 +157,19 @@ async def compare_boxes(
 
 
 @router.get("/search")
+@limiter.limit("60/minute")
 async def search_boxes(
+    request: Request,
     q: str = Query(..., description="Search query"),
-    limit: int = Query(5, description="Max results")
+    limit: int = Query(5, ge=1, le=20, description="Max results"),
 ):
     """
     Quick search for boxes (for Compare dropdown).
     """
     async with AsyncSessionLocal() as db:
+        safe_q = _escape_like(q)
         stmt = select(BoosterBox).where(
-            BoosterBox.product_name.ilike(f"%{q}%")
+            BoosterBox.product_name.ilike(f"%{safe_q}%")
         ).limit(limit)
         
         result = await db.execute(stmt)
@@ -178,7 +201,9 @@ async def search_boxes(
 
 
 @router.get("/top-movers")
+@limiter.limit("30/minute")
 async def get_top_movers(
+    request: Request,
     current_user=Depends(optional_extension_user),
 ):
     """

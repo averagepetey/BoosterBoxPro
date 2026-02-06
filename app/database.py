@@ -17,7 +17,9 @@ _needs_ssl = "sslmode=require" in _db_url or "supabase" in _db_url.lower()
 if _needs_ssl:
     _ctx = ssl.create_default_context()
     if "supabase" in _db_url.lower():
-        # Supabase from Render often fails cert verification; use no-verify for connection.
+        # SECURITY NOTE: Supabase pooler from Render/GH Actions fails cert verification.
+        # This is a known tradeoff. The connection is still encrypted (TLS), just not
+        # verifying the server certificate. Acceptable for Supabase pooler connections.
         _ctx.check_hostname = False
         _ctx.verify_mode = ssl.CERT_NONE
     _connect_args["ssl"] = _ctx
