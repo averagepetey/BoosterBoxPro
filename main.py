@@ -745,7 +745,7 @@ async def get_box_time_series(
         return {"data": []}
 
 
-# eBay recent sales endpoint - individual listings with affiliate links
+# eBay listings endpoint - individual listings with affiliate links
 @app.get("/booster-boxes/{box_id}/ebay-listings")
 @limiter.limit(RateLimits.BOX_DETAIL)
 async def get_box_ebay_listings(

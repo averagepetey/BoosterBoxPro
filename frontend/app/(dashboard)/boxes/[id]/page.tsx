@@ -25,7 +25,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     'floor_price', 
     timeRange === 'all' ? 365 : parseInt(timeRange)
   );
-  // eBay recent sales
+  // eBay listings
   const { data: ebayListings, isLoading: isLoadingEbayListings } = useBoxEbayListings(id);
   // Advanced Metrics table shows one entry per month
   const { data: allHistoricalData, isLoading: isLoadingAllHistorical } = useBoxTimeSeries(
@@ -818,7 +818,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             </div>
           )}
 
-          {/* Recent eBay Sales Section */}
+          {/* eBay Listings Section */}
           {ebayListings.length > 0 && (
             <div
               className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
@@ -829,10 +829,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-lg lg:text-xl font-bold text-white">Recent eBay Sales</h2>
-                <svg className="w-5 h-5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6.5 3C3.46 3 1 5.46 1 8.5c0 4.03 4.08 7.02 10.27 12.06L12 21.18l.73-.62C18.92 15.52 23 12.53 23 8.5 23 5.46 20.54 3 17.5 3c-1.74 0-3.41.81-4.5 2.09C11.91 3.81 10.24 3 8.5 3h-2z"/>
-                </svg>
+                <h2 className="text-lg lg:text-xl font-bold text-white">eBay Listings</h2>
               </div>
 
               {isLoadingEbayListings ? (
@@ -855,7 +852,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                       <tbody>
                         {ebayListings.map((listing) => (
                           <tr key={listing.ebay_item_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                            <td className="py-3 px-3 text-white/80 text-sm max-w-md truncate">{listing.title || 'eBay Listing'}</td>
+                            <td className="py-3 px-3 text-white/80 text-sm max-w-md truncate">{(listing.title || 'eBay Listing').replace(/Opens in a new window or tab/gi, '').trim()}</td>
                             <td className="py-3 px-3 text-right text-white font-semibold text-sm">
                               {listing.sold_price_usd != null ? formatCurrency(listing.sold_price_usd) : '--'}
                             </td>
@@ -885,7 +882,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="lg:hidden space-y-2">
                     {ebayListings.map((listing) => (
                       <div key={listing.ebay_item_id} className="p-3 rounded-xl bg-white/5 border border-white/10">
-                        <div className="text-white/80 text-sm truncate mb-2">{listing.title || 'eBay Listing'}</div>
+                        <div className="text-white/80 text-sm truncate mb-2">{(listing.title || 'eBay Listing').replace(/Opens in a new window or tab/gi, '').trim()}</div>
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="text-white font-semibold text-sm">
@@ -913,7 +910,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
                   {/* Footer note */}
                   <div className="mt-4 pt-3 border-t border-white/10">
-                    <p className="text-white/40 text-xs">Showing completed eBay sales. Prices are final sold prices.</p>
+                    <p className="text-white/40 text-xs">Showing recent eBay listings. Prices are final sold prices.</p>
                   </div>
                 </>
               )}

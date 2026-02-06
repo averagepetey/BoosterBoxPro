@@ -249,7 +249,7 @@ export async function toggleBoxFavorite(id: string, isFavorited: boolean): Promi
 }
 
 /**
- * Fetch recent eBay sold listings for a box
+ * Fetch recent eBay listings for a box
  */
 export async function getBoxEbayListings(
   id: string,
