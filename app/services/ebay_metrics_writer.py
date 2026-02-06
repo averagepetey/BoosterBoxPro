@@ -49,7 +49,17 @@ _insert_raw_sql = text("""
         :eid, :sp, :qty, :lt, CAST(:rd AS jsonb)
     )
     ON CONFLICT (booster_box_id, ebay_item_id)
-    DO NOTHING
+    DO UPDATE SET
+        sold_price_usd = CASE
+            WHEN ebay_sales_raw.sold_price_usd IS NULL OR ebay_sales_raw.sold_price_usd = 0
+            THEN EXCLUDED.sold_price_usd
+            ELSE ebay_sales_raw.sold_price_usd
+        END,
+        raw_data = CASE
+            WHEN ebay_sales_raw.raw_data IS NULL
+            THEN EXCLUDED.raw_data
+            ELSE ebay_sales_raw.raw_data
+        END
 """)
 
 
@@ -110,7 +120,10 @@ def insert_ebay_sales_raw(
                     if not ebay_item_id:
                         continue
                     # Caller sends sold_price_usd (dollars, float)
-                    price_usd = item.get("sold_price_usd") or 0
+                    # Skip items with no price — never write $0 to DB
+                    price_usd = item.get("sold_price_usd")
+                    if not price_usd or float(price_usd) <= 0:
+                        continue
                     conn.execute(_insert_raw_sql, {
                         "bid": booster_box_id,
                         "sd": item.get("sold_date"),
