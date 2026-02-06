@@ -81,20 +81,23 @@ export function MarketOverviewBar({ boxes }: MarketOverviewBarProps) {
       ? ((totalVolToday - avgDailyFrom7d) / avgDailyFrom7d) * 100
       : null;
 
-    // Total Market Cap: sum of (floor_price * active_listings) per box
-    const totalMarketCap = boxes.reduce((sum, b) => {
-      const floor = b.metrics.floor_price_usd || 0;
-      const listings = b.metrics.active_listings_count || 0;
-      return sum + floor * listings;
-    }, 0);
+    // Box Index: sum of all floor prices (cost to buy one of every tracked box)
+    const boxIndex = boxes.reduce((sum, b) => sum + (b.metrics.floor_price_usd || 0), 0);
 
-    // Market cap change: use 1d price change as proxy
-    const priceChanges = boxes
-      .map(b => b.metrics.floor_price_1d_change_pct)
-      .filter((v): v is number => v !== null && v !== undefined);
-    const avgPriceChange = priceChanges.length
-      ? priceChanges.reduce((a, b) => a + b, 0) / priceChanges.length
-      : null;
+    // Box Index change: weighted avg of 1d price changes (weighted by floor price)
+    let boxIndexChangePct: number | null = null;
+    const totalFloor = boxes.reduce((s, b) => s + (b.metrics.floor_price_usd || 0), 0);
+    if (totalFloor > 0) {
+      const weightedChange = boxes.reduce((s, b) => {
+        const floor = b.metrics.floor_price_usd || 0;
+        const change = b.metrics.floor_price_1d_change_pct;
+        if (change !== null && change !== undefined && floor > 0) {
+          return s + change * (floor / totalFloor);
+        }
+        return s;
+      }, 0);
+      boxIndexChangePct = weightedChange;
+    }
 
     // Fear & Greed
     const fearGreedIndex = computeFearGreedIndex(boxes);
@@ -102,8 +105,8 @@ export function MarketOverviewBar({ boxes }: MarketOverviewBarProps) {
     return {
       totalVolToday,
       volChangePct,
-      totalMarketCap,
-      mcapChangePct: avgPriceChange,
+      boxIndex,
+      boxIndexChangePct,
       fearGreedIndex,
     };
   }, [boxes]);
@@ -128,20 +131,20 @@ export function MarketOverviewBar({ boxes }: MarketOverviewBarProps) {
         <div className="text-white/30 text-[10px] mt-1 text-center">vs 7d daily avg</div>
       </div>
 
-      {/* Total Market Cap */}
+      {/* Box Index */}
       <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 min-h-[120px] flex flex-col items-center justify-center">
         <div className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2 text-center">
-          Total Market Cap
+          Box Index
         </div>
         <div className="flex items-baseline gap-2 justify-center">
-          <span className="text-white text-xl font-bold">{formatUsd(stats.totalMarketCap)}</span>
-          {stats.mcapChangePct !== null && (
-            <span className={`text-xs font-medium ${stats.mcapChangePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {formatPct(stats.mcapChangePct)}
+          <span className="text-white text-xl font-bold">{formatUsd(stats.boxIndex)}</span>
+          {stats.boxIndexChangePct !== null && (
+            <span className={`text-xs font-medium ${stats.boxIndexChangePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatPct(stats.boxIndexChangePct)}
             </span>
           )}
         </div>
-        <div className="text-white/30 text-[10px] mt-1 text-center">floor x active listings</div>
+        <div className="text-white/30 text-[10px] mt-1 text-center">sum of all floor prices</div>
       </div>
 
       {/* Fear & Greed Index */}
