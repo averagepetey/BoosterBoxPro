@@ -132,8 +132,8 @@ else:
     cors_origins = settings.cors_origins_list
     cors_credentials = True
     # Allow BoosterBoxPro Vercel deployments (production + preview)
-    cors_origin_regex = r"https://boosterboxpro[a-z0-9-]*\.vercel\.app"
-    logger.info(f"🔒 CORS: Production - origins: {cors_origins}, regex: boosterboxpro*.vercel.app")
+    cors_origin_regex = r"https://booster-?box-?pro[a-z0-9-]*\.vercel\.app"
+    logger.info(f"🔒 CORS: Production - origins: {cors_origins}, regex: booster-?box-?pro*.vercel.app")
     if not cors_origins:
         logger.warning("⚠️  CORS_ORIGINS is empty - *.vercel.app still allowed via regex. Add CORS_ORIGINS for custom domains.")
 
@@ -305,7 +305,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         import re
         if settings.environment == "development":
             response.headers["Access-Control-Allow-Origin"] = "*"
-        elif origin in settings.cors_origins_list or re.match(r"https://boosterboxpro[a-z0-9-]*\.vercel\.app$", origin):
+        elif origin in settings.cors_origins_list or re.match(r"https://booster-?box-?pro[a-z0-9-]*\.vercel\.app$", origin):
             response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     
     # CORS - Production domains (comma-separated in .env)
     # Example: CORS_ORIGINS=https://boosterboxpro.com,https://www.boosterboxpro.com
-    cors_origins: str = "https://boosterboxpro.vercel.app"
+    cors_origins: str = "https://booster-box-pro.vercel.app,https://boosterboxpro.vercel.app"
     
     @property
     def cors_origins_list(self) -> List[str]:
