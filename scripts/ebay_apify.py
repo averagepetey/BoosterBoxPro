@@ -894,7 +894,7 @@ def run_ebay_apify_scraper(
             logger.info(f"  Date filter: {len(items_yesterday)} from {yesterday}, {rejected_date} other dates (pass rate: {pass_rate:.1%})")
 
             # Log pass rate for future optimization
-            log_pass_rate(pass_rates, today, box_id, len(items), len(items_yesterday))
+            log_pass_rate(pass_rates, yesterday, box_id, len(items), len(items_yesterday))
 
             # Calculate metrics from yesterday's sales only
             if items_yesterday:

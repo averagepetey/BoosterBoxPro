@@ -25,17 +25,17 @@ _upsert_daily_sql = text("""
     )
     ON CONFLICT (booster_box_id, metric_date)
     DO UPDATE SET
-        ebay_sales_count = COALESCE(EXCLUDED.ebay_sales_count, ebay_box_metrics_daily.ebay_sales_count),
-        ebay_volume_usd = COALESCE(EXCLUDED.ebay_volume_usd, ebay_box_metrics_daily.ebay_volume_usd),
-        ebay_median_sold_price_usd = COALESCE(EXCLUDED.ebay_median_sold_price_usd, ebay_box_metrics_daily.ebay_median_sold_price_usd),
-        ebay_units_sold_count = COALESCE(EXCLUDED.ebay_units_sold_count, ebay_box_metrics_daily.ebay_units_sold_count),
-        ebay_sales_acceleration = COALESCE(EXCLUDED.ebay_sales_acceleration, ebay_box_metrics_daily.ebay_sales_acceleration),
-        ebay_volume_7d_ema = COALESCE(EXCLUDED.ebay_volume_7d_ema, ebay_box_metrics_daily.ebay_volume_7d_ema),
-        ebay_active_listings_count = COALESCE(EXCLUDED.ebay_active_listings_count, ebay_box_metrics_daily.ebay_active_listings_count),
-        ebay_active_median_price_usd = COALESCE(EXCLUDED.ebay_active_median_price_usd, ebay_box_metrics_daily.ebay_active_median_price_usd),
-        ebay_active_low_price_usd = COALESCE(EXCLUDED.ebay_active_low_price_usd, ebay_box_metrics_daily.ebay_active_low_price_usd),
-        ebay_listings_added_today = COALESCE(EXCLUDED.ebay_listings_added_today, ebay_box_metrics_daily.ebay_listings_added_today),
-        ebay_listings_removed_today = COALESCE(EXCLUDED.ebay_listings_removed_today, ebay_box_metrics_daily.ebay_listings_removed_today),
+        ebay_sales_count = CASE WHEN EXCLUDED.ebay_sales_count IS NOT NULL THEN EXCLUDED.ebay_sales_count ELSE ebay_box_metrics_daily.ebay_sales_count END,
+        ebay_volume_usd = CASE WHEN EXCLUDED.ebay_volume_usd IS NOT NULL THEN EXCLUDED.ebay_volume_usd ELSE ebay_box_metrics_daily.ebay_volume_usd END,
+        ebay_median_sold_price_usd = CASE WHEN EXCLUDED.ebay_median_sold_price_usd IS NOT NULL THEN EXCLUDED.ebay_median_sold_price_usd ELSE ebay_box_metrics_daily.ebay_median_sold_price_usd END,
+        ebay_units_sold_count = CASE WHEN EXCLUDED.ebay_units_sold_count IS NOT NULL THEN EXCLUDED.ebay_units_sold_count ELSE ebay_box_metrics_daily.ebay_units_sold_count END,
+        ebay_sales_acceleration = CASE WHEN EXCLUDED.ebay_sales_acceleration IS NOT NULL THEN EXCLUDED.ebay_sales_acceleration ELSE ebay_box_metrics_daily.ebay_sales_acceleration END,
+        ebay_volume_7d_ema = CASE WHEN EXCLUDED.ebay_volume_7d_ema IS NOT NULL THEN EXCLUDED.ebay_volume_7d_ema ELSE ebay_box_metrics_daily.ebay_volume_7d_ema END,
+        ebay_active_listings_count = CASE WHEN EXCLUDED.ebay_active_listings_count IS NOT NULL THEN EXCLUDED.ebay_active_listings_count ELSE ebay_box_metrics_daily.ebay_active_listings_count END,
+        ebay_active_median_price_usd = CASE WHEN EXCLUDED.ebay_active_median_price_usd IS NOT NULL THEN EXCLUDED.ebay_active_median_price_usd ELSE ebay_box_metrics_daily.ebay_active_median_price_usd END,
+        ebay_active_low_price_usd = CASE WHEN EXCLUDED.ebay_active_low_price_usd IS NOT NULL THEN EXCLUDED.ebay_active_low_price_usd ELSE ebay_box_metrics_daily.ebay_active_low_price_usd END,
+        ebay_listings_added_today = CASE WHEN EXCLUDED.ebay_listings_added_today IS NOT NULL THEN EXCLUDED.ebay_listings_added_today ELSE ebay_box_metrics_daily.ebay_listings_added_today END,
+        ebay_listings_removed_today = CASE WHEN EXCLUDED.ebay_listings_removed_today IS NOT NULL THEN EXCLUDED.ebay_listings_removed_today ELSE ebay_box_metrics_daily.ebay_listings_removed_today END,
         updated_at = NOW()
 """)
 
