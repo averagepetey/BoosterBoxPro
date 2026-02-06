@@ -1016,24 +1016,30 @@ async def run_scraper(debug_box_id: Optional[str] = None):
     else:
         products = get_daily_products()
 
-    # Load market prices and yesterday's floor prices from historical data
+    # Load market prices and yesterday's floor prices from DB (source of truth)
     market_prices = {}
     yesterday_floors = {}
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     try:
-        with open('data/historical_entries.json', 'r') as f:
-            hist = json.load(f)
-        for box_id in TCGPLAYER_URLS.keys():
-            if box_id in hist and hist[box_id]:
-                latest = sorted(hist[box_id], key=lambda x: x.get('date', ''), reverse=True)[0]
-                market_prices[box_id] = latest.get('market_price_usd') or latest.get('floor_price_usd', 0)
-                # Find yesterday's floor for comparable boxes_added calculation
-                for e in hist[box_id]:
-                    if e.get('date') == yesterday and e.get('floor_price_usd'):
-                        yesterday_floors[box_id] = float(e['floor_price_usd'])
-                        break
+        from app.services.db_historical_reader import _get_sync_engine
+        from sqlalchemy import text as _text
+        _engine = _get_sync_engine()
+        with _engine.connect() as conn:
+            rows = conn.execute(_text("""
+                SELECT booster_box_id, floor_price_usd
+                FROM box_metrics_unified
+                WHERE metric_date = :yesterday
+            """), {"yesterday": yesterday}).fetchall()
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            bid = str(d["booster_box_id"])
+            fp = d.get("floor_price_usd")
+            if fp is not None:
+                market_prices[bid] = float(fp)
+                yesterday_floors[bid] = float(fp)
+        logger.info(f"Loaded {len(market_prices)} market prices from DB (yesterday={yesterday})")
     except Exception as e:
-        logger.warning(f"Could not load market prices: {e}")
+        logger.warning(f"Could not load market prices from DB: {e}")
 
     results = []
     errors = []
@@ -1162,8 +1168,8 @@ async def run_scraper(debug_box_id: Optional[str] = None):
 
 
 def save_results(results: List[Dict]):
-    """Save scraped data to historical_entries.json and to box_metrics_unified (DB).
-    Computes boxes_added_today = max(0, today_count - yesterday_count) from yesterday's
+    """Save scraped data to box_metrics_unified (DB).
+    Computes boxes_added_today = today_count - yesterday_count from yesterday's
     refresh to today's so the daily cron records how many listings were added since last run.
     """
     today = datetime.now().strftime('%Y-%m-%d')
@@ -1174,44 +1180,45 @@ def save_results(results: List[Dict]):
         sys.path.insert(0, str(_root))
 
     try:
-        with open('data/historical_entries.json', 'r') as f:
-            hist = json.load(f)
-    except Exception:
-        hist = {}
-
-    try:
         from app.services.box_metrics_writer import upsert_daily_metrics
     except ImportError:
         upsert_daily_metrics = None
+
+    # Load yesterday's active_listings_count from DB for delta calculation
+    yesterday_counts = {}
     try:
-        from app.services.historical_data import DB_TO_LEADERBOARD_UUID_MAP, get_box_30d_avg_sales
-    except ImportError:
-        DB_TO_LEADERBOARD_UUID_MAP = {}
-        get_box_30d_avg_sales = None
+        from app.services.db_historical_reader import _get_sync_engine
+        from sqlalchemy import text as _text
+        _engine = _get_sync_engine()
+        with _engine.connect() as conn:
+            rows = conn.execute(_text("""
+                SELECT booster_box_id, active_listings_count
+                FROM box_metrics_unified
+                WHERE metric_date = :yesterday
+            """), {"yesterday": yesterday}).fetchall()
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            bid = str(d["booster_box_id"])
+            alc = d.get("active_listings_count")
+            if alc is not None:
+                yesterday_counts[bid] = int(alc)
+        logger.info(f"Loaded {len(yesterday_counts)} yesterday counts from DB")
+    except Exception as e:
+        logger.warning(f"Could not load yesterday counts from DB: {e}")
 
     for result in results:
         box_id = result['box_id']
         boxes_within_20pct = result.get('listings_within_20pct') or 0
         comparable_20pct = result.get('listings_within_20pct_comparable')  # Only set when floor dropped
 
-        if box_id not in hist:
-            hist[box_id] = []
-
         # Added/removed from yesterday's refresh to today's (daily cron: yesterday count vs today count)
-        yesterday_alc = None
-        for e in hist[box_id]:
-            if e.get('date') == yesterday:
-                yesterday_alc = e.get('active_listings_count')
-                if yesterday_alc is not None:
-                    yesterday_alc = int(yesterday_alc)
-                break
+        yesterday_alc = yesterday_counts.get(box_id)
 
         # Guard: if yesterday's count looks like bad data (>100), don't compute delta
         # This prevents the first correct run from showing a huge negative delta from old inflated data
         if yesterday_alc is not None and yesterday_alc > 100:
             logger.warning(f"Yesterday's count ({yesterday_alc}) for {box_id} looks inflated, skipping delta")
             boxes_added_today = None
-            boxes_removed_today = None
         else:
             # When floor dropped, use the comparable count (today's listings counted against
             # yesterday's higher 20% threshold) so the delta is apples-to-apples.
@@ -1219,60 +1226,19 @@ def save_results(results: List[Dict]):
             count_for_delta = comparable_20pct if comparable_20pct is not None else boxes_within_20pct
             delta = (count_for_delta - yesterday_alc) if yesterday_alc is not None else None
             boxes_added_today = delta
-            boxes_removed_today = max(0, -delta) if delta is not None else None
             if comparable_20pct is not None and yesterday_alc is not None:
                 logger.info(f"  Floor dropped for {box_id}: using comparable count {comparable_20pct} (vs today's {boxes_within_20pct}) for delta against yesterday's {yesterday_alc}")
 
-        # Build scraper entry; preserve Apify sales/volume from existing today entry if present
-        # (Phase 1 Apify runs first and writes sales/volume; we must not wipe them from JSON)
-        existing_today = next((e for e in hist[box_id] if e.get('date') == today), None)
-        # NOTE: Don't set floor_price_usd here - that's the market SALE price from Apify.
-        # Store listings floor separately as 'listings_floor_price' for reference.
-        entry = {
-            'date': today,
-            'source': 'tcgplayer_scraper',
-            'listings_floor_price': result.get('floor_price'),  # Renamed: lowest listing price (not market price)
-            'active_listings_count': boxes_within_20pct,
-            'listings_within_10pct_floor': result.get('listings_within_10pct_floor'),
-            'scrape_timestamp': result.get('scrape_timestamp'),
-            'pages_scraped': result.get('pages_scraped'),
-            'filters_applied': result.get('filters_applied'),
-            'boxes_added_today': boxes_added_today,
-            'boxes_removed_today': boxes_removed_today,
-        }
-        if existing_today:
-            # Preserve Apify data (floor_price_usd is market price from sales, not listings floor)
-            for key in ('floor_price_usd', 'boxes_sold_per_day', 'boxes_sold_today', 'bucket_quantity_sold', 'daily_volume_usd', 'market_price_usd', 'current_bucket_start', 'current_bucket_qty', 'delta_boxes_sold_today', 'delta_source'):
-                if existing_today.get(key) is not None and entry.get(key) is None:
-                    entry[key] = existing_today[key]
-            # Preserve all ebay_* fields from Phase 1b (eBay scraper runs before listings scraper)
-            for key in existing_today:
-                if key.startswith("ebay_") and existing_today[key] is not None and entry.get(key) is None:
-                    entry[key] = existing_today[key]
-
-        # Remove existing entry for today (update mode)
-        hist[box_id] = [e for e in hist[box_id] if e.get('date') != today]
-        hist[box_id].append(entry)
-
-        # Running 30d avg from historical data so DB stays up to date when we only write floor/listings
-        boxes_sold_30d_avg = get_box_30d_avg_sales(box_id) if get_box_30d_avg_sales else None
-        # Carry Apify sales/volume into DB if Phase 1 wrote them to JSON but DB write failed (so UI gets full data)
-        boxes_sold_per_day = entry.get('boxes_sold_per_day') if existing_today else None
-        unified_volume_usd = entry.get('unified_volume_usd') if existing_today else None
-
         # Write to DB using box_id directly (these ARE the DB UUIDs)
-        # NOTE: Do NOT write floor_price_usd here - that comes from Apify (sales data).
+        # NOTE: Do NOT write floor_price_usd here — that comes from Apify (sales data).
         # Listings scraper's floor is the lowest LISTING price which can be an outlier.
         # Only write active_listings_count, boxes_added_today from this scraper.
+        # COALESCE in the upsert ensures we don't overwrite Phase 1's sales/volume data.
         if upsert_daily_metrics:
             ok = upsert_daily_metrics(
                 booster_box_id=box_id,
                 metric_date=today,
-                floor_price_usd=None,  # Don't overwrite Apify's market price
-                boxes_sold_per_day=boxes_sold_per_day,
                 active_listings_count=boxes_within_20pct,
-                unified_volume_usd=unified_volume_usd,
-                boxes_sold_30d_avg=boxes_sold_30d_avg,
                 boxes_added_today=boxes_added_today,
             )
             if ok:
@@ -1281,12 +1247,11 @@ def save_results(results: List[Dict]):
                 logger.warning(f"DB upsert failed for {box_id} (e.g. missing FK)")
 
         add_remove = ""
-        if boxes_added_today is not None or boxes_removed_today is not None:
-            add_remove = f" | added={boxes_added_today or 0}, removed={boxes_removed_today or 0} (vs yesterday)"
+        if boxes_added_today is not None:
+            add_remove = f" | delta={boxes_added_today:+d} (vs yesterday)"
         logger.info(f"Saved {box_id}: {boxes_within_20pct} boxes (total quantity within 20% of floor) @ ${result.get('floor_price', 0):.2f}{add_remove}")
-    
-    # DB is source of truth — skip JSON backup/save (file may not exist in CI)
-    logger.info(f"Saved {len(results)} entries to DB (JSON write skipped — DB is source of truth)")
+
+    logger.info(f"Saved {len(results)} entries to DB")
 
 
 # ============================================================================

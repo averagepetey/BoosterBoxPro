@@ -688,19 +688,28 @@ def run_ebay_apify_scraper(
     else:
         logger.info("  Using tier-based allocation (insufficient pass rate data)")
 
-    # Load historical data
-    hist = {}
-    if HISTORICAL_FILE.exists():
-        with open(HISTORICAL_FILE) as f:
-            hist = json.load(f)
-
-    # Clear old eBay data (fresh start with Apify)
-    for box_id in hist:
-        for entry in hist[box_id]:
-            # Remove old 130point eBay fields
-            ebay_fields = [k for k in entry.keys() if k.startswith("ebay_") or k == "_ebay_sold_item_ids"]
-            for field in ebay_fields:
-                del entry[field]
+    # Load TCG floor prices from DB (Phase 1 Apify writes these before us)
+    _apify_tcg_floors = {}
+    try:
+        from app.services.db_historical_reader import _get_sync_engine
+        from sqlalchemy import text as _text
+        _engine = _get_sync_engine()
+        with _engine.connect() as conn:
+            rows = conn.execute(_text("""
+                SELECT DISTINCT ON (booster_box_id) booster_box_id, floor_price_usd
+                FROM box_metrics_unified
+                WHERE floor_price_usd IS NOT NULL
+                ORDER BY booster_box_id, metric_date DESC
+            """)).fetchall()
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            bid = str(d["booster_box_id"])
+            fp = d.get("floor_price_usd")
+            if fp is not None:
+                _apify_tcg_floors[bid] = float(fp)
+        logger.info(f"Loaded {len(_apify_tcg_floors)} TCG floor prices from DB")
+    except Exception as e:
+        logger.warning(f"Could not load TCG floors from DB: {e}")
 
     # Determine which boxes to scrape
     if debug_box_id:
@@ -729,16 +738,8 @@ def run_ebay_apify_scraper(
             max_results = get_max_results(tier)
             allocation_type = "tier"
 
-        # Get TCG market price for dynamic minimum
-        tcg_market_price = None
-        box_entries = hist.get(box_id, [])
-        for entry in sorted(box_entries, key=lambda e: e.get("date", ""), reverse=True):
-            if entry.get("market_price_usd"):
-                tcg_market_price = entry["market_price_usd"]
-                break
-            elif entry.get("floor_price_usd"):
-                tcg_market_price = entry["floor_price_usd"]
-                break
+        # Get TCG market price from DB for dynamic minimum
+        tcg_market_price = _apify_tcg_floors.get(box_id)
 
         # Calculate dynamic minimum price (65% of TCG market)
         if tcg_market_price and tcg_market_price > 0:
@@ -906,16 +907,6 @@ def run_ebay_apify_scraper(
                     "ebay_fetch_timestamp": reference_time.isoformat(),
                 }
                 items_yesterday = []  # Empty list for DB write
-
-            # Update historical entry for yesterday's date
-            if box_id not in hist:
-                hist[box_id] = []
-
-            yesterday_entry = next((e for e in hist[box_id] if e.get("date") == yesterday), None)
-            if yesterday_entry:
-                yesterday_entry.update(ebay_data)
-            else:
-                hist[box_id].append({"date": yesterday, **ebay_data})
 
             # Write to database for yesterday's date
             _write_ebay_to_db(box_id, yesterday, ebay_data, items_yesterday)

@@ -1305,14 +1305,48 @@ async def run_ebay_scraper(
     today = datetime.now().strftime("%Y-%m-%d")
     logger.info(f"Phase 1b: eBay scraper starting for {today}")
 
-    # Load historical entries (DB is source of truth; JSON may not exist in CI)
-    hist = {}
-    if HISTORICAL_FILE.exists():
-        try:
-            with open(HISTORICAL_FILE, "r") as f:
-                hist = json.load(f)
-        except Exception:
-            hist = {}
+    # Load reference data from DB (source of truth)
+    yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    today_tcg_floors = {}
+    yesterday_ebay = {}
+    try:
+        from app.services.db_historical_reader import _get_sync_engine
+        from sqlalchemy import text as _text
+        _engine = _get_sync_engine()
+        with _engine.connect() as conn:
+            # Today's TCG floor price (written by Phase 1 Apify before us)
+            rows = conn.execute(_text("""
+                SELECT booster_box_id, floor_price_usd
+                FROM box_metrics_unified
+                WHERE metric_date = :today
+            """), {"today": today}).fetchall()
+            for r in rows:
+                d = r._mapping if hasattr(r, "_mapping") else dict(r)
+                bid = str(d["booster_box_id"])
+                fp = d.get("floor_price_usd")
+                if fp is not None:
+                    today_tcg_floors[bid] = float(fp)
+
+            # Yesterday's eBay active count + TCG floor for delta / floor-drop compensation
+            rows = conn.execute(_text("""
+                SELECT e.booster_box_id,
+                       e.ebay_active_listings_count,
+                       b.floor_price_usd
+                FROM ebay_box_metrics_daily e
+                LEFT JOIN box_metrics_unified b
+                    ON e.booster_box_id = b.booster_box_id AND b.metric_date = :yesterday
+                WHERE e.metric_date = :yesterday
+            """), {"yesterday": yesterday_str}).fetchall()
+            for r in rows:
+                d = r._mapping if hasattr(r, "_mapping") else dict(r)
+                bid = str(d["booster_box_id"])
+                yesterday_ebay[bid] = {
+                    "ebay_active_listings": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else None,
+                    "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
+                }
+        logger.info(f"Loaded {len(today_tcg_floors)} TCG floors, {len(yesterday_ebay)} yesterday eBay records from DB")
+    except Exception as e:
+        logger.warning(f"Could not load reference data from DB: {e}")
 
     # Determine which boxes to scrape
     if debug_box_id:
@@ -1346,18 +1380,8 @@ async def run_ebay_scraper(
             min_price = config["min_price"]
             max_price = config["max_price"]
 
-            # Get TCG market price from historical entries for dynamic 81% floor
-            tcg_market_price = None
-            box_entries = hist.get(box_id, [])
-            if box_entries:
-                # Get most recent entry with market_price_usd
-                for entry in sorted(box_entries, key=lambda e: e.get("date", ""), reverse=True):
-                    if entry.get("market_price_usd"):
-                        tcg_market_price = entry["market_price_usd"]
-                        break
-                    elif entry.get("floor_price_usd"):
-                        tcg_market_price = entry["floor_price_usd"]
-                        break
+            # Get TCG market price from DB for dynamic 81% floor
+            tcg_market_price = today_tcg_floors.get(box_id)
 
             logger.info(f"Scraping sold data for {name}" + (f" (TCG market: ${tcg_market_price:.2f})" if tcg_market_price else ""))
 
@@ -1417,13 +1441,8 @@ async def run_ebay_scraper(
                     active_data[box_id] = []
                     continue
 
-                # Get TCG floor price from existing JSON for price floor check
-                tcg_floor = None
-                existing_today = next(
-                    (e for e in hist.get(box_id, []) if e.get("date") == today), None
-                )
-                if existing_today:
-                    tcg_floor = existing_today.get("floor_price_usd")
+                # Get TCG floor price from DB for price floor check
+                tcg_floor = today_tcg_floors.get(box_id)
 
                 filtered = filter_active_listings(
                     raw,
@@ -1445,78 +1464,39 @@ async def run_ebay_scraper(
         filtered_sold = sold_data.get(box_id, [])
         filtered_active = active_data.get(box_id, [])
 
-        if box_id not in hist:
-            hist[box_id] = []
-
-        # Cross-day dedup: identify items already seen in previous entries
-        prev_item_ids = set()
-        has_prev_tracking = False
-        for prev_entry in hist.get(box_id, []):
-            if prev_entry.get("date") != today:
-                prev_ids = prev_entry.get("_ebay_sold_item_ids", [])
-                if prev_ids:
-                    has_prev_tracking = True
-                for pid in prev_ids:
-                    prev_item_ids.add(pid)
-
-        # Track this run's item IDs for future cross-day dedup
+        # Cross-day dedup not available without JSON history.
+        # Pass None for new_sales_only so compute_ebay_fields uses yesterday-only counting.
         current_item_ids = [item["ebay_item_id"] for item in filtered_sold if item.get("ebay_item_id")]
 
-        # Truly new sales = not seen in any previous day
-        new_sales = [item for item in filtered_sold if item.get("ebay_item_id") not in prev_item_ids]
-
-        # Cold start: no previous _ebay_sold_item_ids → pass None so
-        # compute_ebay_fields falls back to yesterday-only counting
-        # (avoids inflating day 1 with the full 130point history window)
-        new_sales_arg = new_sales if has_prev_tracking else None
-
-        # Get TCG floor price for the 20%/10% window reference
-        existing_today = next(
-            (e for e in hist.get(box_id, []) if e.get("date") == today), None
-        )
-        tcg_floor = existing_today.get("floor_price_usd") if existing_today else None
+        # Get TCG floor price from DB for the 20%/10% window reference
+        tcg_floor = today_tcg_floors.get(box_id)
 
         ebay_fields = compute_ebay_fields(
             filtered_sold, today, filtered_active,
-            new_sales_only=new_sales_arg,
+            new_sales_only=None,
             tcg_floor_price=tcg_floor,
         )
         ebay_fields["_ebay_sold_item_ids"] = current_item_ids
 
         # Compute eBay active listing delta (mirrors TCGplayer boxes_added_today)
-        # Includes: floor-drop compensation, inflated count guard, day-1 null
+        # Includes: floor-drop compensation, inflated count guard
         ebay_active_count = ebay_fields.get("ebay_active_listings")
-        yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-        yesterday_entry = next(
-            (e for e in hist.get(box_id, []) if e.get("date") == yesterday_str), None
-        )
-        yesterday_ebay_active = (
-            yesterday_entry.get("ebay_active_listings")
-            if yesterday_entry else None
-        )
+        yd = yesterday_ebay.get(box_id, {})
+        yesterday_ebay_active = yd.get("ebay_active_listings")
+        yesterday_tcg_floor = yd.get("floor_price_usd")
 
-        # Day-1 guard: if yesterday has no ebay_listings_within_10pct_floor,
-        # it used the old unwindowed counts — force null to avoid bogus delta
-        yesterday_has_windowed = (
-            yesterday_entry.get("ebay_listings_within_10pct_floor") is not None
-            if yesterday_entry else False
-        )
-
-        if not yesterday_has_windowed:
+        if yesterday_ebay_active is None:
+            # No yesterday data — can't compute delta
             ebay_fields["ebay_boxes_added_today"] = None
             ebay_fields["ebay_boxes_removed_today"] = None
-        elif yesterday_ebay_active is not None and yesterday_ebay_active > 100:
+        elif yesterday_ebay_active > 100:
             # Inflated count guard — skip delta when yesterday looks like bad data
             logger.warning(f"Yesterday eBay count ({yesterday_ebay_active}) for {config['name']} looks inflated, skipping delta")
             ebay_fields["ebay_boxes_added_today"] = None
             ebay_fields["ebay_boxes_removed_today"] = None
-        elif ebay_active_count is not None and yesterday_ebay_active is not None:
+        elif ebay_active_count is not None:
             # Floor-drop compensation: when TCG floor dropped, recount today's
             # eBay listings against yesterday's higher threshold for apples-to-apples
-            yesterday_tcg_floor = (
-                yesterday_entry.get("floor_price_usd")
-                if yesterday_entry else None
-            )
             today_tcg_floor = tcg_floor
 
             count_for_delta = ebay_active_count  # default: today's 20% count
@@ -1546,15 +1526,6 @@ async def run_ebay_scraper(
             ebay_fields["ebay_boxes_added_today"] = None
             ebay_fields["ebay_boxes_removed_today"] = None
 
-        existing_today = next(
-            (e for e in hist[box_id] if e.get("date") == today), None
-        )
-        if existing_today:
-            for key, val in ebay_fields.items():
-                existing_today[key] = val
-        else:
-            hist[box_id].append({"date": today, **ebay_fields})
-
         write_ebay_to_db(box_id, today, ebay_fields, filtered_sold)
 
         logger.info(
@@ -1563,7 +1534,6 @@ async def run_ebay_scraper(
             f"median=${ebay_fields.get('ebay_median_price_usd', 'N/A')}"
         )
 
-    # DB is source of truth — skip JSON write (file may not exist in CI)
     logger.info(f"eBay sold data saved to DB ({results_count} boxes)")
 
     summary = {
@@ -1599,14 +1569,44 @@ async def run_ebay_active_scraper(
     today = datetime.now().strftime("%Y-%m-%d")
     logger.info(f"Phase 1b-B: eBay active listings (130point) starting for {today}")
 
-    # Load historical entries (DB is source of truth; JSON may not exist in CI)
-    hist = {}
-    if HISTORICAL_FILE.exists():
-        try:
-            with open(HISTORICAL_FILE, "r") as f:
-                hist = json.load(f)
-        except Exception:
-            hist = {}
+    # Load reference data from DB (source of truth)
+    yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    _active_tcg_floors = {}
+    _active_yesterday_ebay = {}
+    try:
+        from app.services.db_historical_reader import _get_sync_engine
+        from sqlalchemy import text as _text
+        _engine = _get_sync_engine()
+        with _engine.connect() as conn:
+            # Most recent TCG floor price per box (for 20%/10% window)
+            rows = conn.execute(_text("""
+                SELECT DISTINCT ON (booster_box_id) booster_box_id, floor_price_usd
+                FROM box_metrics_unified
+                WHERE floor_price_usd IS NOT NULL
+                ORDER BY booster_box_id, metric_date DESC
+            """)).fetchall()
+            for r in rows:
+                d = r._mapping if hasattr(r, "_mapping") else dict(r)
+                bid = str(d["booster_box_id"])
+                fp = d.get("floor_price_usd")
+                if fp is not None:
+                    _active_tcg_floors[bid] = float(fp)
+
+            # Yesterday's eBay active count for delta calculation
+            rows = conn.execute(_text("""
+                SELECT booster_box_id, ebay_active_listings_count
+                FROM ebay_box_metrics_daily
+                WHERE metric_date = :yesterday
+            """), {"yesterday": yesterday_str}).fetchall()
+            for r in rows:
+                d = r._mapping if hasattr(r, "_mapping") else dict(r)
+                bid = str(d["booster_box_id"])
+                ct = d.get("ebay_active_listings_count")
+                if ct is not None:
+                    _active_yesterday_ebay[bid] = int(ct)
+        logger.info(f"Loaded {len(_active_tcg_floors)} TCG floors, {len(_active_yesterday_ebay)} yesterday eBay counts from DB")
+    except Exception as e:
+        logger.warning(f"Could not load reference data from DB: {e}")
 
     # Determine which boxes to scrape
     if debug_box_id:
@@ -1638,16 +1638,8 @@ async def run_ebay_active_scraper(
                 logger.info(f"  {name}: 0 active listings found")
                 continue
 
-            # Get TCG floor price from most recent entry (not just today)
-            tcg_floor = None
-            box_entries = hist.get(box_id, [])
-            for entry in sorted(box_entries, key=lambda e: e.get("date", ""), reverse=True):
-                if entry.get("floor_price_usd"):
-                    tcg_floor = entry["floor_price_usd"]
-                    break
-                elif entry.get("market_price_usd"):
-                    tcg_floor = entry["market_price_usd"]
-                    break
+            # Get TCG floor price from DB (most recent available)
+            tcg_floor = _active_tcg_floors.get(box_id)
 
             if tcg_floor:
                 logger.info(f"    Using TCG floor ${tcg_floor:.2f} for price filtering")
@@ -1697,15 +1689,8 @@ async def run_ebay_active_scraper(
                 "ebay_active_low_price": round(min(active_prices), 2) if active_prices else None,
             }
 
-            # Calculate delta from yesterday
-            yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-            yesterday_entry = next(
-                (e for e in hist.get(box_id, []) if e.get("date") == yesterday_str), None
-            )
-            yesterday_ebay_active = (
-                yesterday_entry.get("ebay_active_listings")
-                if yesterday_entry else None
-            )
+            # Calculate delta from yesterday (DB-backed)
+            yesterday_ebay_active = _active_yesterday_ebay.get(box_id)
 
             if yesterday_ebay_active is not None and within_20pct is not None:
                 delta = within_20pct - yesterday_ebay_active
@@ -1714,19 +1699,6 @@ async def run_ebay_active_scraper(
             else:
                 active_fields["ebay_boxes_added_today"] = None
                 active_fields["ebay_boxes_removed_today"] = None
-
-            # Update historical entry
-            if box_id not in hist:
-                hist[box_id] = []
-
-            existing_today = next(
-                (e for e in hist.get(box_id, []) if e.get("date") == today), None
-            )
-            if existing_today:
-                for key, val in active_fields.items():
-                    existing_today[key] = val
-            else:
-                hist[box_id].append({"date": today, **active_fields})
 
             # Write to DB
             try:

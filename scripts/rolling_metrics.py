@@ -93,20 +93,15 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
 
 
 def _get_ebay_history(box_id: str) -> Dict[str, Dict[str, Any]]:
-    """Get eBay historical data from ebay_box_metrics_daily, keyed by date.
-
-    Note: Handles missing columns gracefully (e.g., ebay_active_listings_count
-    may not exist if DB migration hasn't been run).
-    """
+    """Get eBay historical data from ebay_box_metrics_daily, keyed by date."""
     from sqlalchemy import text
     try:
         engine = _get_sync_engine()
         with engine.connect() as conn:
-            # Query only columns that are guaranteed to exist
-            # ebay_active_listings_count may not exist in older schemas
             q = text("""
                 SELECT metric_date, ebay_sales_count, ebay_volume_usd,
-                       ebay_units_sold_count
+                       ebay_units_sold_count, ebay_active_listings_count,
+                       ebay_listings_added_today
                 FROM ebay_box_metrics_daily
                 WHERE booster_box_id = :bid
                 ORDER BY metric_date ASC
@@ -122,7 +117,8 @@ def _get_ebay_history(box_id: str) -> Dict[str, Dict[str, Any]]:
                 by_date[date_str] = {
                     "ebay_sold_today": float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0,
                     "ebay_daily_volume_usd": float(d["ebay_volume_usd"]) if d.get("ebay_volume_usd") is not None else 0,
-                    "ebay_active_listings": 0,
+                    "ebay_active_listings": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0,
+                    "ebay_boxes_added_today": int(d["ebay_listings_added_today"]) if d.get("ebay_listings_added_today") is not None else 0,
                 }
         return by_date
     except Exception as e:
@@ -384,6 +380,17 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
 
         updated += 1
 
+        # ── Combined TCG + eBay metrics for unified columns ──────────
+        # floor_price_usd stays TCGplayer-only (primary marketplace)
+        # boxes_sold_per_day = TCG + eBay sold
+        combined_sold = round(sales_per_day, 2) if sales_per_day else target_entry.get("boxes_sold_per_day")
+        # active_listings_count = TCG + eBay active (already computed as `active_listings`)
+        combined_active = active_listings if active_listings else target_entry.get("active_listings_count")
+        # boxes_added_today = TCG + eBay added
+        combined_added = _get_combined_added(target_entry)
+        if target_entry.get("boxes_added_today") is None and target_entry.get("ebay_boxes_added_today") is None:
+            combined_added = None  # Both null → null (not 0)
+
         # ── Write computed metrics to DB ──────────────────────────────
         try:
             from app.services.box_metrics_writer import upsert_daily_metrics
@@ -392,18 +399,18 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 booster_box_id=box_id,
                 metric_date=target_date,
                 floor_price_usd=target_entry.get("floor_price_usd"),
-                boxes_sold_per_day=target_entry.get("boxes_sold_per_day"),
-                active_listings_count=target_entry.get("active_listings_count"),
+                boxes_sold_per_day=combined_sold,
+                active_listings_count=combined_active,
                 unified_volume_usd=unified_volume_usd,
                 unified_volume_7d_ema=unified_volume_7d_ema,
                 boxes_sold_30d_avg=boxes_sold_30d_avg,
-                boxes_added_today=target_entry.get("boxes_added_today"),
+                boxes_added_today=combined_added,
                 liquidity_score=liquidity_score,
                 days_to_20pct_increase=days_to_20pct_increase,
                 avg_boxes_added_per_day=avg_boxes_added_per_day,
                 expected_days_to_sell=expected_time_to_sale_days,
                 floor_price_1d_change_pct=floor_price_1d_change_pct,
-                # New: actual daily volume columns
+                # Actual daily volume columns (TCG + eBay breakdowns preserved)
                 daily_volume_usd=daily_volume_usd,
                 tcg_daily_volume_usd=tcg_daily_volume_usd,
                 ebay_daily_volume_usd=ebay_daily_volume_usd,

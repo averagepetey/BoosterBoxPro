@@ -537,7 +537,7 @@ def detect_spike(current_value: float, baseline: float, threshold_pct: float = 5
 
 def refresh_all_boxes_sales_data() -> Dict[str, Any]:
     """
-    Pull fresh sales data from TCGplayer for all boxes and save to historical_entries.json.
+    Pull fresh sales data from TCGplayer for all boxes and save to DB.
 
     Sales computation uses actual weekly bucket data from Apify:
     - boxes_sold_per_day: average daily sales over the full active selling period
@@ -559,14 +559,33 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
     client = ApifyClient(api_token)
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # Load existing historical data
-    data_dir = Path(__file__).parent.parent.parent / "data"
-    historical_file = data_dir / "historical_entries.json"
-
+    # Load existing historical data from DB (source of truth)
     historical = {}
-    if historical_file.exists():
-        with open(historical_file) as f:
-            historical = json.load(f)
+    try:
+        from app.services.db_historical_reader import _get_sync_engine
+        from sqlalchemy import text as _text
+        _engine = _get_sync_engine()
+        with _engine.connect() as conn:
+            cutoff_30d = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            rows = conn.execute(_text("""
+                SELECT booster_box_id, metric_date, floor_price_usd, boxes_sold_per_day
+                FROM box_metrics_unified
+                WHERE metric_date >= :cutoff
+                ORDER BY booster_box_id, metric_date ASC
+            """), {"cutoff": cutoff_30d}).fetchall()
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            bid = str(d["booster_box_id"])
+            date_str = d["metric_date"].isoformat() if hasattr(d["metric_date"], "isoformat") else str(d["metric_date"])
+            entry = {
+                "date": date_str,
+                "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
+                "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+            }
+            historical.setdefault(bid, []).append(entry)
+        logger.info(f"Loaded {len(historical)} boxes with history from DB")
+    except Exception as e:
+        logger.warning(f"Could not load historical data from DB: {e}")
 
     results = []
     alerts = []
@@ -759,14 +778,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             logger.error(f"Error fetching {name}: {str(e)}")
             error_count += 1
 
-    # Save updated data to JSON
-    try:
-        data_dir.mkdir(parents=True, exist_ok=True)
-        with open(historical_file, "w") as f:
-            json.dump(historical, f, indent=2)
-        logger.debug(f"Saved historical data to {historical_file}")
-    except Exception as e:
-        logger.warning(f"Could not save to JSON (non-fatal): {e}")
+    # DB is source of truth — skip JSON write
 
     # Get top 5 by volume
     top_5 = sorted(results, key=lambda x: x["vol"], reverse=True)[:5]
