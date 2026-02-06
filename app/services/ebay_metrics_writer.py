@@ -173,6 +173,7 @@ def query_accumulated_ebay_metrics(
                     "volume": float(row[1]),
                     "median_price": float(row[2]) if row[2] is not None else None,
                 }
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"query_accumulated_ebay_metrics failed for {booster_box_id}/{sale_date}: {e}")
     return {"count": 0, "volume": 0.0, "median_price": None}
