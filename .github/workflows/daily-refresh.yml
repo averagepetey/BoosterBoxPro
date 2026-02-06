@@ -14,7 +14,7 @@
 # - Phase 1b-B (eBay Active): eBay for-sale listings via 130point.com (real-time inventory).
 # - Phase 2 (Scraper): TCGplayer listings + price — floor_price_usd, active_listings_count, boxes_added_today.
 # - Phase 3 (Rolling Metrics): Compute derived metrics (liquidity, days_to_20pct, EMAs) and upsert to DB.
-# After all phases, the script commits updated historical_entries.json back to repo and calls cache invalidation.
+# After all phases, the script calls cache invalidation so the API serves fresh data.
 
 name: Daily Refresh (Apify + Scraper)
 
@@ -23,9 +23,6 @@ on:
     # 12:05am EST = 05:05 UTC (adjust if DST: 04:05 or 05:05)
     - cron: '5 5 * * *'
   workflow_dispatch: # allow manual run
-
-permissions:
-  contents: write  # Required to push updated historical_entries.json
 
 jobs:
   daily-refresh:
@@ -68,10 +65,3 @@ jobs:
             python scripts/daily_refresh.py
           fi
 
-      - name: Commit updated historical data
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add data/historical_entries.json data/ebay_pass_rates.json
-          git diff --staged --quiet || git commit -m "Daily refresh: update historical data $(date -u +%Y-%m-%d)"
-          git push
