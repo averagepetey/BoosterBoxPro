@@ -129,3 +129,37 @@ def insert_ebay_sales_raw(
         return inserted
     except Exception:
         return inserted
+
+
+_accumulated_sql = text("""
+    SELECT
+        COUNT(DISTINCT ebay_item_id) AS count,
+        COALESCE(SUM(sold_price_usd), 0) AS volume,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price_usd) AS median_price
+    FROM ebay_sales_raw
+    WHERE booster_box_id = CAST(:bid AS uuid)
+      AND sale_date = CAST(:sd AS date)
+""")
+
+
+def query_accumulated_ebay_metrics(
+    booster_box_id: str,
+    sale_date: str,
+) -> Dict[str, Any]:
+    """Query ebay_sales_raw for the accumulated count/volume/median for a box+date.
+
+    Returns dict with keys: count (int), volume (float), median_price (float|None).
+    """
+    try:
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            row = conn.execute(_accumulated_sql, {"bid": booster_box_id, "sd": sale_date}).fetchone()
+            if row:
+                return {
+                    "count": int(row[0]),
+                    "volume": float(row[1]),
+                    "median_price": float(row[2]) if row[2] is not None else None,
+                }
+    except Exception:
+        pass
+    return {"count": 0, "volume": 0.0, "median_price": None}

@@ -745,6 +745,74 @@ async def get_box_time_series(
         return {"data": []}
 
 
+# eBay recent sales endpoint - individual listings with affiliate links
+@app.get("/booster-boxes/{box_id}/ebay-listings")
+@limiter.limit(RateLimits.BOX_DETAIL)
+async def get_box_ebay_listings(
+    request: Request,
+    box_id: str,
+    limit: int = Query(default=25, ge=1, le=100),
+    current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
+):
+    """
+    Get recent eBay sold listings for a booster box.
+    Returns individual sales with titles, prices, dates, and affiliate URLs.
+    """
+    from app.services.db_historical_reader import _get_sync_engine
+    from sqlalchemy import text
+
+    EPN_CAMPAIGN_ID = "YOUR_EPN_ID"
+
+    try:
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT
+                    ebay_item_id,
+                    sale_date,
+                    sold_price_usd,
+                    quantity,
+                    listing_type,
+                    raw_data->>'title' AS title,
+                    raw_data->>'item_url' AS item_url
+                FROM ebay_sales_raw
+                WHERE booster_box_id = CAST(:bid AS uuid)
+                ORDER BY sale_date DESC, sold_price_usd ASC
+                LIMIT :lim
+            """), {"bid": box_id, "lim": limit}).fetchall()
+
+        listings = []
+        for row in rows:
+            item_url = row[6] or ""
+            # Append eBay Partner Network affiliate params
+            if item_url and "ebay.com" in item_url:
+                separator = "&" if "?" in item_url else "?"
+                item_url = f"{item_url}{separator}mkevt=1&mkcid=1&mkrid=711-53200-19255-0&campid={EPN_CAMPAIGN_ID}&toolid=10001"
+
+            listings.append({
+                "ebay_item_id": row[0],
+                "sale_date": str(row[1]) if row[1] else None,
+                "sold_price_usd": float(row[2]) if row[2] is not None else None,
+                "quantity": row[3],
+                "listing_type": row[4],
+                "title": row[5],
+                "item_url": item_url,
+            })
+
+        return {
+            "data": listings,
+            "meta": {
+                "total": len(listings),
+                "box_id": box_id,
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error fetching eBay listings for {box_id}: {e}")
+        if settings.environment == "production":
+            return {"data": [], "meta": {"total": 0, "box_id": box_id}}
+        return {"data": [], "meta": {"total": 0, "box_id": box_id, "error": str(e)}}
+
+
 # Rank history endpoint - DISABLED for now
 # @app.get("/booster-boxes/{box_id}/rank-history")
 # async def get_box_rank_history(

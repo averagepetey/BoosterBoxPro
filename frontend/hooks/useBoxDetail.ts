@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getBoxDetail, getBoxTimeSeries, getBoxRankHistory, BoxDetail, TimeSeriesDataPoint, RankHistoryPoint } from '../lib/api/boxDetail';
+import { getBoxDetail, getBoxTimeSeries, getBoxRankHistory, getBoxEbayListings, BoxDetail, TimeSeriesDataPoint, RankHistoryPoint, EbayListingItem } from '../lib/api/boxDetail';
 
 export function useBoxDetail(id: string) {
   const [box, setBox] = useState<BoxDetail | null>(null);
@@ -141,6 +141,46 @@ export function useBoxRankHistory(id: string, days: number = 30) {
       cancelled = true;
     };
   }, [id, days]);
+
+  return { data, isLoading, error };
+}
+
+export function useBoxEbayListings(id: string, limit: number = 25) {
+  const [data, setData] = useState<EbayListingItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchEbayListings() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const listings = await getBoxEbayListings(id, limit);
+        if (!cancelled) {
+          setData(listings);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error('Failed to load eBay listings'));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    if (id) {
+      fetchEbayListings();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, limit]);
 
   return { data, isLoading, error };
 }

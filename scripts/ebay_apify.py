@@ -604,13 +604,50 @@ def _write_ebay_to_db(
     ebay_data: Dict[str, Any],
     filtered_items: List[Dict[str, Any]],
 ) -> bool:
-    """Write eBay data to database tables."""
+    """Write eBay data to database tables.
+
+    Order: raw insert (deduped) → query accumulated → upsert daily with accumulated values.
+    This ensures counts are monotonic even when Apify samples vary between runs.
+    """
     try:
-        from app.services.ebay_metrics_writer import upsert_ebay_daily_metrics, insert_ebay_sales_raw
+        from app.services.ebay_metrics_writer import (
+            upsert_ebay_daily_metrics,
+            insert_ebay_sales_raw,
+            query_accumulated_ebay_metrics,
+        )
     except ImportError:
         logger.warning("ebay_metrics_writer not available, skipping DB write")
         return False
 
+    # Step 1: Insert raw sales first (ON CONFLICT DO NOTHING → deduped)
+    sold_items = []
+    for item in filtered_items:
+        sold_items.append({
+            "ebay_item_id": item.get("item_id"),
+            "title": item.get("title", ""),
+            "sold_price_usd": item.get("price"),
+            "sold_date": item.get("sold_date"),
+            "item_url": item.get("url", ""),
+            "sale_type": "sold",
+        })
+
+    try:
+        inserted = insert_ebay_sales_raw(booster_box_id=box_id, sold_items=sold_items)
+        logger.debug(f"  DB: inserted {inserted} rows into ebay_sales_raw for {box_id}")
+    except Exception as e:
+        logger.warning(f"eBay raw sales DB write failed for {box_id}: {e}")
+
+    # Step 2: Query accumulated metrics from ebay_sales_raw (source of truth)
+    accumulated = query_accumulated_ebay_metrics(box_id, today)
+    if accumulated["count"] > 0:
+        ebay_data["ebay_sold_count"] = accumulated["count"]
+        ebay_data["ebay_sold_today"] = accumulated["count"]
+        ebay_data["ebay_volume_usd"] = accumulated["volume"]
+        if accumulated["median_price"] is not None:
+            ebay_data["ebay_median_price_usd"] = accumulated["median_price"]
+        logger.debug(f"  DB: accumulated metrics for {box_id}: {accumulated['count']} sales, ${accumulated['volume']:.2f} volume")
+
+    # Step 3: Upsert daily metrics with accumulated (corrected) values
     try:
         upsert_ebay_daily_metrics(
             booster_box_id=box_id,
@@ -629,24 +666,6 @@ def _write_ebay_to_db(
         logger.debug(f"  DB: upserted ebay_box_metrics_daily for {box_id}")
     except Exception as e:
         logger.warning(f"eBay daily metrics DB write failed for {box_id}: {e}")
-
-    # Convert filtered items to format expected by insert_ebay_sales_raw
-    sold_items = []
-    for item in filtered_items:
-        sold_items.append({
-            "ebay_item_id": item.get("item_id"),
-            "title": item.get("title", ""),
-            "sold_price_usd": item.get("price"),
-            "sold_date": item.get("sold_date"),
-            "item_url": item.get("url", ""),
-            "sale_type": "sold",
-        })
-
-    try:
-        inserted = insert_ebay_sales_raw(booster_box_id=box_id, sold_items=sold_items)
-        logger.debug(f"  DB: inserted {inserted} rows into ebay_sales_raw for {box_id}")
-    except Exception as e:
-        logger.warning(f"eBay raw sales DB write failed for {box_id}: {e}")
 
     return True
 

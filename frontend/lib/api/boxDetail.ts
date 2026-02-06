@@ -63,6 +63,16 @@ export interface RankHistoryPoint {
   rank: number;
 }
 
+export interface EbayListingItem {
+  ebay_item_id: string;
+  sale_date: string | null;
+  sold_price_usd: number | null;
+  quantity: number | null;
+  listing_type: string | null;
+  title: string | null;
+  item_url: string | null;
+}
+
 /**
  * Fetch box detail by ID
  * Uses Next.js API proxy to avoid CORS issues and handle slow backend
@@ -240,5 +250,36 @@ export async function toggleBoxFavorite(id: string, isFavorited: boolean): Promi
   }
   
   return !isFavorited;
+}
+
+/**
+ * Fetch recent eBay sold listings for a box
+ */
+export async function getBoxEbayListings(
+  id: string,
+  limit: number = 25
+): Promise<EbayListingItem[]> {
+  const url = `/api/booster-boxes/${id}/ebay-listings?limit=${limit}`;
+  const token = getAuthToken();
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers,
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      removeAuthToken();
+      if (typeof window !== 'undefined') window.location.href = '/landing';
+      throw new Error('Authentication required. Please log in to continue.');
+    }
+    throw new Error(`Failed to fetch eBay listings: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.data || [];
 }
 

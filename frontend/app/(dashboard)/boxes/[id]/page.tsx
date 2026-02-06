@@ -10,7 +10,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
 import { use } from 'react';
 import Link from 'next/link';
-import { useBoxDetail, useBoxTimeSeries } from '@/hooks/useBoxDetail';
+import { useBoxDetail, useBoxTimeSeries, useBoxEbayListings } from '@/hooks/useBoxDetail';
 import { useState } from 'react';
 import { PriceChart } from '@/components/charts/PriceChart';
 import { AdvancedMetricsTable } from '@/components/AdvancedMetricsTable';
@@ -25,6 +25,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     'floor_price', 
     timeRange === 'all' ? 365 : parseInt(timeRange)
   );
+  // eBay recent sales
+  const { data: ebayListings, isLoading: isLoadingEbayListings } = useBoxEbayListings(id);
   // Advanced Metrics table shows one entry per month
   const { data: allHistoricalData, isLoading: isLoadingAllHistorical } = useBoxTimeSeries(
     id,
@@ -823,6 +825,108 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Recent eBay Sales Section */}
+          {ebayListings.length > 0 && (
+            <div
+              className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
+              style={{
+                background: '#141414',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-lg lg:text-xl font-bold text-white">Recent eBay Sales</h2>
+                <svg className="w-5 h-5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6.5 3C3.46 3 1 5.46 1 8.5c0 4.03 4.08 7.02 10.27 12.06L12 21.18l.73-.62C18.92 15.52 23 12.53 23 8.5 23 5.46 20.54 3 17.5 3c-1.74 0-3.41.81-4.5 2.09C11.91 3.81 10.24 3 8.5 3h-2z"/>
+                </svg>
+              </div>
+
+              {isLoadingEbayListings ? (
+                <div className="h-32 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/30"></div>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop: Table layout */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/15">
+                          <th className="text-left py-2 px-3 text-white/50 text-xs font-medium uppercase tracking-wide">Title</th>
+                          <th className="text-right py-2 px-3 text-white/50 text-xs font-medium uppercase tracking-wide">Price</th>
+                          <th className="text-right py-2 px-3 text-white/50 text-xs font-medium uppercase tracking-wide">Date</th>
+                          <th className="text-right py-2 px-3 text-white/50 text-xs font-medium uppercase tracking-wide"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ebayListings.map((listing) => (
+                          <tr key={listing.ebay_item_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                            <td className="py-3 px-3 text-white/80 text-sm max-w-md truncate">{listing.title || 'eBay Listing'}</td>
+                            <td className="py-3 px-3 text-right text-white font-semibold text-sm">
+                              {listing.sold_price_usd != null ? formatCurrency(listing.sold_price_usd) : '--'}
+                            </td>
+                            <td className="py-3 px-3 text-right text-white/60 text-sm">{formatDate(listing.sale_date)}</td>
+                            <td className="py-3 px-3 text-right">
+                              {listing.item_url && (
+                                <a
+                                  href={listing.item_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-400/10 text-yellow-400 text-xs font-semibold hover:bg-yellow-400/20 transition-colors"
+                                >
+                                  View on eBay
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile: Card layout */}
+                  <div className="lg:hidden space-y-2">
+                    {ebayListings.map((listing) => (
+                      <div key={listing.ebay_item_id} className="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div className="text-white/80 text-sm truncate mb-2">{listing.title || 'eBay Listing'}</div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-white font-semibold text-sm">
+                              {listing.sold_price_usd != null ? formatCurrency(listing.sold_price_usd) : '--'}
+                            </span>
+                            <span className="text-white/40 text-xs ml-2">{formatDate(listing.sale_date)}</span>
+                          </div>
+                          {listing.item_url && (
+                            <a
+                              href={listing.item_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-yellow-400/10 text-yellow-400 text-xs font-semibold hover:bg-yellow-400/20 transition-colors"
+                            >
+                              eBay
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer note */}
+                  <div className="mt-4 pt-3 border-t border-white/10">
+                    <p className="text-white/40 text-xs">Showing completed eBay sales. Prices are final sold prices.</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
