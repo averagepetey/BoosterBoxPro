@@ -9,11 +9,11 @@ Runs in multiple phases:
 2. Listings Scraper - Scrapes active listings count from TCGplayer
 3. Rolling Metrics - Computes derived metrics and upserts to DB
 
-Schedule: cron at 10pm EST (03:00 UTC next day). Script adds a random 0–30 min delay
-so the actual run happens at a random time within the 10pm window (captures full day's sales).
+Schedule: cron at 05:05 UTC (12:05 AM EST / 1:05 AM EDT). Script adds a random 0–15 min
+delay so the actual run varies slightly (captures full day's sales).
 
 Run manually (immediate): python scripts/daily_refresh.py --no-delay
-Run via cron (10pm EST): schedule "0 3 * * *" (or "0 2 * * *" during EDT)
+Run via GitHub Actions: "5 5 * * *" (05:05 UTC daily)
 """
 
 import sys
@@ -345,28 +345,36 @@ def main():
     backend_url = os.environ.get("BACKEND_URL", "").rstrip("/")
     invalidate_secret = os.environ.get("INVALIDATE_CACHE_SECRET", "")
     if backend_url and invalidate_secret:
-        try:
-            import urllib.request
-            url = f"{backend_url}/admin/invalidate-cache"
-            logger.info(f"Calling POST {url} to invalidate caches...")
-            req = urllib.request.Request(
-                url,
-                method="POST",
-                headers={"X-Invalidate-Secret": invalidate_secret},
-            )
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                body = resp.read().decode() if hasattr(resp, "read") else ""
-                if resp.status in (200, 201):
-                    logger.info("✅ API caches invalidated – leaderboard and box detail will serve fresh data")
+        import urllib.request
+        import time as _time
+        url = f"{backend_url}/admin/invalidate-cache"
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(f"Calling POST {url} to invalidate caches (attempt {attempt}/{max_retries})...")
+                req = urllib.request.Request(
+                    url,
+                    method="POST",
+                    headers={"X-Invalidate-Secret": invalidate_secret},
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    body = resp.read().decode() if hasattr(resp, "read") else ""
+                    if resp.status in (200, 201):
+                        logger.info("✅ API caches invalidated – leaderboard and box detail will serve fresh data")
+                        break
+                    else:
+                        logger.warning(f"Invalidate cache returned status {resp.status}: {body[:200]}")
+            except Exception as e:
+                err_code = getattr(e, "code", None)
+                err_body = getattr(e, "read", lambda: None)()
+                if err_code is not None:
+                    logger.warning(f"Invalidate cache failed (attempt {attempt}): HTTP {err_code} – {(err_body.decode() if err_body else '')[:200]}")
                 else:
-                    logger.warning(f"Invalidate cache returned status {resp.status}: {body[:200]}")
-        except Exception as e:
-            err_code = getattr(e, "code", None)
-            err_body = getattr(e, "read", lambda: None)()
-            if err_code is not None:
-                logger.warning(f"Invalidate cache failed: HTTP {err_code} – check BACKEND_URL and INVALIDATE_CACHE_SECRET match your deployed backend. Body: {(err_body.decode() if err_body else '')[:200]}")
-            else:
-                logger.warning(f"Could not invalidate API cache: {e}")
+                    logger.warning(f"Invalidate cache failed (attempt {attempt}): {e}")
+                if attempt < max_retries:
+                    _time.sleep(5)
+                else:
+                    logger.error("Cache invalidation failed after all retries – leaderboard may serve stale data for up to 30 min")
     else:
         if not backend_url:
             logger.warning("BACKEND_URL not set – leaderboard/box detail will not auto-update until cache TTL expires; set BACKEND_URL secret (your deployed API URL).")

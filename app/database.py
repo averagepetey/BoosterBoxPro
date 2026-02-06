@@ -33,8 +33,8 @@ _engine_kw = dict(
     future=True,
     pool_pre_ping=True,
     pool_recycle=3600,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=3,
+    max_overflow=2,
 )
 if _connect_args:
     _engine_kw["connect_args"] = _connect_args
