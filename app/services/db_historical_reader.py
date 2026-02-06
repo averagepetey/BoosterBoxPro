@@ -1,10 +1,10 @@
 """
-DB-backed historical data reader.
-Returns the same list-of-dict shape as historical_entries.json so callers
-(get_box_price_history, get_rolling_volume_sum, etc.) see no change.
+DB-backed historical data reader — single source of truth for all historical data.
+Reads from box_metrics_unified and returns list-of-dict rows for callers
+(get_box_price_history, get_rolling_volume_sum, etc.).
 
-Used when prefer_db=True: read from box_metrics_unified instead of JSON.
-No calculations or formulas change—only the source of the rows.
+All API endpoints read through this module. No calculations happen here;
+derived metrics are pre-computed by rolling_metrics.py (Phase 3) and stored in DB.
 """
 
 from __future__ import annotations

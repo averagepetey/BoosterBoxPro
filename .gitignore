@@ -87,3 +87,9 @@ dmypy.json
 *.pyc
 __pycache__/
 
+# Stale data files (DB is source of truth)
+data/historical_entries.json
+data/historical_entries_backup_*.json
+data/historical_entries_pre_*.json
+data/debug_html/
+

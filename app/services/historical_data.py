@@ -3,46 +3,13 @@ Historical Data Service
 Handles loading and processing historical data for boxes
 """
 
-import json
-import time
-from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-# In-memory cache for load_historical_entries to avoid re-reading JSON on every box
-# (leaderboard calls get_box_historical_data 4+ times per box; this cuts file reads to 1 per minute)
-_historical_entries_cache: Optional[Dict[str, List[Dict[str, Any]]]] = None
-_historical_entries_cache_time: float = 0
-_HISTORICAL_CACHE_TTL_SECONDS: float = 60.0
-
 # First month: use ramp formula when we have no daily data. Once we have this many entries
 # in the last 30d (from daily refreshes), we use rolling total only.
 ROLLING_MIN_ENTRIES_30D = 7
-
-
-def load_historical_entries() -> Dict[str, List[Dict[str, Any]]]:
-    """Load all historical entries from JSON file (cached 60s to speed up leaderboard)."""
-    global _historical_entries_cache, _historical_entries_cache_time
-    now = time.monotonic()
-    if _historical_entries_cache is not None and (now - _historical_entries_cache_time) < _HISTORICAL_CACHE_TTL_SECONDS:
-        return _historical_entries_cache
-    historical_file = Path(__file__).parent.parent.parent / "data" / "historical_entries.json"
-    if not historical_file.exists():
-        _historical_entries_cache = {}
-        _historical_entries_cache_time = now
-        return _historical_entries_cache
-    with open(historical_file, 'r') as f:
-        _historical_entries_cache = json.load(f)
-    _historical_entries_cache_time = now
-    return _historical_entries_cache
-
-
-def invalidate_historical_entries_cache() -> None:
-    """Clear in-memory historical entries cache so next load reads fresh from file/DB."""
-    global _historical_entries_cache, _historical_entries_cache_time
-    _historical_entries_cache = None
-    _historical_entries_cache_time = 0
 
 
 # Mapping of database UUIDs to old leaderboard UUIDs
@@ -193,39 +160,16 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 def get_box_historical_data(box_id: str, prefer_db: bool = True) -> List[Dict[str, Any]]:
     """
-    Get historical data for a specific box.
-    When prefer_db=True (default), reads from box_metrics_unified first; falls back to
-    historical_entries.json so behavior and calculations stay the same.
-    Merges data from both database UUID and old leaderboard UUID when using JSON.
+    Get historical data for a specific box from box_metrics_unified in the database.
+    Queries by box_id and also by resolved_id (legacy UUID) to pick up backfill rows.
     """
-    # Prefer DB: same entry shape, no formula changes.
-    # Query by box_id first (what booster_boxes.id uses; listings scraper writes this).
-    # Also query by resolved_id (TCGPlayer/DB UUID) so we pick up any legacy backfill rows.
-    if prefer_db:
-        try:
-            from app.services.db_historical_reader import get_box_historical_entries_from_db
-            resolved_id = LEADERBOARD_TO_DB_UUID_MAP.get(box_id, box_id)
-            db_entries = get_box_historical_entries_from_db(box_id)
-            if resolved_id != box_id:
-                alt_entries = get_box_historical_entries_from_db(resolved_id)
-                db_entries = list(db_entries) + list(alt_entries)
-            if db_entries:
-                entries = merge_same_date_entries(db_entries)
-                entries.sort(key=lambda x: x.get('date', ''))
-                return entries
-        except Exception:
-            pass
-    # Fallback: JSON (unchanged behavior)
-    historical_data = load_historical_entries()
-    entries = list(historical_data.get(box_id, []))
-    alternate_id = None
-    if box_id in DB_TO_LEADERBOARD_UUID_MAP:
-        alternate_id = DB_TO_LEADERBOARD_UUID_MAP[box_id]
-    elif box_id in LEADERBOARD_TO_DB_UUID_MAP:
-        alternate_id = LEADERBOARD_TO_DB_UUID_MAP[box_id]
-    if alternate_id and alternate_id in historical_data:
-        entries.extend(historical_data[alternate_id])
-    entries = merge_same_date_entries(entries)
+    from app.services.db_historical_reader import get_box_historical_entries_from_db
+    resolved_id = LEADERBOARD_TO_DB_UUID_MAP.get(box_id, box_id)
+    db_entries = get_box_historical_entries_from_db(box_id)
+    if resolved_id != box_id:
+        alt_entries = get_box_historical_entries_from_db(resolved_id)
+        db_entries = list(db_entries) + list(alt_entries)
+    entries = merge_same_date_entries(db_entries)
     entries.sort(key=lambda x: x.get('date', ''))
     return entries
 
@@ -493,47 +437,6 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                     result[i]['unified_volume_7d_ema'] = (curr_volume * alpha) + (prev_ema * (1 - alpha))
     
     return result
-
-
-def calculate_monthly_rankings() -> Dict[str, Dict[str, int]]:
-    """
-    Calculate rankings for each month based on historical floor prices.
-    Returns: {date: {box_id: rank}}
-    """
-    historical_data = load_historical_entries()
-    
-    # Group entries by date
-    entries_by_date: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-    
-    for box_id, entries in historical_data.items():
-        for entry in entries:
-            date = entry.get('date')
-            if date:
-                entries_by_date[date].append({
-                    'box_id': box_id,
-                    'floor_price_usd': entry.get('floor_price_usd', 0),
-                    'date': date,
-                })
-    
-    # Calculate rankings for each date
-    rankings_by_date: Dict[str, Dict[str, int]] = {}
-    
-    for date, entries in entries_by_date.items():
-        # Sort by floor price (descending - higher price = better rank)
-        sorted_entries = sorted(
-            entries,
-            key=lambda x: x.get('floor_price_usd', 0),
-            reverse=True
-        )
-        
-        # Assign ranks (1 = highest price)
-        date_rankings = {}
-        for rank, entry in enumerate(sorted_entries, start=1):
-            date_rankings[entry['box_id']] = rank
-        
-        rankings_by_date[date] = date_rankings
-    
-    return rankings_by_date
 
 
 def get_box_30d_avg_sales(box_id: str) -> Optional[float]:
@@ -886,54 +789,6 @@ def get_box_30d_price_change_absolute(box_id: str) -> Optional[float]:
     # Calculate absolute dollar change
     change_absolute = current_price - past_price
     return round(change_absolute, 2)
-
-
-def get_box_rank_history(box_id: str, days: Optional[int] = None) -> List[Dict[str, Any]]:
-    """Get rank history for a box based on historical data"""
-    monthly_rankings = calculate_monthly_rankings()
-    
-    # Get all dates this box has data for
-    historical_data = load_historical_entries()
-    box_entries = historical_data.get(box_id, [])
-    
-    # Get unique dates
-    dates = sorted(set(entry.get('date') for entry in box_entries if entry.get('date')))
-    
-    # Filter by days if specified
-    if days:
-        cutoff_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-        dates = [d for d in dates if d >= cutoff_date]
-    
-    # Build rank history
-    rank_history = []
-    for date in dates:
-        if date in monthly_rankings and box_id in monthly_rankings[date]:
-            rank_history.append({
-                'date': date,
-                'rank': monthly_rankings[date][box_id],
-            })
-    
-    return rank_history
-
-
-def get_all_boxes_for_date(date: str) -> List[Dict[str, Any]]:
-    """Get all boxes with their data for a specific date"""
-    historical_data = load_historical_entries()
-    boxes_for_date = []
-    
-    for box_id, entries in historical_data.items():
-        # Find entry for this date
-        entry = next((e for e in entries if e.get('date') == date), None)
-        if entry:
-            boxes_for_date.append({
-                'box_id': box_id,
-                'date': date,
-                'floor_price_usd': entry.get('floor_price_usd'),
-                'active_listings_count': entry.get('active_listings_count'),
-                'boxes_sold_per_day': entry.get('boxes_sold_per_day'),
-            })
-    
-    return boxes_for_date
 
 
 def get_rolling_volume_sum(box_id: str, days: int = 30) -> Optional[float]:

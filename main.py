@@ -228,12 +228,6 @@ async def admin_invalidate_cache(request: Request):
         return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
     # Clear in-memory leaderboard cache (defined below in this module)
     _leaderboard_cache.clear()
-    # Clear historical entries JSON cache so next request reads fresh from file/DB
-    try:
-        from app.services.historical_data import invalidate_historical_entries_cache
-        invalidate_historical_entries_cache()
-    except Exception as e:
-        logger.warning(f"invalidate_historical_entries_cache: {e}")
     # Clear Redis caches (leaderboard, box detail, time-series)
     redis_deleted = 0
     try:
@@ -241,7 +235,7 @@ async def admin_invalidate_cache(request: Request):
         redis_deleted = cache_service.invalidate_all_data_caches()
     except Exception as e:
         logger.warning(f"cache_service.invalidate_all_data_caches: {e}")
-    logger.info("Cache invalidated (leaderboard in-memory + historical entries + Redis)")
+    logger.info("Cache invalidated (leaderboard in-memory + Redis)")
     return {"ok": True, "message": "Caches invalidated", "redis_keys_deleted": redis_deleted}
 
 
@@ -645,9 +639,6 @@ async def get_box_time_series(
     """
     Get historical time-series data for a booster box.
     Requires authentication and active subscription (trial or paid).
-    """
-    """
-    Get historical time-series data for a box from historical_entries.json
     """
     import json
     from pathlib import Path
