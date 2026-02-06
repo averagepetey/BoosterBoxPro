@@ -345,15 +345,10 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 raw_days = supply / net_burn
                 expected_time_to_sale_days = round(max(1.0, min(365.0, raw_days)), 2)
 
-        # ── 6b. liquidity_label (from expected_time_to_sale_days) ────
-        liquidity_label = None
-        if expected_time_to_sale_days is not None:
-            if expected_time_to_sale_days < 5:
-                liquidity_label = "High"
-            elif expected_time_to_sale_days <= 15:
-                liquidity_label = "Medium"
-            else:
-                liquidity_label = "Low"
+        # ── 6. liquidity_score (sold_30d_avg / active_listings × 100, cap 10) ──
+        liquidity_score = None
+        if has_30d_data and sold_30d_avg_raw and active_listings and active_listings > 0:
+            liquidity_score = round(min(10.0, (sold_30d_avg_raw / active_listings) * 100), 2)
 
         # ── 9. Volume metrics ────────────────────────────────────────
         # TCG daily volume = boxes_sold × floor_price (estimated, we don't have actual sale prices)
@@ -414,7 +409,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 unified_volume_7d_ema=unified_volume_7d_ema,
                 boxes_sold_30d_avg=boxes_sold_30d_avg,
                 boxes_added_today=target_entry.get("boxes_added_today"),
-                liquidity_score=None,  # Deprecated, use liquidity_label
+                liquidity_score=liquidity_score,
                 days_to_20pct_increase=days_to_20pct_increase,
                 avg_boxes_added_per_day=avg_boxes_added_per_day,
                 expected_days_to_sell=expected_time_to_sale_days,

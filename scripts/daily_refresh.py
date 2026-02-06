@@ -283,7 +283,7 @@ def main():
             save_completion_status(status)
             return 1
     
-    # Phase 3: Rolling Metrics (non-fatal — raw data from Phase 1+2 is already saved)
+    # Phase 3: Rolling Metrics (FATAL — derived metrics must be computed for API to serve correct data)
     logger.info("")
     logger.info("=" * 50)
     logger.info("Phase 3: Rolling Metrics — Computing Derived Metrics")
@@ -300,9 +300,18 @@ def main():
         logger.info(f"✅ Phase 3 complete: {rm_result.get('boxes_updated', 0)} boxes, {rm_result.get('db_updated', 0)} DB rows")
     except Exception as e:
         status["rolling_metrics"]["error"] = str(e)
-        logger.warning(f"⚠️  Phase 3 (Rolling Metrics) failed (non-fatal): {e}")
+        logger.error(f"Phase 3 (Rolling Metrics) failed: {e}")
         import traceback
-        logger.warning(traceback.format_exc())
+        logger.error(traceback.format_exc())
+
+        try:
+            from app.services.alert_service import alert_cron_failure
+            alert_cron_failure("daily-refresh", str(e), "Rolling Metrics")
+        except Exception as alert_err:
+            logger.warning(f"Failed to send alert: {alert_err}")
+
+        save_completion_status(status)
+        return 1
 
     # Calculate duration
     end_time = datetime.now()

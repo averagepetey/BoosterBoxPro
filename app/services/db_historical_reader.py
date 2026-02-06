@@ -69,6 +69,20 @@ def _row_to_entry(row: Any) -> Dict[str, Any]:
         "daily_volume_usd": daily_volume_usd,
         "boxes_sold_30d_avg": _f(d.get("boxes_sold_30d_avg")),
         "boxes_added_today": _f(d.get("boxes_added_today"), int) if d.get("boxes_added_today") is not None else None,
+        # Volume breakdown + eBay fields (written by rolling_metrics Phase 3)
+        "tcg_daily_volume_usd": _f(d.get("tcg_daily_volume_usd")),
+        "ebay_daily_volume_usd": _f(d.get("ebay_daily_volume_usd")),
+        "ebay_units_sold_count": _f(d.get("ebay_units_sold_count")),
+        "ebay_active_listings_count": _f(d.get("ebay_active_listings_count"), int) if d.get("ebay_active_listings_count") is not None else None,
+        # Aliases expected by leaderboard / box detail
+        "daily_volume_tcg_usd": _f(d.get("tcg_daily_volume_usd")),
+        "daily_volume_ebay_usd": _f(d.get("ebay_daily_volume_usd")),
+        "ebay_sold_today": _f(d.get("ebay_units_sold_count")),
+        "ebay_active_listings": _f(d.get("ebay_active_listings_count"), int) if d.get("ebay_active_listings_count") is not None else None,
+        "liquidity_score": _f(d.get("liquidity_score")),
+        "days_to_20pct_increase": _f(d.get("days_to_20pct_increase")),
+        "expected_days_to_sell": _f(d.get("expected_days_to_sell")),
+        "avg_boxes_added_per_day": _f(d.get("avg_boxes_added_per_day")),
     }
     return entry
 
@@ -88,7 +102,11 @@ def get_box_historical_entries_from_db(booster_box_id: str) -> List[Dict[str, An
             q = text("""
                 SELECT metric_date, floor_price_usd, floor_price_1d_change_pct,
                        boxes_sold_per_day, active_listings_count, unified_volume_usd,
-                       unified_volume_7d_ema, boxes_sold_30d_avg, boxes_added_today
+                       unified_volume_7d_ema, boxes_sold_30d_avg, boxes_added_today,
+                       daily_volume_usd, tcg_daily_volume_usd, ebay_daily_volume_usd,
+                       ebay_units_sold_count, ebay_active_listings_count,
+                       liquidity_score, days_to_20pct_increase,
+                       expected_days_to_sell, avg_boxes_added_per_day
                 FROM box_metrics_unified
                 WHERE booster_box_id = :bid
                 ORDER BY metric_date ASC
@@ -114,7 +132,11 @@ def get_all_boxes_historical_entries_from_db(box_ids: List[str]) -> Dict[str, Li
             q = text("""
                 SELECT booster_box_id, metric_date, floor_price_usd, floor_price_1d_change_pct,
                        boxes_sold_per_day, active_listings_count, unified_volume_usd,
-                       unified_volume_7d_ema, boxes_sold_30d_avg, boxes_added_today
+                       unified_volume_7d_ema, boxes_sold_30d_avg, boxes_added_today,
+                       daily_volume_usd, tcg_daily_volume_usd, ebay_daily_volume_usd,
+                       ebay_units_sold_count, ebay_active_listings_count,
+                       liquidity_score, days_to_20pct_increase,
+                       expected_days_to_sell, avg_boxes_added_per_day
                 FROM box_metrics_unified
                 WHERE booster_box_id IN :ids
                 ORDER BY booster_box_id, metric_date ASC
@@ -125,18 +147,39 @@ def get_all_boxes_historical_entries_from_db(box_ids: List[str]) -> Dict[str, Li
             d = r._mapping if hasattr(r, "_mapping") else dict(r)
             bid = str(d["booster_box_id"])
             uv = float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None
+            def _f(v, cast=float):
+                if v is None:
+                    return None
+                try:
+                    return cast(v)
+                except (TypeError, ValueError):
+                    return None
             ent = {
                 "date": d["metric_date"].isoformat() if hasattr(d.get("metric_date"), "isoformat") else str(d.get("metric_date") or ""),
-                "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
-                "floor_price_1d_change_pct": float(d["floor_price_1d_change_pct"]) if d.get("floor_price_1d_change_pct") is not None else None,
-                "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
-                "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
-                "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
+                "floor_price_usd": _f(d.get("floor_price_usd")),
+                "floor_price_1d_change_pct": _f(d.get("floor_price_1d_change_pct")),
+                "boxes_sold_per_day": _f(d.get("boxes_sold_per_day")),
+                "boxes_sold_today": _f(d.get("boxes_sold_per_day")),
+                "active_listings_count": _f(d.get("active_listings_count"), int),
                 "unified_volume_usd": uv,
-                "unified_volume_7d_ema": float(d["unified_volume_7d_ema"]) if d.get("unified_volume_7d_ema") is not None else None,
-                "daily_volume_usd": float(d["daily_volume_usd"]) if d.get("daily_volume_usd") is not None else None,
-                "boxes_sold_30d_avg": float(d["boxes_sold_30d_avg"]) if d.get("boxes_sold_30d_avg") is not None else None,
-                "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
+                "unified_volume_7d_ema": _f(d.get("unified_volume_7d_ema")),
+                "daily_volume_usd": _f(d.get("daily_volume_usd")),
+                "boxes_sold_30d_avg": _f(d.get("boxes_sold_30d_avg")),
+                "boxes_added_today": _f(d.get("boxes_added_today"), int),
+                # Volume breakdown + eBay fields
+                "tcg_daily_volume_usd": _f(d.get("tcg_daily_volume_usd")),
+                "ebay_daily_volume_usd": _f(d.get("ebay_daily_volume_usd")),
+                "ebay_units_sold_count": _f(d.get("ebay_units_sold_count")),
+                "ebay_active_listings_count": _f(d.get("ebay_active_listings_count"), int),
+                # Aliases expected by leaderboard / box detail
+                "daily_volume_tcg_usd": _f(d.get("tcg_daily_volume_usd")),
+                "daily_volume_ebay_usd": _f(d.get("ebay_daily_volume_usd")),
+                "ebay_sold_today": _f(d.get("ebay_units_sold_count")),
+                "ebay_active_listings": _f(d.get("ebay_active_listings_count"), int),
+                "liquidity_score": _f(d.get("liquidity_score")),
+                "days_to_20pct_increase": _f(d.get("days_to_20pct_increase")),
+                "expected_days_to_sell": _f(d.get("expected_days_to_sell")),
+                "avg_boxes_added_per_day": _f(d.get("avg_boxes_added_per_day")),
             }
             out.setdefault(bid, []).append(ent)
         return out
