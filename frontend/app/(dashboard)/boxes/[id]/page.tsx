@@ -806,9 +806,13 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <div className="py-3 px-2 lg:px-3 text-white/50 text-xs lg:text-sm">Listed Today</div>
                 <div className="py-3 px-2 lg:px-3">
                   <div className="text-base lg:text-xl font-bold text-white">
-                    {box.metrics.boxes_added_today != null
-                      ? `${box.metrics.boxes_added_today > 0 ? '+' : ''}${box.metrics.boxes_added_today}`
-                      : '--'}
+                    {(() => {
+                      const combined = box.metrics.boxes_added_today;
+                      const ebay = box.metrics.ebay_boxes_added_today;
+                      const val = (combined != null && ebay != null) ? combined - ebay : combined;
+                      if (val == null) return '--';
+                      return `${val > 0 ? '+' : ''}${val}`;
+                    })()}
                   </div>
                 </div>
                 <div className="py-3 px-2 lg:px-3">
