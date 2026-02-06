@@ -568,7 +568,8 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
         with _engine.connect() as conn:
             cutoff_30d = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
             rows = conn.execute(_text("""
-                SELECT booster_box_id, metric_date, floor_price_usd, boxes_sold_per_day
+                SELECT booster_box_id, metric_date, floor_price_usd, boxes_sold_per_day,
+                       current_bucket_start, current_bucket_qty
                 FROM box_metrics_unified
                 WHERE metric_date >= :cutoff
                 ORDER BY booster_box_id, metric_date ASC
@@ -581,6 +582,8 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 "date": date_str,
                 "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
                 "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+                "current_bucket_start": d.get("current_bucket_start"),
+                "current_bucket_qty": int(d["current_bucket_qty"]) if d.get("current_bucket_qty") is not None else None,
             }
             historical.setdefault(bid, []).append(entry)
         logger.info(f"Loaded {len(historical)} boxes with history from DB")
@@ -745,16 +748,18 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 vals = [_safe_float(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0) for e in recent_30]
                 boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
 
-            # Write to DB
+            # Write to DB: use daily delta (actual sales today) not weekly average
             try:
                 from app.services.box_metrics_writer import upsert_daily_metrics
                 upsert_daily_metrics(
                     booster_box_id=box_id,
                     metric_date=today,
                     floor_price_usd=floor,
-                    boxes_sold_per_day=boxes_sold_per_day,
+                    boxes_sold_per_day=boxes_sold_today,
                     unified_volume_usd=volume_30d,
                     boxes_sold_30d_avg=boxes_sold_30d_avg,
+                    current_bucket_start=current_bucket_start,
+                    current_bucket_qty=current_bucket_qty,
                 )
             except Exception as e:
                 logger.warning(f"DB upsert skipped for {name}: {e}")

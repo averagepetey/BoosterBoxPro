@@ -444,8 +444,8 @@ def detect_lot_quantity(title: str) -> int:
     if match:
         return int(match.group(1))
 
-    # Pattern: "lot of 2", "lot of 3"
-    match = re.search(r'\blot\s+of\s+(\d+)\b', t)
+    # Pattern: "lot of 2", "lot of 3", "lot of (4)"
+    match = re.search(r'\blot\s+of\s+\(?(\d+)\)?\b', t)
     if match:
         return int(match.group(1))
 

@@ -218,6 +218,27 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
 
         # Entry ~30 days ago
         target_dt = datetime.strptime(target_date, "%Y-%m-%d")
+
+        # Fix date alignment: eBay Apify counts yesterday's sold listings and
+        # writes them to yesterday's date in ebay_box_metrics_daily.  Phase 3
+        # runs for today, so today's entry has no eBay sold data yet (it will
+        # be written by tomorrow's pipeline run).  Pull yesterday's eBay sold
+        # data into today's entry so combined metrics include eBay sales.
+        # (Active listings from Phase 1b-B are already correct for today.)
+        yesterday_str = (target_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+        if yesterday_str in ebay_by_date and target_date not in ebay_by_date:
+            ebay_yday = ebay_by_date[yesterday_str]
+            target_entry["ebay_sold_today"] = ebay_yday.get("ebay_sold_today", 0)
+            target_entry["ebay_daily_volume_usd"] = ebay_yday.get("ebay_daily_volume_usd", 0)
+        elif yesterday_str in ebay_by_date and target_date in ebay_by_date:
+            # Today has eBay data (e.g. active listings from Phase 1b-B) but
+            # sold data is still on yesterday's row.  Merge sold fields only.
+            ebay_yday = ebay_by_date[yesterday_str]
+            if not target_entry.get("ebay_sold_today"):
+                target_entry["ebay_sold_today"] = ebay_yday.get("ebay_sold_today", 0)
+            if not target_entry.get("ebay_daily_volume_usd"):
+                target_entry["ebay_daily_volume_usd"] = ebay_yday.get("ebay_daily_volume_usd", 0)
+
         cutoff_30d = (target_dt - timedelta(days=30)).strftime("%Y-%m-%d")
         entry_30d_ago = None
         for e in reversed(sorted_ents[:target_idx]):

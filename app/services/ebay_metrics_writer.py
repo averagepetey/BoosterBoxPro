@@ -109,12 +109,14 @@ def insert_ebay_sales_raw(
                     ebay_item_id = item.get("ebay_item_id")
                     if not ebay_item_id:
                         continue
+                    # Caller sends sold_price_usd (dollars, float)
+                    price_usd = item.get("sold_price_usd") or 0
                     conn.execute(_insert_raw_sql, {
                         "bid": booster_box_id,
                         "sd": item.get("sold_date"),
                         "st": item.get("sold_date"),  # Use date as timestamp fallback
                         "eid": ebay_item_id,
-                        "sp": (item.get("sold_price_cents") or 0) / 100.0,
+                        "sp": float(price_usd),
                         "qty": 1,
                         "lt": item.get("sale_type"),
                         "rd": json.dumps({
