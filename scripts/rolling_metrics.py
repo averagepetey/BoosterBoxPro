@@ -42,21 +42,10 @@ logger = logging.getLogger(__name__)
 DATA_EPOCH = "2026-02-02"
 
 
-_engine = None
-
 def _get_sync_engine():
-    """Get SQLAlchemy sync engine for database queries (singleton)."""
-    global _engine
-    if _engine is None:
-        from sqlalchemy import create_engine
-        from app.config import settings
-        url = settings.database_url
-        if "+asyncpg" in url:
-            url = url.replace("postgresql+asyncpg", "postgresql+psycopg2", 1)
-        elif "postgresql://" in url and "+" not in url:
-            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
-        _engine = create_engine(url, pool_pre_ping=True, pool_recycle=3600, pool_size=3, max_overflow=2)
-    return _engine
+    """Reuse the shared sync engine from db_historical_reader (single pool)."""
+    from app.services.db_historical_reader import _get_sync_engine as _shared_engine
+    return _shared_engine()
 
 
 def _get_all_box_ids() -> List[str]:
