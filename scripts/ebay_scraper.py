@@ -900,15 +900,32 @@ async def scrape_active_listings_browser(
             locale="en-US",
         )
         page = await context.new_page()
+        # Apply stealth patches so Cloudflare doesn't block headless Chromium
+        try:
+            from playwright_stealth import Stealth
+            stealth = Stealth()
+            await stealth.apply_stealth_async(page)
+        except ImportError:
+            logger.warning("playwright_stealth not installed, skipping stealth patches")
 
         try:
             logger.info(f"Active listings: launching browser (profile: {profile['name']})")
-            await page.goto(
-                "https://130point.com/sales/",
-                wait_until="domcontentloaded",
-                timeout=30000,
-            )
-            await page.wait_for_selector("#searchBar", timeout=15000)
+            # Retry initial page load up to 3 times (130point can be slow/flaky)
+            for _attempt in range(3):
+                try:
+                    await page.goto(
+                        "https://130point.com/sales/",
+                        wait_until="domcontentloaded",
+                        timeout=45000,
+                    )
+                    await page.wait_for_selector("#searchBar", timeout=30000)
+                    break  # success
+                except Exception as nav_err:
+                    if _attempt < 2:
+                        logger.warning(f"  130point load attempt {_attempt + 1} failed: {nav_err}, retrying...")
+                        await asyncio.sleep(5)
+                    else:
+                        raise  # final attempt, let outer handler catch it
             logger.info("  130point page loaded, search bar ready")
 
             # Select "Items For Sale" and "eBay" marketplace (once, persists)
