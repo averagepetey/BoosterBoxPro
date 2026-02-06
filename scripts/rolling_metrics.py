@@ -13,7 +13,8 @@ Metrics computed for each box's target-date entry:
   2. boxes_added_7d_ema           – EMA alpha=0.25 on boxes_added_today
   3. boxes_added_30d_ema          – EMA alpha=0.065 on boxes_added_today
   4. floor_price_1d_change_pct    – (today - yesterday) / yesterday × 100
-  5. floor_price_30d_change_pct   – (today - 30d ago) / 30d ago × 100
+  5. floor_price_7d_change_pct    – (today - 7d ago) / 7d ago × 100
+  5b. floor_price_30d_change_pct  – (today - 30d ago) / 30d ago × 100
   6. liquidity_score              – (sold_30d_avg / active_listings) × 100, cap 10
   7. days_to_20pct_increase       – active_listings / (avg_sales - avg_added), cap 180
   8. expected_time_to_sale_days   – supply_10pct / (sales/day - avg_added), cap [1, 365]
@@ -239,6 +240,14 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             if target_entry.get("ebay_daily_volume_usd") is None:
                 target_entry["ebay_daily_volume_usd"] = ebay_yday.get("ebay_daily_volume_usd", 0)
 
+        # Active listings fallback: if today's eBay active listings is 0
+        # (Phase 1b-B failed or didn't run), carry forward yesterday's value.
+        if target_entry.get("ebay_active_listings") == 0 and yesterday_str in ebay_by_date:
+            yday_active = ebay_by_date[yesterday_str].get("ebay_active_listings", 0)
+            if yday_active > 0:
+                target_entry["ebay_active_listings"] = yday_active
+                logger.info(f"Active listings fallback: using yesterday's eBay active ({yday_active}) for {box_id}")
+
         cutoff_30d = (target_dt - timedelta(days=30)).strftime("%Y-%m-%d")
         entry_30d_ago = None
         for e in reversed(sorted_ents[:target_idx]):
@@ -294,7 +303,19 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         if fp_today and fp_prev and fp_prev > 0:
             floor_price_1d_change_pct = round(((fp_today - fp_prev) / fp_prev) * 100, 2)
 
-        # ── 5. floor_price_30d_change_pct ─────────────────────────────
+        # ── 5. floor_price_7d_change_pct ──────────────────────────────
+        cutoff_7d_str = (target_dt - timedelta(days=7)).strftime("%Y-%m-%d")
+        entry_7d_ago = None
+        for e in reversed(sorted_ents[:target_idx]):
+            if e.get("date", "") <= cutoff_7d_str:
+                entry_7d_ago = e
+                break
+        fp_7d = entry_7d_ago.get("floor_price_usd") if entry_7d_ago else None
+        floor_price_7d_change_pct = None
+        if fp_today and fp_7d and fp_7d > 0:
+            floor_price_7d_change_pct = round(((fp_today - fp_7d) / fp_7d) * 100, 2)
+
+        # ── 5b. floor_price_30d_change_pct ────────────────────────────
         fp_30d = entry_30d_ago.get("floor_price_usd") if entry_30d_ago else None
         floor_price_30d_change_pct = None
         if fp_today and fp_30d and fp_30d > 0:
@@ -399,6 +420,30 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         daily_vols = [v for v in daily_vols if v > 0]
         unified_volume_7d_ema = round(_ema(daily_vols, 0.3), 2) if daily_vols else None
 
+        # ── 10. Volume change percentages ───────────────────────────
+        # volume_1d: today's volume vs yesterday's volume
+        vol_today = daily_volume_usd
+        vol_prev = _get_daily_vol(prev_entry) if prev_entry else None
+        volume_1d_change_pct = None
+        if vol_today and vol_prev and vol_prev > 0:
+            volume_1d_change_pct = round(((vol_today - vol_prev) / vol_prev) * 100, 2)
+
+        # volume_7d: this week's total vs previous week's total
+        cutoff_14d = (target_dt - timedelta(days=14)).strftime("%Y-%m-%d")
+        entries_prev_7d = [e for e in history if cutoff_14d < (e.get("date") or "") <= cutoff_7d_str]
+        vol_prev_7d = sum(_get_daily_vol(e) for e in entries_prev_7d)
+        volume_7d_change_pct = None
+        if vol_7d and vol_prev_7d and vol_prev_7d > 0:
+            volume_7d_change_pct = round(((vol_7d - vol_prev_7d) / vol_prev_7d) * 100, 2)
+
+        # volume_30d: this month's total vs previous month's total
+        cutoff_60d = (target_dt - timedelta(days=60)).strftime("%Y-%m-%d")
+        entries_prev_30d = [e for e in history if cutoff_60d < (e.get("date") or "") <= cutoff_30d]
+        vol_prev_30d = sum(_get_daily_vol(e) for e in entries_prev_30d)
+        volume_30d_change_pct = None
+        if vol_30d and vol_prev_30d and vol_prev_30d > 0:
+            volume_30d_change_pct = round(((vol_30d - vol_prev_30d) / vol_prev_30d) * 100, 2)
+
         updated += 1
 
         # ── Combined TCG + eBay metrics for unified columns ──────────
@@ -437,6 +482,11 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 ebay_daily_volume_usd=ebay_daily_volume_usd,
                 ebay_units_sold_count=ebay_units_sold_count,
                 ebay_active_listings_count=ebay_active_listings_count,
+                floor_price_7d_change_pct=floor_price_7d_change_pct,
+                floor_price_30d_change_pct=floor_price_30d_change_pct,
+                volume_1d_change_pct=volume_1d_change_pct,
+                volume_7d_change_pct=volume_7d_change_pct,
+                volume_30d_change_pct=volume_30d_change_pct,
             )
             if ok:
                 db_updated += 1

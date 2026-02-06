@@ -35,7 +35,6 @@ export interface BoxDetail {
     boxes_added_30d_ema?: number | null;
     avg_boxes_added_per_day?: number | null;
     volume_30d_sma?: number | null;
-    momentum_score?: number | null;
     community_sentiment?: number | null;
     expected_time_to_sale_days?: number | null;
     top_10_value_usd?: number | null;
@@ -50,10 +49,7 @@ export interface TimeSeriesDataPoint {
   unified_volume_7d_ema?: number | null;
   active_listings_count?: number | null;
   units_sold_count?: number | null;
-  visible_market_cap_usd?: number | null;
-  listed_percentage?: number | null;
   days_to_20pct_increase?: number | null;
-  momentum_score?: number | null;
   boxes_added_today?: number | null;
   boxes_sold_per_day?: number | null;
 }

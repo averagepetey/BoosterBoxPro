@@ -28,9 +28,7 @@ export interface ManualExtractionSubmission {
   active_listings_count?: number;
   boxes_sold_today?: number;
   daily_volume_usd?: number;
-  visible_market_cap_usd?: number;
   boxes_added_today?: number;
-  estimated_total_supply?: number;
   source?: string;
   notes?: string;
 }

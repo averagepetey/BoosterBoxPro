@@ -14,7 +14,6 @@ interface MetricRow {
   unified_volume_7d_ema?: number | null;
   unified_volume_usd?: number | null;
   active_listings_count?: number | null;
-  visible_market_cap_usd?: number | null;
   units_sold_count?: number | null;
   boxes_sold_per_day?: number | null;
   boxes_added_today?: number | null;

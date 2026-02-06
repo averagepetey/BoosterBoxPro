@@ -575,16 +575,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Additional Metrics - Momentum Score if available */}
-                {box.metrics.momentum_score !== null && box.metrics.momentum_score !== undefined && (
-                  <div className="mb-6">
-                    <div className="text-white/70 text-sm mb-1">Momentum Score</div>
-                    <div className="text-xl font-semibold text-white">
-                      {box.metrics.momentum_score.toFixed(2)}
-                    </div>
-                  </div>
-                )}
-
                 {/* Calculated Metrics - Absorption Rate */}
                 {/* Hidden until we have multi-day data for accurate daily additions comparison */}
                 {/* {box.metrics.boxes_sold_per_day && box.metrics.boxes_added_today && box.metrics.boxes_added_today > 0 && (

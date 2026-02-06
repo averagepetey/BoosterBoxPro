@@ -28,14 +28,11 @@ export interface BoxMetricsSummary {
   units_sold_count?: number | null;
   boxes_sold_30d_avg?: number | null;
   active_listings_count?: number | null;
-  listed_percentage?: number | null;
   top_10_value_usd?: number | null;
-  estimated_total_supply?: number | null;
   liquidity_score?: number | null;
   days_to_20pct_increase?: number | null;
   expected_days_to_sell?: number | null;
   boxes_added_today?: number | null;
-  price_sparkline_1d?: number[] | null;
   // eBay marketplace data (from Phase 1b — 130point.com scraper)
   ebay_sold_today?: number | null;
   ebay_daily_volume_usd?: number | null;
