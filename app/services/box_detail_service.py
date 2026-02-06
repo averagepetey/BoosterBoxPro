@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booster_box import BoosterBox
@@ -174,6 +174,24 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
     latest_db_metric = latest_metric_result.scalar_one_or_none()
     current_floor_override = float(latest_db_metric.floor_price_usd) if (latest_db_metric and latest_db_metric.floor_price_usd) else None
 
+    # Get latest eBay daily metrics (low price, median price, listings added/removed)
+    ebay_daily_row = None
+    try:
+        ebay_daily_result = await db.execute(
+            sa_text("""
+                SELECT ebay_active_low_price_usd, ebay_active_median_price_usd,
+                       ebay_listings_added_today, ebay_listings_removed_today
+                FROM ebay_box_metrics_daily
+                WHERE booster_box_id = :bid
+                ORDER BY metric_date DESC
+                LIMIT 1
+            """),
+            {"bid": str(db_box.id)}
+        )
+        ebay_daily_row = ebay_daily_result.first()
+    except Exception:
+        pass
+
     historical_data = None
     try:
         historical_data = get_box_price_history(str(db_box.id), days=90)
@@ -307,15 +325,15 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "data_days_collected": latest.get("data_days_collected"),
             "days_until_30d_metrics": latest.get("days_until_30d_metrics"),
             "listings_within_10pct_floor": latest.get("listings_within_10pct_floor"),
-            # eBay marketplace data (from Phase 1b — 130point.com scraper)
+            # eBay marketplace data (from box_metrics_unified + ebay_box_metrics_daily)
             "ebay_sold_today": latest.get("ebay_sold_today"),
             "ebay_daily_volume_usd": latest.get("ebay_daily_volume_usd"),
-            "ebay_median_price_usd": latest.get("ebay_median_price_usd"),
+            "ebay_median_price_usd": float(ebay_daily_row.ebay_active_median_price_usd) if (ebay_daily_row and ebay_daily_row.ebay_active_median_price_usd) else latest.get("ebay_median_price_usd"),
             "ebay_active_listings": latest.get("ebay_active_listings"),
-            "ebay_active_low_price": latest.get("ebay_active_low_price"),
+            "ebay_active_low_price": float(ebay_daily_row.ebay_active_low_price_usd) if (ebay_daily_row and ebay_daily_row.ebay_active_low_price_usd) else latest.get("ebay_active_low_price"),
             "ebay_volume_30d_usd": latest.get("ebay_volume_30d_usd"),
-            "ebay_boxes_added_today": latest.get("ebay_boxes_added_today"),
-            "ebay_boxes_removed_today": latest.get("ebay_boxes_removed_today"),
+            "ebay_boxes_added_today": int(ebay_daily_row.ebay_listings_added_today) if (ebay_daily_row and ebay_daily_row.ebay_listings_added_today is not None) else latest.get("ebay_boxes_added_today"),
+            "ebay_boxes_removed_today": int(ebay_daily_row.ebay_listings_removed_today) if (ebay_daily_row and ebay_daily_row.ebay_listings_removed_today is not None) else latest.get("ebay_boxes_removed_today"),
             "combined_boxes_sold_today": latest.get("combined_boxes_sold_today"),
             "daily_volume_tcg_usd": latest.get("daily_volume_tcg_usd"),
             "daily_volume_ebay_usd": latest.get("daily_volume_ebay_usd"),

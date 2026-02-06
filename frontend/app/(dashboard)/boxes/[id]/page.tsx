@@ -257,59 +257,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               )}
 
-              {/* Mobile: Marketplace Comparison */}
-              {(box.metrics.ebay_sold_today != null || box.metrics.ebay_active_listings != null || box.metrics.ebay_active_low_price != null) && (
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <div className="text-white/70 text-[10px] uppercase tracking-wide mb-2">Marketplace Comparison</div>
-                  <div className="grid grid-cols-2 gap-0">
-                    {/* TCGplayer header */}
-                    <div className="flex items-center gap-1.5 pb-1.5 border-b border-white/10 border-r border-white/10 px-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                      <span className="text-white/60 text-[9px] font-medium uppercase">TCGplayer</span>
-                    </div>
-                    {/* eBay header */}
-                    <div className="flex items-center gap-1.5 pb-1.5 border-b border-white/10 px-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                      <span className="text-white/60 text-[9px] font-medium uppercase">eBay</span>
-                    </div>
-                    {/* Floor / Low Price */}
-                    <div className="py-2 px-1 border-r border-white/10 border-b border-white/10">
-                      <div className="text-white/50 text-[9px]">Floor</div>
-                      <div className="text-sm font-bold text-white">{formatCurrency(box.metrics.floor_price_usd)}</div>
-                    </div>
-                    <div className="py-2 px-1 border-b border-white/10">
-                      <div className="text-white/50 text-[9px]">Low Price</div>
-                      <div className="text-sm font-bold text-white">{formatCurrency(box.metrics.ebay_active_low_price)}</div>
-                    </div>
-                    {/* Daily Volume */}
-                    <div className="py-2 px-1 border-r border-white/10 border-b border-white/10">
-                      <div className="text-white/50 text-[9px]">Daily Vol</div>
-                      <div className="text-sm font-bold text-white">{formatCurrency(box.metrics.daily_volume_tcg_usd)}</div>
-                    </div>
-                    <div className="py-2 px-1 border-b border-white/10">
-                      <div className="text-white/50 text-[9px]">Daily Vol</div>
-                      <div className="text-sm font-bold text-white">{formatCurrency(box.metrics.ebay_daily_volume_usd)}</div>
-                    </div>
-                    {/* Listed Today */}
-                    <div className="py-2 px-1 border-r border-white/10">
-                      <div className="text-white/50 text-[9px]">Listed Today</div>
-                      <div className="text-sm font-bold text-white">
-                        {box.metrics.boxes_added_today != null
-                          ? `${box.metrics.boxes_added_today > 0 ? '+' : ''}${box.metrics.boxes_added_today}`
-                          : '--'}
-                      </div>
-                    </div>
-                    <div className="py-2 px-1">
-                      <div className="text-white/50 text-[9px]">Listed / Removed</div>
-                      <div className="text-sm font-bold text-white">
-                        {box.metrics.ebay_boxes_added_today != null || box.metrics.ebay_boxes_removed_today != null
-                          ? `${box.metrics.ebay_boxes_added_today != null ? `+${box.metrics.ebay_boxes_added_today}` : '--'} / ${box.metrics.ebay_boxes_removed_today != null ? `-${box.metrics.ebay_boxes_removed_today}` : '--'}`
-                          : '--'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Desktop: Original layout */}
@@ -626,68 +573,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
 
-                {/* Marketplace Comparison - TCGplayer vs eBay */}
-                {(box.metrics.ebay_sold_today != null || box.metrics.ebay_active_listings != null || box.metrics.ebay_active_low_price != null) && (
-                  <div
-                    className="mb-6 p-4 rounded-xl border border-white/15"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
-                  >
-                    <h3 className="text-white font-semibold text-base mb-4">Marketplace Comparison</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* TCGplayer Column */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
-                          <span className="text-white/60 text-xs font-medium uppercase tracking-wide">TCGplayer</span>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <div className="text-white/50 text-xs mb-0.5">Floor Price</div>
-                            <div className="text-xl font-bold text-white">{formatCurrency(box.metrics.floor_price_usd)}</div>
-                          </div>
-                          <div>
-                            <div className="text-white/50 text-xs mb-0.5">Daily Volume</div>
-                            <div className="text-xl font-bold text-white">{formatCurrency(box.metrics.daily_volume_tcg_usd)}</div>
-                          </div>
-                          <div>
-                            <div className="text-white/50 text-xs mb-0.5">Listed Today</div>
-                            <div className="text-xl font-bold text-white">
-                              {box.metrics.boxes_added_today != null
-                                ? `${box.metrics.boxes_added_today > 0 ? '+' : ''}${box.metrics.boxes_added_today}`
-                                : '--'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* eBay Column */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
-                          <span className="text-white/60 text-xs font-medium uppercase tracking-wide">eBay</span>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <div className="text-white/50 text-xs mb-0.5">Low Price</div>
-                            <div className="text-xl font-bold text-white">{formatCurrency(box.metrics.ebay_active_low_price)}</div>
-                          </div>
-                          <div>
-                            <div className="text-white/50 text-xs mb-0.5">Daily Volume</div>
-                            <div className="text-xl font-bold text-white">{formatCurrency(box.metrics.ebay_daily_volume_usd)}</div>
-                          </div>
-                          <div>
-                            <div className="text-white/50 text-xs mb-0.5">Listed / Removed</div>
-                            <div className="text-xl font-bold text-white">
-                              {box.metrics.ebay_boxes_added_today != null || box.metrics.ebay_boxes_removed_today != null
-                                ? `${box.metrics.ebay_boxes_added_today != null ? `+${box.metrics.ebay_boxes_added_today}` : '--'} / ${box.metrics.ebay_boxes_removed_today != null ? `-${box.metrics.ebay_boxes_removed_today}` : '--'}`
-                                : '--'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Additional Metrics - Momentum Score if available */}
                 {box.metrics.momentum_score !== null && box.metrics.momentum_score !== undefined && (
                   <div className="mb-6">
@@ -837,6 +722,105 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
           </div>
+
+          {/* Marketplace Comparison - Standalone Section */}
+          {(box.metrics.ebay_sold_today != null || box.metrics.ebay_active_listings != null || box.metrics.ebay_active_low_price != null) && (
+            <div
+              className="rounded-2xl lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-6"
+              style={{
+                background: '#141414',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.4), 0 0 60px rgba(255, 255, 255, 0.2), 0 30px 80px rgba(0,0,0,0.2)'
+              }}
+            >
+              <h2 className="text-lg lg:text-xl font-bold text-white mb-4">TCGplayer vs eBay</h2>
+              <div className="grid grid-cols-3 gap-0">
+                {/* Header row */}
+                <div className="py-2 px-2 lg:px-3"></div>
+                <div className="py-2 px-2 lg:px-3 flex items-center gap-2 border-b border-white/15">
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
+                  <span className="text-white/60 text-xs font-medium uppercase tracking-wide">TCGplayer</span>
+                </div>
+                <div className="py-2 px-2 lg:px-3 flex items-center gap-2 border-b border-white/15">
+                  <span className="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+                  <span className="text-white/60 text-xs font-medium uppercase tracking-wide">eBay</span>
+                </div>
+
+                {/* Floor / Low Price */}
+                <div className="py-3 px-2 lg:px-3 text-white/50 text-xs lg:text-sm border-b border-white/10">Floor / Low</div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">{formatCurrency(box.metrics.floor_price_usd)}</div>
+                </div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">{formatCurrency(box.metrics.ebay_active_low_price)}</div>
+                </div>
+
+                {/* Daily Volume */}
+                <div className="py-3 px-2 lg:px-3 text-white/50 text-xs lg:text-sm border-b border-white/10">Daily Volume</div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">{formatCurrency(box.metrics.daily_volume_tcg_usd)}</div>
+                </div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">{formatCurrency(box.metrics.ebay_daily_volume_usd)}</div>
+                </div>
+
+                {/* Sold Today */}
+                <div className="py-3 px-2 lg:px-3 text-white/50 text-xs lg:text-sm border-b border-white/10">Sold Today</div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">
+                    {(() => {
+                      const combined = box.metrics.combined_boxes_sold_today;
+                      const ebay = box.metrics.ebay_sold_today;
+                      if (combined != null && ebay != null) return Math.round(combined - ebay);
+                      if (combined != null) return Math.round(combined);
+                      return '--';
+                    })()}
+                  </div>
+                </div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">
+                    {box.metrics.ebay_sold_today != null ? Math.round(box.metrics.ebay_sold_today) : '--'}
+                  </div>
+                </div>
+
+                {/* Active Listings */}
+                <div className="py-3 px-2 lg:px-3 text-white/50 text-xs lg:text-sm border-b border-white/10">Active Listings</div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">
+                    {(() => {
+                      const combined = box.metrics.active_listings_count;
+                      const ebay = box.metrics.ebay_active_listings;
+                      if (combined != null && ebay != null) return combined - ebay;
+                      if (combined != null) return combined;
+                      return '--';
+                    })()}
+                  </div>
+                </div>
+                <div className="py-3 px-2 lg:px-3 border-b border-white/10">
+                  <div className="text-base lg:text-xl font-bold text-white">
+                    {box.metrics.ebay_active_listings != null ? box.metrics.ebay_active_listings : '--'}
+                  </div>
+                </div>
+
+                {/* Listed Today */}
+                <div className="py-3 px-2 lg:px-3 text-white/50 text-xs lg:text-sm">Listed Today</div>
+                <div className="py-3 px-2 lg:px-3">
+                  <div className="text-base lg:text-xl font-bold text-white">
+                    {box.metrics.boxes_added_today != null
+                      ? `${box.metrics.boxes_added_today > 0 ? '+' : ''}${box.metrics.boxes_added_today}`
+                      : '--'}
+                  </div>
+                </div>
+                <div className="py-3 px-2 lg:px-3">
+                  <div className="text-base lg:text-xl font-bold text-white">
+                    {box.metrics.ebay_boxes_added_today != null
+                      ? `${box.metrics.ebay_boxes_added_today > 0 ? '+' : ''}${box.metrics.ebay_boxes_added_today}`
+                      : '--'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Advanced Metrics Table Section */}
           <div 
