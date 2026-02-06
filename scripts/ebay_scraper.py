@@ -1305,9 +1305,14 @@ async def run_ebay_scraper(
     today = datetime.now().strftime("%Y-%m-%d")
     logger.info(f"Phase 1b: eBay scraper starting for {today}")
 
-    # Load historical entries
-    with open(HISTORICAL_FILE, "r") as f:
-        hist = json.load(f)
+    # Load historical entries (DB is source of truth; JSON may not exist in CI)
+    hist = {}
+    if HISTORICAL_FILE.exists():
+        try:
+            with open(HISTORICAL_FILE, "r") as f:
+                hist = json.load(f)
+        except Exception:
+            hist = {}
 
     # Determine which boxes to scrape
     if debug_box_id:
@@ -1558,10 +1563,8 @@ async def run_ebay_scraper(
             f"median=${ebay_fields.get('ebay_median_price_usd', 'N/A')}"
         )
 
-    # Save updated historical entries
-    with open(HISTORICAL_FILE, "w") as f:
-        json.dump(hist, f, indent=2)
-    logger.info(f"Saved eBay data to {HISTORICAL_FILE}")
+    # DB is source of truth — skip JSON write (file may not exist in CI)
+    logger.info(f"eBay sold data saved to DB ({results_count} boxes)")
 
     summary = {
         "results": results_count,
@@ -1596,9 +1599,14 @@ async def run_ebay_active_scraper(
     today = datetime.now().strftime("%Y-%m-%d")
     logger.info(f"Phase 1b-B: eBay active listings (130point) starting for {today}")
 
-    # Load historical entries
-    with open(HISTORICAL_FILE, "r") as f:
-        hist = json.load(f)
+    # Load historical entries (DB is source of truth; JSON may not exist in CI)
+    hist = {}
+    if HISTORICAL_FILE.exists():
+        try:
+            with open(HISTORICAL_FILE, "r") as f:
+                hist = json.load(f)
+        except Exception:
+            hist = {}
 
     # Determine which boxes to scrape
     if debug_box_id:
@@ -1748,10 +1756,8 @@ async def run_ebay_active_scraper(
         import traceback
         logger.error(traceback.format_exc())
 
-    # Save updated historical entries
-    with open(HISTORICAL_FILE, "w") as f:
-        json.dump(hist, f, indent=2)
-    logger.info(f"Saved eBay active data to {HISTORICAL_FILE}")
+    # DB is source of truth — skip JSON write (file may not exist in CI)
+    logger.info(f"eBay active data saved to DB ({results_count} boxes)")
 
     summary = {
         "results": results_count,

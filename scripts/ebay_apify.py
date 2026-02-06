@@ -946,9 +946,7 @@ def run_ebay_apify_scraper(
             logger.debug(f"  Waiting {delay:.1f}s before next box...")
             time.sleep(delay)
 
-    # Save historical data
-    with open(HISTORICAL_FILE, "w") as f:
-        json.dump(hist, f, indent=2)
+    # DB is source of truth — skip JSON write (file may not exist in CI)
 
     # Save pass rates for future optimization
     save_pass_rates(pass_rates)

@@ -1285,15 +1285,8 @@ def save_results(results: List[Dict]):
             add_remove = f" | added={boxes_added_today or 0}, removed={boxes_removed_today or 0} (vs yesterday)"
         logger.info(f"Saved {box_id}: {boxes_within_20pct} boxes (total quantity within 20% of floor) @ ${result.get('floor_price', 0):.2f}{add_remove}")
     
-    # Backup and save
-    backup_path = Path(f'data/historical_entries_backup_{today}.json')
-    with open('data/historical_entries.json', 'r') as f:
-        backup_path.write_text(f.read())
-    
-    with open('data/historical_entries.json', 'w') as f:
-        json.dump(hist, f, indent=2)
-    
-    logger.info(f"Saved {len(results)} entries to historical_entries.json")
+    # DB is source of truth — skip JSON backup/save (file may not exist in CI)
+    logger.info(f"Saved {len(results)} entries to DB (JSON write skipped — DB is source of truth)")
 
 
 # ============================================================================
