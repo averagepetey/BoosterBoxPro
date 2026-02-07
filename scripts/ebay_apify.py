@@ -401,7 +401,8 @@ def is_non_us(title: str) -> bool:
 def is_case_listing(title: str) -> bool:
     """Check if listing is a case (12+ boxes), not a single box."""
     t = title.lower()
-    if "case fresh" in t:
+    # "case fresh" or "fresh from case" = single box pulled from a sealed case
+    if "case fresh" in t or "from case" in t:
         return False
     return bool(re.search(r'\bcase\b', t))
 
