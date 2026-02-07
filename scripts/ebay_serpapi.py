@@ -206,7 +206,7 @@ def serpapi_search(
         "api_key": api_key,
         "_nkw": query,
         "LH_ItemCondition": "1000",    # New condition
-        "LH_PrefLoc": "Domestic",      # US sellers only
+        "LH_PrefLoc": "1",             # US sellers only (1=Domestic)
         "_udlo": str(min_price),
         "_udhi": str(max_price),
         "_ipg": "200",                 # 200 results per page
