@@ -5,13 +5,13 @@
 # Required secrets (Repo → Settings → Secrets and variables → Actions):
 #   DATABASE_URL          - DB for all metrics (Apify + Scraper write here).
 #   APIFY_API_TOKEN       - Phase 1: sales/volume (boxes_sold_per_day, unified_volume_usd, boxes_sold_30d_avg).
+#   SERPAPI_API_KEY        - Phase 1b: eBay sold + active listings via SerpApi ($25/mo Starter plan).
 #   BACKEND_URL           - Public API URL (e.g. https://your-api.run.app) so refresh can call invalidate-cache.
 #   INVALIDATE_CACHE_SECRET - Secret for POST /admin/invalidate-cache; required for leaderboard/box detail to show new data automatically.
 #
 # What updates what (both phases write to DB; app reads from DB):
 # - Phase 1 (Apify): sales/volume — boxes_sold_per_day, unified_volume_usd, floor_price, boxes_sold_30d_avg.
-# - Phase 1b (eBay Sold): eBay sold listings via Apify (caffein.dev actor).
-# - Phase 1b-B (eBay Active): eBay for-sale listings via 130point.com (real-time inventory).
+# - Phase 1b (eBay SerpApi): eBay sold + active listings via SerpApi engine.
 # - Phase 2 (Scraper): TCGplayer listings + price — floor_price_usd, active_listings_count, boxes_added_today.
 # - Phase 3 (Rolling Metrics): Compute derived metrics (liquidity, days_to_20pct, EMAs) and upsert to DB.
 # After all phases, the script calls cache invalidation so the API serves fresh data.
@@ -49,13 +49,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Playwright Chromium
-        run: playwright install chromium
-
       - name: Run daily refresh
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           INVALIDATE_CACHE_SECRET: ${{ secrets.INVALIDATE_CACHE_SECRET }}
         run: |

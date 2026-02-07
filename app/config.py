@@ -110,10 +110,9 @@ class Settings(BaseSettings):
 
     # Apify API (TCGplayer scraping)
     apify_api_token: Optional[str] = None
-    
-    # Future: Marketplace API keys
-    # tcgplayer_api_key: Optional[str] = None
-    # ebay_api_key: Optional[str] = None
+
+    # SerpApi (eBay scraping — replaces Apify caffein.dev + 130point)
+    serpapi_api_key: Optional[str] = None
     
     class Config:
         env_file = ".env"
