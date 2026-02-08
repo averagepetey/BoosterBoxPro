@@ -235,9 +235,9 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             # Today has eBay data (e.g. active listings from Phase 1b-B) but
             # sold data is still on yesterday's row.  Merge sold fields only.
             ebay_yday = ebay_by_date[yesterday_str]
-            if target_entry.get("ebay_sold_today") is None:
+            if not target_entry.get("ebay_sold_today"):
                 target_entry["ebay_sold_today"] = ebay_yday.get("ebay_sold_today", 0)
-            if target_entry.get("ebay_daily_volume_usd") is None:
+            if not target_entry.get("ebay_daily_volume_usd"):
                 target_entry["ebay_daily_volume_usd"] = ebay_yday.get("ebay_daily_volume_usd", 0)
 
         # Active listings fallback: if today's eBay active listings is 0
