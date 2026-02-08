@@ -123,7 +123,7 @@ def pull_all_boxes():
             entry["data_source"] = "tcgplayer_apify"
             
             status = "NEW" if is_new else "UPDATED"
-            sold_per_day = transformed.get("boxes_sold_per_day", 0)
+            sold_per_day = transformed.get("boxes_sold_today", 0)
             floor_price = transformed.get("floor_price_usd", 0)
             daily_vol = transformed.get("daily_volume_usd", 0)
             print(f"   ✅ {status}: {sold_per_day}/day @ ${floor_price} (${daily_vol}/day volume)")

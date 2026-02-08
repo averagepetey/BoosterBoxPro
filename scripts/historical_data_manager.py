@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional
 
 
 def _compute_30d_avg_sold(entries: List[Dict[str, Any]]) -> Optional[float]:
-    """Compute running 30-day average of boxes_sold_per_day from entries (last 30 days)."""
+    """Compute running 30-day average of boxes_sold_today from entries (last 30 days)."""
     if not entries:
         return None
     cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -20,7 +20,7 @@ def _compute_30d_avg_sold(entries: List[Dict[str, Any]]) -> Optional[float]:
         return None
     vals = []
     for e in recent:
-        v = e.get("boxes_sold_per_day") or e.get("boxes_sold_today")
+        v = e.get("boxes_sold_today")
         vals.append(float(v) if v is not None else 0.0)
     return round(sum(vals) / len(vals), 2) if vals else None
 
@@ -116,7 +116,7 @@ class HistoricalDataManager:
                 booster_box_id=db_id,
                 metric_date=entry_date,
                 floor_price_usd=entry_data.get("floor_price_usd"),
-                boxes_sold_per_day=entry_data.get("boxes_sold_per_day") or entry_data.get("boxes_sold_today"),
+                boxes_sold_today=entry_data.get("boxes_sold_today"),
                 active_listings_count=entry_data.get("active_listings_count"),
                 unified_volume_usd=entry_data.get("unified_volume_usd") or entry_data.get("daily_volume_usd"),
                 unified_volume_7d_ema=entry_data.get("unified_volume_7d_ema"),

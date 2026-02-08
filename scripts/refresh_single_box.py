@@ -152,8 +152,8 @@ def main():
             print(f"\n📂 NO PREVIOUS ENTRY for this box")
 
         # Compute metrics
-        boxes_sold_per_day = compute_daily_sales_from_buckets(buckets, today=today) or 0
-        weekly_rate = compute_this_week_daily_rate(buckets, today=today) or boxes_sold_per_day
+        boxes_sold_avg = compute_daily_sales_from_buckets(buckets, today=today) or 0
+        weekly_rate = compute_this_week_daily_rate(buckets, today=today) or boxes_sold_avg
 
         # Delta tracking
         boxes_sold_today = weekly_rate
@@ -173,7 +173,7 @@ def main():
             market_price = 0
 
         print(f"\n📈 COMPUTED METRICS:")
-        print(f"  boxes_sold_per_day (active avg): {boxes_sold_per_day}")
+        print(f"  boxes_sold_avg (active avg): {boxes_sold_avg}")
         print(f"  weekly_rate (recent complete week): {weekly_rate}")
         print(f"  boxes_sold_today: {boxes_sold_today} (source: {delta_source})")
         print(f"  market_price: ${_safe_float(market_price):.2f}")
@@ -187,7 +187,7 @@ def main():
             new_entry = {
                 "date": today,
                 "source": "apify_tcgplayer",
-                "boxes_sold_per_day": boxes_sold_per_day,
+                "boxes_sold_today": boxes_sold_today,
                 "boxes_sold_today": boxes_sold_today,
                 "current_bucket_start": incomplete.get("bucketStartDate", "")[:10] if incomplete else None,
                 "current_bucket_qty": _safe_int(incomplete.get("quantitySold")) if incomplete else None,

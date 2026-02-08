@@ -87,8 +87,8 @@ def run_apify_refresh(target_date: str):
                 market_price = 0
 
             # Compute sales metrics
-            boxes_sold_per_day = compute_daily_sales_from_buckets(buckets, today=target_date) or 0
-            weekly_rate = compute_this_week_daily_rate(buckets, today=target_date) or boxes_sold_per_day
+            boxes_sold_avg = compute_daily_sales_from_buckets(buckets, today=target_date) or 0
+            weekly_rate = compute_this_week_daily_rate(buckets, today=target_date) or boxes_sold_avg
 
             # Get incomplete bucket for delta tracking
             incomplete = get_current_incomplete_bucket(buckets, target_date)
@@ -124,7 +124,7 @@ def run_apify_refresh(target_date: str):
 
             if existing_entry:
                 # Update existing entry
-                existing_entry["boxes_sold_per_day"] = boxes_sold_per_day
+                existing_entry["boxes_sold_today"] = boxes_sold_today
                 existing_entry["boxes_sold_today"] = boxes_sold_today
                 existing_entry["market_price_usd"] = market_price
                 existing_entry["floor_price_usd"] = market_price
@@ -138,7 +138,7 @@ def run_apify_refresh(target_date: str):
                 new_entry = {
                     "date": target_date,
                     "source": "apify_tcgplayer",
-                    "boxes_sold_per_day": boxes_sold_per_day,
+                    "boxes_sold_today": boxes_sold_today,
                     "boxes_sold_today": boxes_sold_today,
                     "market_price_usd": market_price,
                     "floor_price_usd": market_price,

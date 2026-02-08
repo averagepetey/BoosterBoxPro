@@ -98,7 +98,7 @@ class MetricsCalculator:
         units_sold = [u for u in units_sold if u is not None]
         if units_sold:
             metrics["units_sold_count"] = units_sold[-1]  # Today's sales
-            metrics["boxes_sold_per_day"] = statistics.mean(units_sold[-30:]) if len(units_sold) > 0 else units_sold[-1]
+            metrics["boxes_sold_today"] = statistics.mean(units_sold[-30:]) if len(units_sold) > 0 else units_sold[-1]
             metrics["boxes_sold_30d_avg"] = statistics.mean(units_sold[-30:]) if len(units_sold) >= 30 else statistics.mean(units_sold) if units_sold else None
         
         # Active listings
@@ -136,9 +136,9 @@ class MetricsCalculator:
                     break
         
         # Liquidity score (simplified calculation)
-        if metrics.get("active_listings_count") and metrics.get("boxes_sold_per_day"):
-            if metrics["boxes_sold_per_day"] > 0:
-                metrics["liquidity_score"] = min(1.0, metrics["active_listings_count"] / (metrics["boxes_sold_per_day"] * 7))
+        if metrics.get("active_listings_count") and metrics.get("boxes_sold_today"):
+            if metrics["boxes_sold_today"] > 0:
+                metrics["liquidity_score"] = min(1.0, metrics["active_listings_count"] / (metrics["boxes_sold_today"] * 7))
             else:
                 metrics["liquidity_score"] = 0.0
         
@@ -156,7 +156,7 @@ class MetricsCalculator:
             floor_price_usd=metrics.get("floor_price_usd"),
             price_ladder_data=today_data.get("price_ladder"),
             active_listings_count=metrics.get("active_listings_count"),
-            boxes_sold_per_day=metrics.get("boxes_sold_per_day"),
+            boxes_sold_today=metrics.get("boxes_sold_today"),
             boxes_sold_30d_avg=metrics.get("boxes_sold_30d_avg"),
             avg_boxes_added_per_day=metrics.get("avg_boxes_added_per_day")
         )
@@ -317,7 +317,7 @@ class MetricsCalculator:
         floor_price_usd: Optional[float],
         price_ladder_data: Optional[List[Dict[str, Any]]],
         active_listings_count: Optional[int],
-        boxes_sold_per_day: Optional[float],
+        boxes_sold_today: Optional[float],
         boxes_sold_30d_avg: Optional[float],
         avg_boxes_added_per_day: Optional[float]
     ) -> Optional[float]:
@@ -332,8 +332,8 @@ class MetricsCalculator:
         if supply is None or supply <= 0:
             return None
 
-        # Sales rate: prefer boxes_sold_per_day, fallback to boxes_sold_30d_avg
-        sales_per_day = boxes_sold_per_day if (boxes_sold_per_day is not None and boxes_sold_per_day > 0) else boxes_sold_30d_avg
+        # Sales rate: prefer boxes_sold_today, fallback to boxes_sold_30d_avg
+        sales_per_day = boxes_sold_today if (boxes_sold_today is not None and boxes_sold_today > 0) else boxes_sold_30d_avg
         if sales_per_day is None or sales_per_day <= 0:
             return None
 

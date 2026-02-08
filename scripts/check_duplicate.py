@@ -80,7 +80,7 @@ async def check_duplicate_data(
         existing_data = {
             "floor_price_usd": float(existing.floor_price_usd) if existing.floor_price_usd else None,
             "active_listings_count": existing.active_listings_count,
-            "boxes_sold_per_day": float(existing.boxes_sold_per_day) if existing.boxes_sold_per_day else None,
+            "boxes_sold_today": float(existing.boxes_sold_per_day) if existing.boxes_sold_per_day else None,
             "unified_volume_usd": float(existing.unified_volume_usd) if existing.unified_volume_usd else None,
             "visible_market_cap_usd": float(existing.visible_market_cap_usd) if existing.visible_market_cap_usd else None,
             "boxes_added_today": existing.boxes_added_today,
@@ -89,7 +89,7 @@ async def check_duplicate_data(
         new_data = {
             "floor_price_usd": floor_price,
             "active_listings_count": listings,
-            "boxes_sold_per_day": sold,
+            "boxes_sold_today": sold,
             "unified_volume_usd": volume,
             "visible_market_cap_usd": market_cap,
             "boxes_added_today": added,
@@ -102,7 +102,7 @@ async def check_duplicate_data(
         comparison_fields = {
             "floor_price_usd": ("floor_price_usd", tolerance),
             "active_listings_count": ("active_listings_count", 0),
-            "boxes_sold_today": ("boxes_sold_per_day", 0),
+            "boxes_sold_today": ("boxes_sold_today", 0),
             "daily_volume_usd": ("unified_volume_usd", tolerance),
             "visible_market_cap_usd": ("visible_market_cap_usd", tolerance),
             "boxes_added_today": ("boxes_added_today", 0),
