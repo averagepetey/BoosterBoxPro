@@ -68,7 +68,7 @@ export function MarketEdgeSection() {
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white mb-4 lg:mb-6 leading-tight">
-            Gain an Edge Over the <span className="text-transparent bg-clip-text bg-[linear-gradient(180deg,#22c55e,#16a34a)]">One Piece Market</span>
+            Gain an Edge Over the <span className="market-gradient-animated">One Piece Market</span>
           </h2>
           <p className="text-base sm:text-lg lg:text-xl text-white/80 font-medium">
             See when listings disappear or appear fast, or when liquidity is going from one box to the next.
