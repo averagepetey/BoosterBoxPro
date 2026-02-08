@@ -165,9 +165,9 @@ class TCGplayerApifyService:
             market_price = 0
             floor_price = 0
 
-        # Compute daily sales from weekly buckets (all active period)
-        boxes_sold_per_day = compute_daily_sales_from_buckets(buckets, today=target_date) or 0
-        boxes_sold_today = compute_this_week_daily_rate(buckets, today=target_date) or boxes_sold_per_day
+        # Compute daily sales from weekly buckets
+        _weekly_fallback = compute_daily_sales_from_buckets(buckets, today=target_date) or 0
+        boxes_sold_today = compute_this_week_daily_rate(buckets, today=target_date) or _weekly_fallback
         daily_volume = round(boxes_sold_today * market_price, 2) if market_price else 0
 
         # Track current incomplete bucket for delta computation on next run
@@ -180,7 +180,6 @@ class TCGplayerApifyService:
             'box_id': box_id,
             'floor_price_usd': floor_price,
             'market_price_usd': market_price,
-            'boxes_sold_per_day': boxes_sold_per_day,
             'boxes_sold_today': boxes_sold_today,
             'daily_volume_usd': daily_volume,
             'active_listings_count': None,
@@ -501,7 +500,7 @@ def get_7day_baseline(historical: Dict, box_id: str, current_date: str) -> Optio
     if not recent_entries:
         return None
     
-    avg_sales = sum(e.get("boxes_sold_per_day", 0) or 0 for e in recent_entries) / len(recent_entries)
+    avg_sales = sum(e.get("boxes_sold_today", 0) or 0 for e in recent_entries) / len(recent_entries)
     return avg_sales
 
 
@@ -540,8 +539,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
     Pull fresh sales data from TCGplayer for all boxes and save to DB.
 
     Sales computation uses actual weekly bucket data from Apify:
-    - boxes_sold_per_day: average daily sales over the full active selling period
-    - boxes_sold_today: daily rate from the most recent complete weekly bucket
+    - boxes_sold_today: daily rate from the most recent complete weekly bucket (or delta from incomplete bucket)
 
     The old approach of using averageDailyQuantitySold (a lifetime avg) is removed.
 
@@ -581,7 +579,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             entry = {
                 "date": date_str,
                 "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
-                "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+                "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
                 "current_bucket_start": d.get("current_bucket_start"),
                 "current_bucket_qty": int(d["current_bucket_qty"]) if d.get("current_bucket_qty") is not None else None,
             }
@@ -642,11 +640,10 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 floor = 0
                 bucket_date = ""
 
-            # ── CORE FIX: Compute daily sales from weekly bucket data ──
-            # boxes_sold_per_day: average over full active selling period
-            boxes_sold_per_day = compute_daily_sales_from_buckets(buckets, today=today) or 0
+            # ── Compute daily sales from weekly bucket data ──
+            _weekly_fallback = compute_daily_sales_from_buckets(buckets, today=today) or 0
             # boxes_sold_today: most recent complete week's daily rate
-            boxes_sold_today = compute_this_week_daily_rate(buckets, today=today) or boxes_sold_per_day
+            boxes_sold_today = compute_this_week_daily_rate(buckets, today=today) or _weekly_fallback
 
             # Store complete bucket data for the most recent complete week (reference)
             complete_buckets = get_complete_weekly_buckets(buckets, today)
@@ -671,7 +668,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                     boxes_sold_today = delta_boxes_sold_today
                     logger.info(f"  Delta tracking: {delta_boxes_sold_today} sold today ({delta_source})")
 
-            prev_sold_per_day = prev_entry.get("boxes_sold_per_day") if prev_entry else None
+            prev_sold_per_day = prev_entry.get("boxes_sold_today") if prev_entry else None
             prev_price = prev_entry.get("market_price_usd") if prev_entry else None
 
             # Get 7-day baseline for spike detection
@@ -686,8 +683,8 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 logger.warning(f"🔥 {name}: {spike['type']} - {spike['change_pct']:+.1f}% vs baseline")
 
             # Day-over-day changes
-            avg_change = round(boxes_sold_per_day - prev_sold_per_day, 2) if prev_sold_per_day is not None else None
-            avg_change_pct = round(((boxes_sold_per_day - prev_sold_per_day) / prev_sold_per_day) * 100, 1) if prev_sold_per_day and prev_sold_per_day > 0 else None
+            avg_change = round(boxes_sold_today - prev_sold_per_day, 2) if prev_sold_per_day is not None else None
+            avg_change_pct = round(((boxes_sold_today - prev_sold_per_day) / prev_sold_per_day) * 100, 1) if prev_sold_per_day and prev_sold_per_day > 0 else None
             price_change = round(market_price - prev_price, 2) if prev_price else None
             price_change_pct = round(((market_price - prev_price) / prev_price) * 100, 1) if prev_price and prev_price > 0 else None
 
@@ -702,7 +699,6 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 "date": today,
                 "source": "apify_tcgplayer",
                 # Sales metrics (computed from weekly bucket data)
-                "boxes_sold_per_day": boxes_sold_per_day,  # Active-period avg from all weekly buckets
                 "boxes_sold_today": boxes_sold_today,  # Delta from incomplete bucket, or weekly rate fallback
                 "bucket_quantity_sold": recent_bucket_qty,  # Raw qty from most recent complete week
                 # Incomplete bucket delta tracking
@@ -745,7 +741,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             recent_30 = [e for e in entries_30d if (e.get("date") or "") >= cutoff_30]
             boxes_sold_30d_avg = None
             if recent_30:
-                vals = [_safe_float(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0) for e in recent_30]
+                vals = [_safe_float(e.get("boxes_sold_today") or 0) for e in recent_30]
                 boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
 
             # Write to DB: use daily delta (actual sales today) not weekly average
@@ -755,7 +751,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                     booster_box_id=box_id,
                     metric_date=today,
                     floor_price_usd=floor,
-                    boxes_sold_per_day=boxes_sold_today,
+                    boxes_sold_today=boxes_sold_today,
                     unified_volume_usd=volume_30d,
                     boxes_sold_30d_avg=boxes_sold_30d_avg,
                     current_bucket_start=current_bucket_start,
@@ -766,12 +762,11 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
 
             # Log with context
             change_str = f" ({avg_change_pct:+.1f}%)" if avg_change_pct else ""
-            logger.info(f"✅ {name}: {boxes_sold_per_day}/day (active avg), {boxes_sold_today}/day (this week){change_str} @ ${market_price:.2f}")
+            logger.info(f"✅ {name}: {boxes_sold_today}/day (this week){change_str} @ ${market_price:.2f}")
 
             results.append({
                 "name": name,
                 "box_id": box_id,
-                "sold": boxes_sold_per_day,
                 "sold_today": boxes_sold_today,
                 "price": market_price,
                 "vol": daily_vol,
@@ -801,7 +796,6 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             {
                 "name": r["name"],
                 "daily_volume": r["vol"],
-                "sales_per_day": r["sold"],
                 "sales_today": r["sold_today"],
                 "price": r["price"],
                 "change_pct": r.get("change_pct"),
@@ -809,11 +803,11 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             for r in top_5
         ],
         "top_gainers": [
-            {"name": r["name"], "change_pct": r["change_pct"], "sales_per_day": r["sold"]}
+            {"name": r["name"], "change_pct": r["change_pct"], "sales_today": r["sold_today"]}
             for r in top_gainers if r["change_pct"] and r["change_pct"] > 0
         ],
         "top_losers": [
-            {"name": r["name"], "change_pct": r["change_pct"], "sales_per_day": r["sold"]}
+            {"name": r["name"], "change_pct": r["change_pct"], "sales_today": r["sold_today"]}
             for r in top_losers if r["change_pct"] and r["change_pct"] < 0
         ],
         "alerts": alerts,

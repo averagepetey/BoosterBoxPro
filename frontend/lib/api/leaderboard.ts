@@ -24,7 +24,7 @@ export interface BoxMetricsSummary {
   volume_1d_change_pct?: number | null; // day-over-day volume % change
   volume_7d_change_pct?: number | null; // week-over-week volume % change
   volume_30d_change_pct?: number | null; // month-over-month volume % change
-  boxes_sold_per_day?: number | null;
+  boxes_sold_today?: number | null;
   units_sold_count?: number | null;
   boxes_sold_30d_avg?: number | null;
   active_listings_count?: number | null;
@@ -42,7 +42,6 @@ export interface BoxMetricsSummary {
   ebay_volume_30d_usd?: number | null;
   ebay_boxes_added_today?: number | null;
   ebay_boxes_removed_today?: number | null;
-  combined_boxes_sold_today?: number | null;
   daily_volume_tcg_usd?: number | null;
   daily_volume_ebay_usd?: number | null;
 }

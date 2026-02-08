@@ -54,9 +54,9 @@ function computeFearGreedIndex(boxes: LeaderboardBox[]): number {
   // Map: -5 (net removals) -> 100 (greed), +5 (net additions) -> 0 (fear)
   const listingTrend = clamp((-avgAdded + 5) / 10, 0, 1) * 100;
 
-  // 4. Sales Velocity (25%): avg boxes_sold_per_day, mapped 0-3 -> 0-100
+  // 4. Sales Velocity (25%): avg boxes_sold_today, mapped 0-3 -> 0-100
   const salesValues = boxes
-    .map(b => b.metrics.boxes_sold_per_day)
+    .map(b => b.metrics.boxes_sold_today)
     .filter((v): v is number => v !== null && v !== undefined);
   const avgSales = salesValues.length
     ? salesValues.reduce((a, b) => a + b, 0) / salesValues.length

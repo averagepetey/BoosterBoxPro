@@ -273,13 +273,13 @@ export function LeaderboardTable({
                   {(() => {
                     if (timeRange === '24h') {
                       // 24h: Show daily sales rate
-                      return box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                        ? formatNumber(box.metrics.boxes_sold_per_day)
+                      return box.metrics.boxes_sold_today !== null && box.metrics.boxes_sold_today !== undefined
+                        ? formatNumber(box.metrics.boxes_sold_today)
                         : formatNumber(box.metrics.units_sold_count);
                     } else if (timeRange === '7d') {
                       // 7d: Show total sales over 7 days (daily * 7)
-                      const sales7d = box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined
-                        ? box.metrics.boxes_sold_per_day * 7
+                      const sales7d = box.metrics.boxes_sold_today !== null && box.metrics.boxes_sold_today !== undefined
+                        ? box.metrics.boxes_sold_today * 7
                         : null;
                       return sales7d !== null ? formatNumber(sales7d) : formatNumber(box.metrics.units_sold_count);
                     } else { // 30d
@@ -287,9 +287,9 @@ export function LeaderboardTable({
                       if (box.metrics.boxes_sold_30d_avg !== null && box.metrics.boxes_sold_30d_avg !== undefined) {
                         // boxes_sold_30d_avg is average per day, multiply by 30 for total
                         return formatNumber(box.metrics.boxes_sold_30d_avg * 30);
-                      } else if (box.metrics.boxes_sold_per_day !== null && box.metrics.boxes_sold_per_day !== undefined) {
+                      } else if (box.metrics.boxes_sold_today !== null && box.metrics.boxes_sold_today !== undefined) {
                         // Fallback: use daily rate * 30
-                        return formatNumber(box.metrics.boxes_sold_per_day * 30);
+                        return formatNumber(box.metrics.boxes_sold_today * 30);
                       } else {
                         return formatNumber(box.metrics.units_sold_count);
                       }

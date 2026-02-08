@@ -66,7 +66,8 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
     with engine.connect() as conn:
         q = text("""
             SELECT metric_date, floor_price_usd, boxes_sold_per_day,
-                   active_listings_count, unified_volume_usd, unified_volume_7d_ema,
+                   active_listings_count, ebay_active_listings_count,
+                   unified_volume_usd, unified_volume_7d_ema,
                    boxes_sold_30d_avg, boxes_added_today, liquidity_score,
                    days_to_20pct_increase, avg_boxes_added_per_day,
                    expected_days_to_sell, floor_price_1d_change_pct
@@ -84,9 +85,9 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
         entries.append({
             "date": date_str,
             "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
-            "boxes_sold_per_day": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
             "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
             "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
+            "stored_ebay_active": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0,
             "unified_volume_usd": float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None,
             "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
         })
@@ -262,7 +263,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         data_days = len(set(
             e.get("date") for e in history
             if e.get("date") and e.get("date") >= DATA_EPOCH
-            and (e.get("floor_price_usd") or e.get("boxes_sold_per_day"))
+            and (e.get("floor_price_usd") or e.get("boxes_sold_today"))
         ))
         has_30d_data = data_days >= 30
         days_until_30d = max(0, 30 - data_days)
@@ -322,13 +323,17 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             floor_price_30d_change_pct = round(((fp_today - fp_30d) / fp_30d) * 100, 2)
 
         # ── Shared inputs for metrics 6-8 ─────────────────────────────
-        tcg_active = target_entry.get("active_listings_count") or 0
+        # Subtract any eBay active that Phase 3 previously combined into active_listings_count
+        # so re-runs don't double-count eBay listings
+        raw_active = target_entry.get("active_listings_count") or 0
+        stored_ebay = target_entry.get("stored_ebay_active") or 0
+        tcg_active = max(0, raw_active - stored_ebay)
         ebay_active = target_entry.get("ebay_active_listings") or 0
         active_listings = tcg_active + ebay_active
 
         # 30-day average sales from daily entries
         sold_vals = [
-            float(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0)
+            float(e.get("boxes_sold_today") or 0)
             + float(e.get("ebay_sold_today") or 0)
             for e in recent_30
         ]
@@ -355,8 +360,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
 
         # ── 8. expected_time_to_sale_days ──────────────────────────────
         tcg_sales = float(
-            target_entry.get("boxes_sold_per_day")
-            or target_entry.get("boxes_sold_today")
+            target_entry.get("boxes_sold_today")
             or sold_30d_avg_raw
             or 0
         )
@@ -379,7 +383,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
 
         # ── 9. Volume metrics ────────────────────────────────────────
         # TCG daily volume = boxes_sold × floor_price (estimated, we don't have actual sale prices)
-        tcg_sold = float(target_entry.get("boxes_sold_per_day") or target_entry.get("boxes_sold_today") or 0)
+        tcg_sold = float(target_entry.get("boxes_sold_today") or 0)
         tcg_price = float(target_entry.get("floor_price_usd") or 0)
         tcg_daily_volume_usd = round(tcg_sold * tcg_price, 2) if tcg_sold and tcg_price else 0
 
@@ -396,7 +400,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         # Helper for historical volume calculations
         def _get_daily_vol(e):
             """Blended daily volume: TCGplayer (estimated) + eBay (actual)."""
-            sold = e.get("boxes_sold_today") or e.get("boxes_sold_per_day") or 0
+            sold = e.get("boxes_sold_today") or 0
             price = e.get("floor_price_usd") or 0
             sold = float(sold) if sold else 0
             price = float(price) if price else 0
@@ -448,8 +452,8 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
 
         # ── Combined TCG + eBay metrics for unified columns ──────────
         # floor_price_usd stays TCGplayer-only (primary marketplace)
-        # boxes_sold_per_day = TCG + eBay sold
-        combined_sold = round(sales_per_day, 2) if sales_per_day else target_entry.get("boxes_sold_per_day")
+        # boxes_sold_today = TCG + eBay sold
+        combined_sold = round(sales_per_day, 2) if sales_per_day else target_entry.get("boxes_sold_today")
         # active_listings_count = TCG + eBay active (already computed as `active_listings`)
         combined_active = active_listings if active_listings else target_entry.get("active_listings_count")
         # boxes_added_today = TCG + eBay added
@@ -465,7 +469,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 booster_box_id=box_id,
                 metric_date=target_date,
                 floor_price_usd=target_entry.get("floor_price_usd"),
-                boxes_sold_per_day=combined_sold,
+                boxes_sold_today=combined_sold,
                 active_listings_count=combined_active,
                 unified_volume_usd=unified_volume_usd,
                 unified_volume_7d_ema=unified_volume_7d_ema,

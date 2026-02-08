@@ -81,7 +81,7 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
                 all_listings.extend(entry.get('raw_listings', []))
             
             # Sum boxes sold from the field (as fallback)
-            boxes_sold = entry.get('boxes_sold_today') or entry.get('boxes_sold_per_day') or 0
+            boxes_sold = entry.get('boxes_sold_today') or 0
             total_boxes_sold += boxes_sold
             
             # Take the max listings count (scraper may use active_listings_count, or legacy listings_count/listings_count_in_range)
@@ -145,7 +145,6 @@ def merge_same_date_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any
         
         # Update merged entry
         base['boxes_sold_today'] = total_boxes_sold
-        base['boxes_sold_per_day'] = total_boxes_sold
         base['boxes_added_today'] = total_listings_added
         base['active_listings_count'] = total_listings
         if all_sales:
@@ -198,11 +197,11 @@ def filter_to_one_per_month(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         entries.sort(key=lambda x: x.get('date', ''))
         base_entry = entries[-1].copy()
         
-        # Calculate average boxes_sold_per_day for all entries in this month
-        daily_sales_values = [e.get('boxes_sold_per_day', 0) or 0 for e in entries if e.get('boxes_sold_per_day', 0) or 0 > 0]
+        # Calculate average boxes_sold_today for all entries in this month
+        daily_sales_values = [e.get('boxes_sold_today', 0) or 0 for e in entries if e.get('boxes_sold_today', 0) or 0 > 0]
         if daily_sales_values:
             avg_daily_sales = sum(daily_sales_values) / len(daily_sales_values)
-            base_entry['boxes_sold_per_day'] = round(avg_daily_sales, 2)
+            base_entry['boxes_sold_today'] = round(avg_daily_sales, 2)
         # If all are 0, keep 0
         
         result.append(base_entry)
@@ -233,13 +232,13 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
         
         floor_price = entry.get('floor_price_usd', 0)
         
-        # Recalculate boxes_sold_per_day from raw_sales if available (more accurate)
-        boxes_sold_per_day = entry.get('boxes_sold_per_day', 0) or 0
+        # Recalculate boxes_sold_today from raw_sales if available (more accurate)
+        boxes_sold_today = entry.get('boxes_sold_today', 0) or 0
         if entry.get('raw_sales'):
             # Count actual boxes sold from raw_sales
             total_sold = sum(s.get('quantity', 1) for s in entry.get('raw_sales', []))
             if total_sold > 0:
-                boxes_sold_per_day = total_sold
+                boxes_sold_today = total_sold
         
         # Calculate 1-day change percentage — prefer stored value from Phase 3
         floor_price_1d_change_pct = entry.get('floor_price_1d_change_pct')
@@ -267,24 +266,24 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                     days_between = (current_date - prev_date).days
                     
                     if days_between > 0:
-                        # boxes_sold_per_day is already a daily average (one day's worth of sales)
+                        # boxes_sold_today is the daily sales count
                         # Use the current period's daily rate multiplied by days between entries
-                        if boxes_sold_per_day > 0:
+                        if boxes_sold_today > 0:
                             # Use current period's daily rate
-                            units_sold_count = round(boxes_sold_per_day * days_between, 1)
+                            units_sold_count = round(boxes_sold_today * days_between, 1)
                         else:
                             # If current period is 0, use previous period's rate
-                            prev_boxes_sold_per_day = prev_entry.get('boxes_sold_per_day', 0) or 0
-                            if prev_boxes_sold_per_day > 0:
-                                units_sold_count = round(prev_boxes_sold_per_day * days_between, 1)
+                            prev_boxes_sold_today = prev_entry.get('boxes_sold_today', 0) or 0
+                            if prev_boxes_sold_today > 0:
+                                units_sold_count = round(prev_boxes_sold_today * days_between, 1)
                 except (ValueError, TypeError):
                     pass  # Skip calculation if date parsing fails
         
         # Volume: daily = floor_price × avg_daily_sold; 7d/30d = running sum of daily entries
         unified_volume_usd = None
         daily_volume_usd = None
-        if floor_price and (boxes_sold_per_day or entry.get('boxes_sold_today') is not None):
-            sold = boxes_sold_per_day or entry.get('boxes_sold_today') or 0
+        if floor_price and (boxes_sold_today or entry.get('boxes_sold_today') is not None):
+            sold = boxes_sold_today or 0
             # Calculate daily volume - prefer stored, then raw sales, then floor × sold
             daily_volume_usd = None
             # Priority 1: Use stored daily_volume_usd if available (from screenshot capture)
@@ -372,7 +371,7 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
             'floor_price_1d_change_pct': floor_price_1d_change_pct,
             'active_listings_count': entry.get('active_listings_count'),
             'listings_within_10pct_floor': listings_within_10pct_floor,
-            'boxes_sold_per_day': boxes_sold_per_day,
+            'boxes_sold_today': boxes_sold_today,
             'boxes_added_today': entry.get('boxes_added_today'),
             'daily_volume_usd': daily_volume_usd,
             'unified_volume_usd': unified_volume_usd,
@@ -400,17 +399,17 @@ def get_box_price_history(box_id: str, days: Optional[int] = None, one_per_month
                     days_in_month = calendar.monthrange(year, month)[1]
                     
                     # Recalculate units sold: daily average * days in month
-                    boxes_sold_per_day = entry.get('boxes_sold_per_day', 0) or 0
+                    boxes_sold_today = entry.get('boxes_sold_today', 0) or 0
                     # Always recalculate, even if 0
-                    units_sold_count = round(boxes_sold_per_day * days_in_month, 1)
+                    units_sold_count = round(boxes_sold_today * days_in_month, 1)
                     result[i]['units_sold_count'] = units_sold_count
-                    
+
                     # Recalculate volume: 30-day volume using market efficiency factor
                     # For monthly aggregated data, use the monthly average daily sales
                     floor_price = entry.get('floor_price_usd', 0)
-                    if floor_price > 0 and boxes_sold_per_day > 0:
+                    if floor_price > 0 and boxes_sold_today > 0:
                         # daily volume = floor × avg daily sold; 30d = daily × 30
-                        daily_volume = floor_price * boxes_sold_per_day
+                        daily_volume = floor_price * boxes_sold_today
                         result[i]['unified_volume_usd'] = daily_volume * 30
                     elif floor_price > 0:
                         # If units_sold is 0, volume should also be 0
@@ -443,7 +442,7 @@ def get_box_30d_avg_sales(box_id: str) -> Optional[float]:
     """
     Calculate the 30-day average boxes sold per day for a box.
     Uses screenshot data from database when available, falls back to JSON historical data.
-    Returns the average of boxes_sold_per_day from entries in the last 30 days.
+    Returns the average of boxes_sold_today from entries in the last 30 days.
     Includes all values (including zeros) for a true 30-day average.
     
     NOTE: For screenshot data, averages are calculated during processing and stored
@@ -466,11 +465,10 @@ def get_box_30d_avg_sales(box_id: str) -> Optional[float]:
     if not recent_entries:
         return None
     
-    # Get all boxes_sold_per_day values (including zeros) for true average
-    # Prioritize boxes_sold_today if boxes_sold_per_day is not available
+    # Get all boxes_sold_today values (including zeros) for true average
     daily_sales = []
     for e in recent_entries:
-        sold = e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0
+        sold = e.get('boxes_sold_today') or 0
         daily_sales.append(float(sold) if sold else 0.0)
     
     if not daily_sales:
@@ -520,10 +518,10 @@ def get_box_30d_volume(box_id: str) -> Optional[float]:
     # Calculate volume for each period between entries
     for i, entry in enumerate(recent_entries):
         floor_price = entry.get('floor_price_usd', 0)
-        boxes_sold_per_day = entry.get('boxes_sold_per_day', 0) or 0
+        boxes_sold_today_val = entry.get('boxes_sold_today', 0) or 0
         entry_date_str = entry.get('date', '')
-        
-        if not floor_price or not boxes_sold_per_day or not entry_date_str:
+
+        if not floor_price or not boxes_sold_today_val or not entry_date_str:
             continue
         
         try:
@@ -556,7 +554,7 @@ def get_box_30d_volume(box_id: str) -> Optional[float]:
             days_in_period = 30
         
         # Volume = floor price × avg daily sold × days in period (running sum of daily entries)
-        period_volume = floor_price * boxes_sold_per_day * days_in_period
+        period_volume = floor_price * boxes_sold_today_val * days_in_period
         total_volume += period_volume
     
     return round(total_volume, 2)
@@ -590,7 +588,7 @@ def get_box_30d_volume_ramp_estimate(
     avg_sales = get_box_30d_avg_sales(box_id)
     if avg_sales is None:
         vals = [
-            float(e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0)
+            float(e.get("boxes_sold_today") or 0)
             for e in recent
         ]
         avg_sales = sum(vals) / len(vals) if vals else 0
@@ -862,7 +860,7 @@ def get_previous_calendar_month_volume(box_id: str) -> Optional[float]:
         daily = e.get("daily_volume_usd")
         if daily is None or daily == 0:
             fp = e.get("floor_price_usd") or 0
-            sold = e.get("boxes_sold_per_day") or e.get("boxes_sold_today") or 0
+            sold = e.get("boxes_sold_today") or 0
             daily = fp * sold if (fp and sold) else 0
         total += daily
     return round(total, 2) if total > 0 else None
@@ -921,11 +919,11 @@ def get_box_volume_change_pcts(box_id: str) -> Dict[str, Optional[float]]:
     if len(entries) >= 2:
         prev_entry = entries[-2]
         curr_d = latest.get("daily_volume_usd") or 0
-        if not curr_d and latest.get("floor_price_usd") and (latest.get("boxes_sold_per_day") or latest.get("boxes_sold_today")):
-            curr_d = (latest.get("floor_price_usd") or 0) * (latest.get("boxes_sold_per_day") or latest.get("boxes_sold_today") or 0)
+        if not curr_d and latest.get("floor_price_usd") and latest.get("boxes_sold_today"):
+            curr_d = (latest.get("floor_price_usd") or 0) * (latest.get("boxes_sold_today") or 0)
         prev_d = prev_entry.get("daily_volume_usd") or 0
-        if not prev_d and prev_entry.get("floor_price_usd") and (prev_entry.get("boxes_sold_per_day") or prev_entry.get("boxes_sold_today")):
-            prev_d = (prev_entry.get("floor_price_usd") or 0) * (prev_entry.get("boxes_sold_per_day") or prev_entry.get("boxes_sold_today") or 0)
+        if not prev_d and prev_entry.get("floor_price_usd") and prev_entry.get("boxes_sold_today"):
+            prev_d = (prev_entry.get("floor_price_usd") or 0) * (prev_entry.get("boxes_sold_today") or 0)
         if prev_d and prev_d > 0:
             volume_1d_change_pct = round(((curr_d - prev_d) / prev_d) * 100, 2)
 
@@ -991,7 +989,7 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
             if n >= 2 and n < ROLLING_MIN_ENTRIES_30D:
                 first_floor = recent_30[0].get('floor_price_usd') or 0
                 current_floor = recent_30[-1].get('floor_price_usd') or 0
-                vals = [(e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0) for e in recent_30]
+                vals = [(e.get('boxes_sold_today') or 0) for e in recent_30]
                 boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
                 if first_floor and current_floor and boxes_sold_30d_avg:
                     volume_30d = round(30.0 * boxes_sold_30d_avg * (first_floor + current_floor) / 2.0, 2)
@@ -1002,9 +1000,9 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
                 rolling_total = 0.0
                 for i, entry in enumerate(recent_30):
                     floor_price = entry.get('floor_price_usd') or 0
-                    boxes_sold_per_day = entry.get('boxes_sold_per_day') or entry.get('boxes_sold_today') or 0
+                    boxes_sold_today_val = entry.get('boxes_sold_today') or 0
                     entry_date_str = entry.get('date', '')
-                    if not floor_price or not boxes_sold_per_day or not entry_date_str:
+                    if not floor_price or not boxes_sold_today_val or not entry_date_str:
                         continue
                     try:
                         entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d')
@@ -1025,7 +1023,7 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
                         days_in_period = max(1, (period_end - period_start).days)
                     if len(recent_30) == 1:
                         days_in_period = 30
-                    rolling_total += floor_price * boxes_sold_per_day * days_in_period
+                    rolling_total += floor_price * boxes_sold_today_val * days_in_period
                 if rolling_total > 0:
                     volume_30d = round(rolling_total, 2)
             if volume_30d is None:
@@ -1033,7 +1031,7 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
                 volume_30d = round(s, 2) if s > 0 else None
         boxes_sold_30d_avg = None
         if recent_30:
-            vals = [(e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0) for e in recent_30]
+            vals = [(e.get('boxes_sold_today') or 0) for e in recent_30]
             boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
         monthly = filter_to_one_per_month(entries)
         floor_price_30d_change_pct = None
@@ -1051,11 +1049,11 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
         if len(entries) >= 2:
             prev_entry = entries[-2]
             curr_daily = latest.get('daily_volume_usd') or 0
-            if not curr_daily and latest.get('floor_price_usd') and (latest.get('boxes_sold_per_day') or latest.get('boxes_sold_today')):
-                curr_daily = (latest.get('floor_price_usd') or 0) * (latest.get('boxes_sold_per_day') or latest.get('boxes_sold_today') or 0)
+            if not curr_daily and latest.get('floor_price_usd') and latest.get('boxes_sold_today'):
+                curr_daily = (latest.get('floor_price_usd') or 0) * (latest.get('boxes_sold_today') or 0)
             prev_daily = prev_entry.get('daily_volume_usd') or 0
-            if not prev_daily and prev_entry.get('floor_price_usd') and (prev_entry.get('boxes_sold_per_day') or prev_entry.get('boxes_sold_today')):
-                prev_daily = (prev_entry.get('floor_price_usd') or 0) * (prev_entry.get('boxes_sold_per_day') or prev_entry.get('boxes_sold_today') or 0)
+            if not prev_daily and prev_entry.get('floor_price_usd') and prev_entry.get('boxes_sold_today'):
+                prev_daily = (prev_entry.get('floor_price_usd') or 0) * (prev_entry.get('boxes_sold_today') or 0)
             if prev_daily and prev_daily > 0 and curr_daily is not None:
                 volume_1d_change_pct = round(((curr_daily - prev_daily) / prev_daily) * 100, 2)
         cutoff_14 = (datetime.now() - timedelta(days=14)).strftime('%Y-%m-%d')
@@ -1073,7 +1071,7 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
                 daily = e.get('daily_volume_usd')
                 if daily is None or daily == 0:
                     fp = e.get('floor_price_usd') or 0
-                    sold = e.get('boxes_sold_per_day') or e.get('boxes_sold_today') or 0
+                    sold = e.get('boxes_sold_today') or 0
                     daily = fp * sold if (fp and sold) else 0
                 s += daily
             prev_month_vol = round(s, 2) if s > 0 else None
@@ -1096,7 +1094,7 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
             'volume_1d_change_pct': volume_1d_change_pct,
             'volume_7d_change_pct': volume_7d_change_pct,
             'volume_30d_change_pct': volume_30d_change_pct,
-            'boxes_sold_per_day': latest.get('boxes_sold_per_day') or latest.get('boxes_sold_today'),
+            'boxes_sold_today': latest.get('boxes_sold_today'),
             'boxes_added_today': latest.get('boxes_added_today'),
             'active_listings_count': latest.get('active_listings_count'),
             # eBay marketplace data (from Phase 1b)
@@ -1107,7 +1105,6 @@ def get_all_boxes_latest_for_leaderboard(box_ids: List[str]) -> Dict[str, Dict[s
             'ebay_active_low_price': latest.get('ebay_active_low_price'),
             'ebay_boxes_added_today': latest.get('ebay_boxes_added_today'),
             'ebay_boxes_removed_today': latest.get('ebay_boxes_removed_today'),
-            'combined_boxes_sold_today': latest.get('combined_boxes_sold_today'),
             'daily_volume_tcg_usd': latest.get('daily_volume_tcg_usd'),
             'daily_volume_ebay_usd': latest.get('daily_volume_ebay_usd'),
             # Derived metrics (from Phase 3 rolling_metrics)

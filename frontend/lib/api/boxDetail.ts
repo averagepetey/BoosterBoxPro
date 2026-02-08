@@ -28,7 +28,7 @@ export interface BoxDetail {
     volume_1d_change_pct?: number | null;
     volume_7d_change_pct?: number | null;
     volume_30d_change_pct?: number | null;
-    boxes_sold_per_day?: number | null;
+    boxes_sold_today?: number | null;
     boxes_sold_30d_avg?: number | null;
     boxes_added_today?: number | null;
     boxes_added_7d_ema?: number | null;
@@ -51,7 +51,7 @@ export interface TimeSeriesDataPoint {
   units_sold_count?: number | null;
   days_to_20pct_increase?: number | null;
   boxes_added_today?: number | null;
-  boxes_sold_per_day?: number | null;
+  boxes_sold_today?: number | null;
 }
 
 export interface RankHistoryPoint {
@@ -278,4 +278,3 @@ export async function getBoxEbayListings(
   const data = await response.json();
   return data.data || [];
 }
-

@@ -15,7 +15,7 @@ interface MetricRow {
   unified_volume_usd?: number | null;
   active_listings_count?: number | null;
   units_sold_count?: number | null;
-  boxes_sold_per_day?: number | null;
+  boxes_sold_today?: number | null;
   boxes_added_today?: number | null;
 }
 

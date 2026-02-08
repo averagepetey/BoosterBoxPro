@@ -404,7 +404,7 @@ async def get_booster_boxes(
     """
     ALLOWED_SORT_FIELDS = {
         "unified_volume_usd", "unified_volume_7d_ema", "daily_volume_usd",
-        "floor_price_usd", "floor_price_1d_change_pct", "boxes_sold_per_day",
+        "floor_price_usd", "floor_price_1d_change_pct", "boxes_sold_today",
         "boxes_sold_30d_avg", "active_listings_count", "liquidity_score",
         "days_to_20pct_increase", "tcg_daily_volume_usd", "ebay_daily_volume_usd",
     }
@@ -516,7 +516,7 @@ async def get_booster_boxes(
                     "unified_volume_usd": float(latest_metrics.unified_volume_usd) if latest_metrics.unified_volume_usd else None,
                     "unified_volume_7d_ema": float(latest_metrics.unified_volume_7d_ema) if latest_metrics.unified_volume_7d_ema else None,
                     # Sales
-                    "boxes_sold_per_day": float(latest_metrics.boxes_sold_per_day) if latest_metrics.boxes_sold_per_day else None,
+                    "boxes_sold_today": float(latest_metrics.boxes_sold_per_day) if latest_metrics.boxes_sold_per_day else None,
                     "ebay_units_sold_count": float(latest_metrics.ebay_units_sold_count) if latest_metrics.ebay_units_sold_count else None,
                     "boxes_sold_30d_avg": float(latest_metrics.boxes_sold_30d_avg) if latest_metrics.boxes_sold_30d_avg else None,
                     # Listings

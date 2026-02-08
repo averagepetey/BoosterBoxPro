@@ -210,7 +210,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
                     break
         if not active_listings and latest_db_metric and (latest_db_metric.active_listings_count or 0) > 0:
             active_listings = int(latest_db_metric.active_listings_count)
-        boxes_sold_per_day = latest.get("boxes_sold_per_day") or 0
+        boxes_sold_today = latest.get("boxes_sold_today") or 0
 
         avg_sales_30d = latest.get("boxes_sold_30d_avg")
         if avg_sales_30d is None:
@@ -286,7 +286,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
 
         supply_10pct = latest.get("listings_within_10pct_floor")
         supply = supply_10pct if supply_10pct is not None and supply_10pct > 0 else active_listings
-        sales_per_day = boxes_sold_per_day or avg_sales_30d
+        sales_per_day = boxes_sold_today or avg_sales_30d
         listings_added_per_day = avg_boxes_added_per_day or 0.0
         # Prefer pre-computed expected_time_to_sale_days from Phase 3
         expected_days_to_sell = latest.get("expected_time_to_sale_days")
@@ -310,8 +310,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "volume_30d": volume_30d,
             "unified_volume_usd": volume_30d,
             "unified_volume_7d_ema": unified_volume_7d_ema,
-            "boxes_sold_per_day": boxes_sold_per_day,
-            "boxes_sold_today": latest.get("boxes_sold_today"),
+            "boxes_sold_today": boxes_sold_today,
             "boxes_added_today": boxes_added_today,
             "avg_boxes_added_per_day": round(avg_boxes_added_per_day, 2) if (avg_boxes_added_per_day is not None and has_30_days_boxes_added) else None,
             "days_to_20pct_increase": days_to_20pct,
@@ -334,7 +333,6 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             "ebay_volume_30d_usd": latest.get("ebay_volume_30d_usd"),
             "ebay_boxes_added_today": int(ebay_daily_row.ebay_listings_added_today) if (ebay_daily_row and ebay_daily_row.ebay_listings_added_today is not None) else latest.get("ebay_boxes_added_today"),
             "ebay_boxes_removed_today": int(ebay_daily_row.ebay_listings_removed_today) if (ebay_daily_row and ebay_daily_row.ebay_listings_removed_today is not None) else latest.get("ebay_boxes_removed_today"),
-            "combined_boxes_sold_today": latest.get("combined_boxes_sold_today"),
             "daily_volume_tcg_usd": latest.get("daily_volume_tcg_usd"),
             "daily_volume_ebay_usd": latest.get("daily_volume_ebay_usd"),
         }
@@ -373,7 +371,7 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
                 "volume_30d": float(latest_db_metric.unified_volume_usd) if latest_db_metric.unified_volume_usd else None,
                 "unified_volume_usd": float(latest_db_metric.unified_volume_usd) if latest_db_metric.unified_volume_usd else None,
                 "unified_volume_7d_ema": float(latest_db_metric.unified_volume_7d_ema) if latest_db_metric.unified_volume_7d_ema else None,
-                "boxes_sold_per_day": float(latest_db_metric.boxes_sold_per_day) if latest_db_metric.boxes_sold_per_day else None,
+                "boxes_sold_today": float(latest_db_metric.boxes_sold_per_day) if latest_db_metric.boxes_sold_per_day else None,
                 "boxes_sold_30d_avg": avg_30d,
                 "boxes_added_today": int(latest_db_metric.boxes_added_today) if latest_db_metric.boxes_added_today is not None else None,
                 "avg_boxes_added_per_day": float(latest_db_metric.avg_boxes_added_per_day) if latest_db_metric.avg_boxes_added_per_day is not None else None,

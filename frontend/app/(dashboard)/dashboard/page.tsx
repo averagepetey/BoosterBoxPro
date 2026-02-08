@@ -143,12 +143,12 @@ function DashboardContent() {
     
     // If currently sorting by sales, update to the correct metric for the new time range
     const isCurrentlySortingBySales = 
-      sortBy === 'boxes_sold_per_day' || 
+      sortBy === 'boxes_sold_today' || 
       sortBy === 'boxes_sold_30d_avg';
     
     if (isCurrentlySortingBySales) {
       if (range === '24h' || range === '7d') {
-        setSortBy('boxes_sold_per_day');
+        setSortBy('boxes_sold_today');
       } else { // 30d
         setSortBy('boxes_sold_30d_avg');
       }
@@ -409,14 +409,14 @@ function DashboardContent() {
               <div 
                 className="col-span-1 text-right font-bold cursor-pointer hover:text-white transition-colors px-3"
                 onClick={() => {
-                  const salesSort = timeRange === '24h' ? 'boxes_sold_per_day'
-                    : timeRange === '7d' ? 'boxes_sold_per_day'
+                  const salesSort = timeRange === '24h' ? 'boxes_sold_today'
+                    : timeRange === '7d' ? 'boxes_sold_today'
                     : 'boxes_sold_30d_avg';
                   handleSort(salesSort);
                 }}
               >
                 {timeRange === '24h' ? 'Sales' : timeRange === '7d' ? '7d Sales' : '30d Sales'}
-                {(sortBy === 'boxes_sold_per_day' || sortBy === 'boxes_sold_30d_avg') && (
+                {(sortBy === 'boxes_sold_today' || sortBy === 'boxes_sold_30d_avg') && (
                   <span className="ml-1 text-[10px]">{sortDirection === 'desc' ? '▼' : '▲'}</span>
                 )}
               </div>

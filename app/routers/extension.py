@@ -144,7 +144,7 @@ async def compare_boxes(
         "floor_price_winner": get_winner(m1.get("floor_price_usd"), m2.get("floor_price_usd"), higher_is_better=False),
         "growth_winner": get_winner(m1.get("floor_price_30d_change_pct"), m2.get("floor_price_30d_change_pct")),
         "volume_winner": get_winner(m1.get("daily_volume_usd"), m2.get("daily_volume_usd")),
-        "sales_winner": get_winner(m1.get("boxes_sold_per_day") or m1.get("sales_per_day"), m2.get("boxes_sold_per_day") or m2.get("sales_per_day")),
+        "sales_winner": get_winner(m1.get("boxes_sold_today"), m2.get("boxes_sold_today")),
         "liquidity_winner": get_winner(m1.get("liquidity_score"), m2.get("liquidity_score")),
         "investment_winner": get_winner(m1.get("days_to_20pct_increase"), m2.get("days_to_20pct_increase"), higher_is_better=False),
     }

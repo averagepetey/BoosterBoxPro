@@ -235,7 +235,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 {[
                   { label: 'Liquidity', value: getLiquidityScoreLabel(box.metrics.liquidity_score), valueClass: getLiquidityScoreColor(box.metrics.liquidity_score) },
                   { label: 'Listed to 20%', value: box.metrics.active_listings_count != null ? box.metrics.active_listings_count.toLocaleString() : '--', valueClass: 'text-white' },
-                  { label: 'Sold Today', value: box.metrics.combined_boxes_sold_today != null ? Math.round(box.metrics.combined_boxes_sold_today).toString() : '--', valueClass: 'text-white' },
+                  { label: 'Sold Today', value: box.metrics.boxes_sold_today != null ? Math.round(box.metrics.boxes_sold_today).toString() : '--', valueClass: 'text-white' },
                   { label: 'Time to Sale', value: box.metrics.expected_time_to_sale_days != null ? `${Number(box.metrics.expected_time_to_sale_days).toFixed(2)}d` : 'N/A', valueClass: 'text-white' },
                   { label: 'Top 10', value: box.metrics.top_10_value_usd != null ? formatCurrency(box.metrics.top_10_value_usd) : '--', valueClass: 'text-white' },
                   { label: 'Daily Vol', value: box.metrics.daily_volume_usd != null ? formatCurrency(box.metrics.daily_volume_usd) : '--', valueClass: 'text-white' },
@@ -539,8 +539,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <div className="flex flex-col min-h-[5rem]">
                     <div className="text-white/70 text-sm mb-1">Sold Today</div>
                     <div className="text-2xl font-bold text-white">
-                      {box.metrics.combined_boxes_sold_today !== null && box.metrics.combined_boxes_sold_today !== undefined
-                        ? Math.round(box.metrics.combined_boxes_sold_today).toString()
+                      {box.metrics.boxes_sold_today !== null && box.metrics.boxes_sold_today !== undefined
+                        ? Math.round(box.metrics.boxes_sold_today).toString()
                         : '--'}
                     </div>
                     <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">&nbsp;</div>
@@ -577,14 +577,14 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
                 {/* Calculated Metrics - Absorption Rate */}
                 {/* Hidden until we have multi-day data for accurate daily additions comparison */}
-                {/* {box.metrics.boxes_sold_per_day && box.metrics.boxes_added_today && box.metrics.boxes_added_today > 0 && (
+                {/* {box.metrics.boxes_sold_today && box.metrics.boxes_added_today && box.metrics.boxes_added_today > 0 && (
                   <div className="mb-6 p-3 rounded-lg bg-white/5 border border-white/10">
                     <div className="text-white/70 text-sm mb-1">Absorption Rate</div>
                     <div className="text-xl font-semibold text-white">
-                      {(box.metrics.boxes_sold_per_day / box.metrics.boxes_added_today).toFixed(2)}x
+                      {(box.metrics.boxes_sold_today / box.metrics.boxes_added_today).toFixed(2)}x
                     </div>
                     <div className="text-white/50 text-xs mt-1">
-                      Selling {((box.metrics.boxes_sold_per_day / box.metrics.boxes_added_today) * 100).toFixed(0)}% faster than supply added
+                      Selling {((box.metrics.boxes_sold_today / box.metrics.boxes_added_today) * 100).toFixed(0)}% faster than supply added
                     </div>
                   </div>
                 )} */}
@@ -761,7 +761,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <div className="py-3 px-2 lg:px-3 border-b border-white/10">
                   <div className="text-base lg:text-xl font-bold text-white">
                     {(() => {
-                      const combined = box.metrics.combined_boxes_sold_today;
+                      const combined = box.metrics.boxes_sold_today;
                       const ebay = box.metrics.ebay_sold_today;
                       if (combined != null && ebay != null) return Math.round(combined - ebay);
                       if (combined != null) return Math.round(combined);
