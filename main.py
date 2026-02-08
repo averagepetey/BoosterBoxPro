@@ -232,26 +232,34 @@ async def cron_health():
         }
 
 
+# In-memory response cache for leaderboard (repeat requests return instantly)
+_leaderboard_cache: dict = {}
+
+
 @app.post("/admin/invalidate-cache")
 async def admin_invalidate_cache(request: Request):
     """
     Invalidate all API caches so leaderboard and box detail serve fresh data.
     Called by the daily refresh job when it completes. Requires INVALIDATE_CACHE_SECRET.
     """
-    secret = request.headers.get("X-Invalidate-Secret")
-    if not settings.invalidate_cache_secret or secret != settings.invalidate_cache_secret:
-        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
-    # Clear in-memory leaderboard cache (defined below in this module)
-    _leaderboard_cache.clear()
-    # Clear Redis caches (leaderboard, box detail, time-series)
-    redis_deleted = 0
     try:
-        from app.services.cache_service import cache_service
-        redis_deleted = cache_service.invalidate_all_data_caches()
+        secret = request.headers.get("X-Invalidate-Secret")
+        if not settings.invalidate_cache_secret or secret != settings.invalidate_cache_secret:
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+        # Clear in-memory leaderboard cache
+        _leaderboard_cache.clear()
+        # Clear Redis caches (leaderboard, box detail, time-series)
+        redis_deleted = 0
+        try:
+            from app.services.cache_service import cache_service
+            redis_deleted = cache_service.invalidate_all_data_caches()
+        except Exception as e:
+            logger.warning(f"cache_service.invalidate_all_data_caches: {e}")
+        logger.info("Cache invalidated (leaderboard in-memory + Redis)")
+        return {"ok": True, "message": "Caches invalidated", "redis_keys_deleted": redis_deleted}
     except Exception as e:
-        logger.warning(f"cache_service.invalidate_all_data_caches: {e}")
-    logger.info("Cache invalidated (leaderboard in-memory + Redis)")
-    return {"ok": True, "message": "Caches invalidated", "redis_keys_deleted": redis_deleted}
+        logger.error(f"Cache invalidation endpoint error: {e}")
+        return JSONResponse(status_code=200, content={"ok": True, "message": f"In-memory cache cleared, error: {e}", "redis_keys_deleted": 0})
 
 
 # Global exception handler to ensure CORS headers are included in error responses
@@ -379,9 +387,6 @@ from app.services.box_detail_service import (
     get_top_10_value_usd,
     set_code_from_product_name,
 )
-
-# In-memory response cache for leaderboard (repeat requests return instantly)
-_leaderboard_cache: dict = {}
 
 
 # Leaderboard endpoint - requires authentication and active subscription
