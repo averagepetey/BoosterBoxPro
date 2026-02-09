@@ -62,12 +62,17 @@
     if (!text) return null;
     const lower = text.toLowerCase();
 
-    // Regex patterns in priority order
+    // Try set name mapping first — most reliable, avoids false regex matches
+    for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
+      if (lower.includes(setName)) {
+        return setCode;
+      }
+    }
+
+    // Regex patterns — only match codes that look like our tracked boxes
     const patterns = [
-      /[([\s]?(op|eb|prb)[-\s]?(\d{1,2})[\s)\]]/i,
       /\b(op|eb|prb)-(\d{1,2})\b/i,
       /\b(op|eb|prb)(\d{1,2})\b/i,
-      /(op|eb|prb)[-\s]?(\d{1,2})/i,
     ];
 
     for (const pattern of patterns) {
@@ -75,14 +80,12 @@
       if (match) {
         const prefix = match[1].toUpperCase();
         const num = match[2].padStart(2, '0');
-        return `${prefix}-${num}`;
-      }
-    }
-
-    // Try set name mapping
-    for (const [setName, setCode] of Object.entries(SET_NAME_MAP)) {
-      if (lower.includes(setName)) {
-        return setCode;
+        const candidate = `${prefix}-${num}`;
+        // Only return codes within our known range to avoid false positives
+        const n = parseInt(num, 10);
+        if (prefix === 'OP' && n >= 1 && n <= 13) return candidate;
+        if (prefix === 'EB' && n >= 1 && n <= 2) return candidate;
+        if (prefix === 'PRB' && n >= 1 && n <= 2) return candidate;
       }
     }
 
