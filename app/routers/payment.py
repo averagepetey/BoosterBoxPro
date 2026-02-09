@@ -182,10 +182,10 @@ async def create_checkout_session(
             },
             
             # Success URL - user returns here after successful checkout
-            success_url=f"{os.getenv('FRONTEND_URL', 'https://boosterboxpro.vercel.app')}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
-            
+            success_url=f"{os.getenv('FRONTEND_URL', 'https://booster-box-pro.vercel.app')}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
+
             # Cancel URL - user returns here if they cancel
-            cancel_url=f"{os.getenv('FRONTEND_URL', 'https://boosterboxpro.vercel.app')}/signup?cancelled=true",
+            cancel_url=f"{os.getenv('FRONTEND_URL', 'https://booster-box-pro.vercel.app')}/signup?cancelled=true",
             
             # Metadata to track user and tier
             metadata={
@@ -519,7 +519,7 @@ async def create_portal_session(
         raise HTTPException(status_code=500, detail="Stripe is not configured")
 
     try:
-        frontend_url = os.getenv("FRONTEND_URL", "https://boosterboxpro.vercel.app")
+        frontend_url = os.getenv("FRONTEND_URL", "https://booster-box-pro.vercel.app")
         portal_session = stripe.billing_portal.Session.create(
             customer=user.stripe_customer_id,
             return_url=f"{frontend_url}/account",

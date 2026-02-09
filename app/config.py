@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     
     # Email Service (Resend)
     resend_api_key: Optional[str] = None
-    frontend_url: str = "https://boosterboxpro.vercel.app"
+    frontend_url: str = "https://booster-box-pro.vercel.app"
 
     # Google OAuth
     google_client_id: Optional[str] = None
