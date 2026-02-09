@@ -11,7 +11,7 @@
     console.log('[BBP] Already loaded, showing panel');
     const existingPanel = document.getElementById('bbp-panel');
     if (existingPanel) {
-      existingPanel.style.display = 'block';
+      existingPanel.style.display = 'flex';
       existingPanel.classList.remove('bbp-collapsed');
     }
     return;
@@ -167,6 +167,29 @@
   }
 
   /**
+   * Load saved panel height from storage
+   */
+  async function loadPanelHeight() {
+    try {
+      const { bbpPanelHeight } = await chrome.storage.local.get('bbpPanelHeight');
+      return bbpPanelHeight || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Save panel height to storage
+   */
+  async function savePanelHeight(height) {
+    try {
+      await chrome.storage.local.set({ bbpPanelHeight: height });
+    } catch (e) {
+      // storage unavailable
+    }
+  }
+
+  /**
    * Load saved panel position from storage
    */
   async function loadPanelPosition() {
@@ -206,8 +229,7 @@
           <span class="bbp-title">BoosterPro</span>
         </div>
         <div class="bbp-controls">
-          <button class="bbp-btn-collapse" title="Collapse">▶</button>
-          <button class="bbp-btn-minimize" title="Minimize">−</button>
+          <button class="bbp-btn-collapse" title="Collapse"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3L9.5 7L5.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <button class="bbp-btn-close" title="Close">×</button>
         </div>
       </div>
@@ -362,6 +384,7 @@
           <button class="bbp-retry-btn">Retry</button>
         </div>
       </div>
+      <div class="bbp-resize-handle"></div>
     `;
 
     return panel;
@@ -497,8 +520,12 @@
     let dragOffsetY = 0;
 
     handle.addEventListener('mousedown', (e) => {
-      // Don't start drag on button clicks
-      if (e.target.closest('button')) return;
+      // Don't start drag on button clicks (walk up DOM to catch SVG children inside buttons)
+      let el = e.target;
+      while (el && el !== handle) {
+        if (el.tagName === 'BUTTON') return;
+        el = el.parentElement;
+      }
       // Don't start drag when collapsed (header click expands)
       if (panelElement.classList.contains('bbp-collapsed')) return;
 
@@ -540,6 +567,40 @@
   }
 
   /**
+   * Setup drag-to-resize on the bottom handle
+   */
+  function setupResize() {
+    const handle = panelElement.querySelector('.bbp-resize-handle');
+    let isResizing = false;
+
+    handle.addEventListener('mousedown', (e) => {
+      if (panelElement.classList.contains('bbp-collapsed')) return;
+      isResizing = true;
+      panelElement.classList.add('bbp-resizing');
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const panelRect = panelElement.getBoundingClientRect();
+      const minHeight = 120;
+      const maxHeight = window.innerHeight - 100;
+      let newHeight = e.clientY - panelRect.top;
+      newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+      panelElement.style.height = newHeight + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isResizing) return;
+      isResizing = false;
+      panelElement.classList.remove('bbp-resizing');
+      document.body.style.userSelect = '';
+      savePanelHeight(panelElement.offsetHeight);
+    });
+  }
+
+  /**
    * Setup event listeners
    */
   function setupEventListeners() {
@@ -548,27 +609,35 @@
     // Collapse button — minimizes to strip, does NOT set userDismissed
     // (panel will still auto-expand when navigating to a new box)
     const collapseBtn = panelElement.querySelector('.bbp-btn-collapse');
+    let savedHeightBeforeCollapse = '';
     collapseBtn.addEventListener('click', () => {
       const isCollapsed = panelElement.classList.toggle('bbp-collapsed');
-      collapseBtn.textContent = isCollapsed ? '◀' : '▶';
+      if (isCollapsed) {
+        savedHeightBeforeCollapse = panelElement.style.height;
+        panelElement.style.height = '';
+      } else {
+        panelElement.style.height = savedHeightBeforeCollapse;
+      }
+      collapseBtn.innerHTML = isCollapsed
+        ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 3L4.5 7L8.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3L9.5 7L5.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
     });
 
     // Also allow clicking header to expand when collapsed
     panelElement.querySelector('.bbp-panel-header').addEventListener('click', (e) => {
-      if (panelElement.classList.contains('bbp-collapsed') && !e.target.closest('button')) {
+      let clickedEl = e.target;
+      let isButton = false;
+      while (clickedEl && clickedEl !== e.currentTarget) {
+        if (clickedEl.tagName === 'BUTTON') { isButton = true; break; }
+        clickedEl = clickedEl.parentElement;
+      }
+      if (panelElement.classList.contains('bbp-collapsed') && !isButton) {
         panelElement.classList.remove('bbp-collapsed');
-        collapseBtn.textContent = '▶';
+        panelElement.style.height = savedHeightBeforeCollapse;
+        collapseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3L9.5 7L5.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         collapseBtn.title = 'Collapse';
       }
-    });
-
-    // Minimize button (−) — toggles between full height and compact scrollable view
-    const minimizeBtn = panelElement.querySelector('.bbp-btn-minimize');
-    minimizeBtn.addEventListener('click', () => {
-      const isMinimized = panelElement.classList.toggle('bbp-minimized');
-      minimizeBtn.textContent = isMinimized ? '+' : '−';
-      minimizeBtn.title = isMinimized ? 'Expand' : 'Minimize';
     });
 
     // Close button (X) — hides panel entirely until user clicks "Open Extension" in popup
@@ -629,6 +698,9 @@
 
     // Drag to move
     setupDrag();
+
+    // Resize from bottom edge
+    setupResize();
   }
 
   /**
@@ -695,7 +767,7 @@
       // No box detected
       currentSetCode = null;
       if (forceShow && panelElement) {
-        panelElement.style.display = 'block';
+        panelElement.style.display = 'flex';
         updatePanel(null);
       } else if (panelElement) {
         panelElement.style.display = 'none';
@@ -712,7 +784,7 @@
     // Decide whether to show/expand the panel
     if (forceShow) {
       // User clicked "Open Extension" in popup — always show expanded
-      panelElement.style.display = 'block';
+      panelElement.style.display = 'flex';
       panelElement.classList.remove('bbp-collapsed');
       userDismissed = false;
     } else if (userDismissed) {
@@ -720,11 +792,11 @@
       // Just update data silently in the background
     } else if (isFirstTimeSeeingThisBox) {
       // First time seeing this box in this tab — auto-open expanded
-      panelElement.style.display = 'block';
+      panelElement.style.display = 'flex';
       panelElement.classList.remove('bbp-collapsed');
     } else if (isNewBox) {
       // Different box (previously seen in this tab) — keep panel visible, don't force expand
-      panelElement.style.display = 'block';
+      panelElement.style.display = 'flex';
     }
     // Same box, same state — keep as-is
 
@@ -763,9 +835,9 @@
   async function init(forceShow = false) {
     console.log('[BBP] Initializing BoosterBoxPro panel');
 
-    // Create and inject panel (hidden by default)
+    // Create and inject panel — show immediately so user can collapse while loading
     panelElement = createPanel();
-    panelElement.style.display = 'none'; // Hide initially
+    panelElement.style.display = 'flex';
     document.body.appendChild(panelElement);
 
     // Restore saved position or use default (right side)
@@ -774,6 +846,12 @@
       panelElement.style.top = savedPos.top + 'px';
       panelElement.style.left = savedPos.left + 'px';
       panelElement.style.right = 'auto';
+    }
+
+    // Restore saved height
+    const savedHeight = await loadPanelHeight();
+    if (savedHeight) {
+      panelElement.style.height = savedHeight + 'px';
     }
 
     // Setup event listeners
@@ -812,7 +890,7 @@
       if (!panelElement) {
         init(true); // forceShow = true
       } else {
-        panelElement.style.display = 'block';
+        panelElement.style.display = 'flex';
         panelElement.classList.remove('bbp-collapsed');
         detectAndFetch(0, true); // forceShow = true
       }

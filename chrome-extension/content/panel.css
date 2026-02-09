@@ -9,6 +9,7 @@
   left: 0;
   right: auto;
   width: 320px;
+  height: calc(100vh - 100px);
   max-height: calc(100vh - 100px);
   background: #141414;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -19,7 +20,9 @@
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
   z-index: 999999;
   overflow: hidden;
-  transition: width 0.3s ease, border-radius 0.3s ease, max-height 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease, border-radius 0.3s ease, height 0.3s ease;
 }
 
 /* When panel has been dragged away from edges, show all borders and full radius */
@@ -29,17 +32,10 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* Minimized state — same look, shorter panel, content scrolls */
-.bbp-panel.bbp-minimized {
-  max-height: 280px;
-}
-
-.bbp-panel.bbp-minimized .bbp-panel-content {
-  max-height: 220px;
-}
-
 .bbp-panel.bbp-collapsed {
   width: 36px;
+  height: auto;
+  max-height: none;
   border-radius: 0 12px 12px 0;
   cursor: pointer;
   background: #1a1a1a;
@@ -54,8 +50,8 @@
 
 .bbp-panel.bbp-collapsed .bbp-panel-content,
 .bbp-panel.bbp-collapsed .bbp-title,
-.bbp-panel.bbp-collapsed .bbp-btn-minimize,
-.bbp-panel.bbp-collapsed .bbp-btn-close {
+.bbp-panel.bbp-collapsed .bbp-btn-close,
+.bbp-panel.bbp-collapsed .bbp-resize-handle {
   display: none;
 }
 
@@ -80,10 +76,13 @@
 .bbp-panel.bbp-collapsed .bbp-btn-collapse {
   width: 24px;
   height: 40px;
-  font-size: 16px;
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.25);
   backdrop-filter: blur(8px);
+}
+
+.bbp-btn-collapse svg {
+  display: block;
 }
 
 .bbp-panel-header {
@@ -167,7 +166,8 @@
 .bbp-panel-content {
   padding: 16px 16px 24px;
   overflow-y: auto;
-  max-height: calc(100vh - 160px);
+  flex: 1;
+  min-height: 0;
 }
 
 .bbp-loading {
@@ -562,6 +562,42 @@
 .bbp-retry-btn:active {
   transform: translateY(0);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* ─── Resize handle ─── */
+.bbp-resize-handle {
+  width: 100%;
+  height: 8px;
+  cursor: ns-resize;
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+}
+
+.bbp-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  transition: background 0.2s ease;
+}
+
+.bbp-resize-handle:hover::after {
+  background: rgba(239, 68, 68, 0.5);
+}
+
+/* Active resize state — no transition lag, no text selection */
+.bbp-panel.bbp-resizing {
+  transition: none;
+}
+
+.bbp-panel.bbp-resizing .bbp-resize-handle::after {
+  background: rgba(239, 68, 68, 0.7);
 }
 
 /* ─── Scrollbar ─── */
