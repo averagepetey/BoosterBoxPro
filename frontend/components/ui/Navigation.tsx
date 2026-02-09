@@ -64,19 +64,19 @@ export function Navigation({ sticky = true }: NavigationProps) {
         background: 'rgba(0, 0, 0, 0)',
         backdropFilter: 'blur(10px) saturate(120%)',
         WebkitBackdropFilter: 'blur(10px) saturate(120%)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.03)'
+        borderBottom: 'none',
+        backgroundImage: 'linear-gradient(to right, transparent, rgba(239, 68, 68, 0.12), transparent)',
+        backgroundSize: '100% 1px',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'bottom',
       }}
     >
       <div className="w-full max-w-full">
-        <div className="flex items-center justify-between h-[84px] sm:h-[72px] px-4 sm:px-6">
-          {/* Logo - Responsive size: md on mobile, lg on desktop */}
-          <div className="flex-shrink-0 py-1">
-            <div className="block sm:hidden">
-              <Logo size="md" href="/dashboard" />
-            </div>
-            <div className="hidden sm:block">
-              <Logo size="lg" href="/dashboard" />
-            </div>
+        <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+          {/* Logo + Brand Name */}
+          <div className="flex-shrink-0 flex items-center gap-2.5">
+            <Logo size="md" href="/dashboard" />
+            <span className="hidden sm:inline text-lg font-bold" style={{ background: 'linear-gradient(180deg, #ef4444, #dc2626)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>BoosterBoxPro</span>
           </div>
           
           {/* Desktop Navigation Links */}
@@ -127,15 +127,18 @@ export function Navigation({ sticky = true }: NavigationProps) {
               </>
             ) : (
               <>
+                <a href="#chrome-extension" className="text-sm text-white/50 hover:text-white transition-colors">Features</a>
+                <a href="#pricing" className="text-sm text-white/50 hover:text-white transition-colors">Pricing</a>
+                <div className="w-px h-5 bg-white/10" />
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="px-5 py-2 rounded-lg border border-white/40 text-white hover:bg-white/10 hover:border-white/70 font-medium transition-all flex items-center"
+                  className="px-4 py-1.5 rounded-lg border border-white/20 text-sm text-white/80 hover:text-white hover:bg-white/5 hover:border-white/40 font-medium transition-all"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => setIsSignupModalOpen(true)}
-                  className="px-5 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition-all"
+                  className="px-4 py-1.5 rounded-lg bg-yellow-400 text-sm text-black font-semibold hover:bg-yellow-300 hover:shadow-[0_0_16px_rgba(250,204,21,0.35)] transition-all"
                 >
                   Sign Up
                 </button>
@@ -230,12 +233,15 @@ export function Navigation({ sticky = true }: NavigationProps) {
                 </>
               ) : (
                 <>
+                  <a href="#chrome-extension" onClick={closeMobileMenu} className="text-white/60 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center text-sm">Features</a>
+                  <a href="#pricing" onClick={closeMobileMenu} className="text-white/60 hover:text-white transition-colors px-4 py-3 min-h-[44px] flex items-center text-sm">Pricing</a>
+                  <div className="border-t border-white/10 mx-4 my-1" />
                   <button
                     onClick={() => {
                       setIsLoginModalOpen(true);
                       closeMobileMenu();
                     }}
-                    className="px-4 py-3 rounded-lg border border-white/40 text-white hover:bg-white/10 hover:border-white/70 font-medium transition-all min-h-[44px] flex items-center justify-center mx-4"
+                    className="px-4 py-3 rounded-lg border border-white/20 text-white/80 hover:text-white hover:bg-white/5 hover:border-white/40 font-medium transition-all min-h-[44px] flex items-center justify-center mx-4 text-sm"
                   >
                     Sign In
                   </button>
@@ -244,7 +250,7 @@ export function Navigation({ sticky = true }: NavigationProps) {
                       setIsSignupModalOpen(true);
                       closeMobileMenu();
                     }}
-                    className="px-4 py-3 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition-all text-center min-h-[44px] flex items-center justify-center mx-4 mt-2"
+                    className="px-4 py-3 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 hover:shadow-[0_0_16px_rgba(250,204,21,0.35)] transition-all text-center min-h-[44px] flex items-center justify-center mx-4 mt-2 text-sm"
                   >
                     Sign Up
                   </button>
