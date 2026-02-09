@@ -442,7 +442,7 @@
     // Update image if available
     const img = panelElement.querySelector('.bbp-box-image');
     if (box.image_url) {
-      img.src = `https://boosterboxpro.vercel.app${box.image_url}`;
+      img.src = `https://booster-box-pro.vercel.app${box.image_url}`;
       img.style.display = 'block';
     } else {
       img.style.display = 'none';
@@ -481,7 +481,7 @@
     const listingsAdded = metrics.boxes_added_today != null ? metrics.boxes_added_today : (metrics.avg_boxes_added_per_day != null ? metrics.avg_boxes_added_per_day : null);
     document.getElementById('bbp-listings-added').textContent = listingsAdded != null ? formatNumber(Math.round(listingsAdded)) + '/day' : '—';
     const dashboardLink = panelElement.querySelector('.bbp-dashboard-link');
-    dashboardLink.href = 'https://boosterboxpro.vercel.app/boxes/' + box.id;
+    dashboardLink.href = 'https://booster-box-pro.vercel.app/boxes/' + box.id;
     currentBoxData = data;
     const cmp1 = document.getElementById('bbp-compare-box1-name');
     if (cmp1) cmp1.textContent = box.set_code || currentSetCode;
