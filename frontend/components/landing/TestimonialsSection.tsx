@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuthModals } from '@/components/auth/AuthModalsProvider';
 
@@ -23,36 +24,36 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    username: 'AlexCollector',
-    handle: '@alexcollects',
-    profilePicture: '👤',
+    username: 'boxkingpeter',
+    handle: '@boxkingpeter',
+    profilePicture: '/images/reviews/boxkingpeter.png',
     rating: 5,
     review: "Between the ease of use and comprehensive data, I've been able to track my collection's value and make informed buying decisions. The real-time metrics are incredibly valuable.",
     date: '2 weeks ago'
   },
   {
     id: 2,
-    username: 'MarketWatcher',
-    handle: '@marketpro',
-    profilePicture: '👤',
+    username: 'mati_500',
+    handle: '@mati_500',
+    profilePicture: '/images/reviews/mati_500.jpg',
     rating: 5,
     review: "As someone who has tried tracking prices manually, BoosterBoxPro has been a game-changer. The dashboard makes it easy to spot trends and opportunities.",
     date: '1 month ago'
   },
   {
     id: 3,
-    username: 'OnePieceInvestor',
-    handle: '@opinvestor',
-    profilePicture: '👤',
+    username: 'mochabuni',
+    handle: '@mochabuni',
+    profilePicture: '/images/reviews/mochabuni.jpg',
     rating: 5,
     review: "The Chrome extension is amazing - having market data right on TCGplayer and eBay pages has completely changed how I shop for boxes.",
     date: '3 weeks ago'
   },
   {
     id: 4,
-    username: 'DataDriven',
-    handle: '@datatracker',
-    profilePicture: '👤',
+    username: 'petey2457',
+    handle: '@petey2457',
+    profilePicture: '/images/reviews/petey2457.jpg',
     rating: 5,
     review: "Spotting buyouts before they happen has given me a huge edge. The volume tracking feature is something you can't get anywhere else.",
     date: '1 week ago'
@@ -203,8 +204,12 @@ export function TestimonialsSection() {
               >
                 {/* Profile Section */}
                 <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
-                    {testimonial.profilePicture}
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 overflow-hidden">
+                    {testimonial.profilePicture.startsWith('/') ? (
+                      <Image src={testimonial.profilePicture} alt={testimonial.username} width={56} height={56} className="w-full h-full object-cover" />
+                    ) : (
+                      testimonial.profilePicture
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs sm:text-sm lg:text-base font-semibold text-white mb-0.5">
@@ -279,8 +284,12 @@ export function TestimonialsSection() {
                 >
                   {/* Profile Section */}
                   <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
-                      {testimonial.profilePicture}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 overflow-hidden">
+                      {testimonial.profilePicture.startsWith('/') ? (
+                        <Image src={testimonial.profilePicture} alt={testimonial.username} width={48} height={48} className="w-full h-full object-cover" />
+                      ) : (
+                        testimonial.profilePicture
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs sm:text-sm font-semibold text-white mb-0.5">
@@ -333,8 +342,12 @@ export function TestimonialsSection() {
                 >
                   {/* Profile Section */}
                   <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
-                      {testimonial.profilePicture}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 overflow-hidden">
+                      {testimonial.profilePicture.startsWith('/') ? (
+                        <Image src={testimonial.profilePicture} alt={testimonial.username} width={48} height={48} className="w-full h-full object-cover" />
+                      ) : (
+                        testimonial.profilePicture
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs sm:text-sm font-semibold text-white mb-0.5">
