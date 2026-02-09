@@ -27,7 +27,9 @@
     {
       "matches": [
         "https://*.tcgplayer.com/*",
-        "https://tcgplayer.com/*"
+        "https://tcgplayer.com/*",
+        "https://*.ebay.com/*",
+        "https://ebay.com/*"
       ],
       "js": ["content/tcgplayer.js"],
       "css": ["content/panel.css"],

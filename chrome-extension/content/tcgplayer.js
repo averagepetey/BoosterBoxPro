@@ -18,7 +18,8 @@
   }
   window.__bbpLoaded = true;
 
-  console.log('[BBP] BoosterBoxPro content script loaded on TCGplayer');
+  const siteName = window.location.hostname.includes('ebay') ? 'eBay' : 'TCGplayer';
+  console.log(`[BBP] BoosterBoxPro content script loaded on ${siteName}`);
 
   // State
   let currentSetCode = null;
