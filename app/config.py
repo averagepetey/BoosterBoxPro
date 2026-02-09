@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Admin API Key (simple auth for manual entry endpoints)
     admin_api_key: Optional[str] = None
 
-    # Invalidate cache secret: daily refresh calls POST /admin/invalidate-cache with this
+    # Invalidate cache secret: daily refresh calls POST /hooks/invalidate-cache with this
     # so leaderboard and box detail serve fresh data right after refresh (set in GitHub Actions)
     invalidate_cache_secret: Optional[str] = None
     

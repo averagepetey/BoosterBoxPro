@@ -321,7 +321,7 @@ def main():
     if backend_url and invalidate_secret:
         import urllib.request
         import time as _time
-        url = f"{backend_url}/admin/invalidate-cache"
+        url = f"{backend_url}/hooks/invalidate-cache"
         max_retries = 3
         for attempt in range(1, max_retries + 1):
             try:

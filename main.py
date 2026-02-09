@@ -236,11 +236,13 @@ async def cron_health():
 _leaderboard_cache: dict = {}
 
 
-@app.post("/admin/invalidate-cache")
-async def admin_invalidate_cache(request: Request):
+@app.post("/hooks/invalidate-cache")
+async def hooks_invalidate_cache(request: Request):
     """
     Invalidate all API caches so leaderboard and box detail serve fresh data.
     Called by the daily refresh job when it completes. Requires INVALIDATE_CACHE_SECRET.
+    Lives under /hooks (not /admin) so it bypasses the admin IP allowlist —
+    GitHub Actions runners have dynamic IPs. The secret header provides auth.
     """
     try:
         secret = request.headers.get("X-Invalidate-Secret")
