@@ -309,10 +309,14 @@ export function LeaderboardTable({
 
               {/* Days to 20% - same data as box detail */}
               <div className="col-span-1 text-center px-2 min-h-[44px] max-[430px]:min-h-[36px] xl:min-h-0 flex items-center justify-center">
-                <div className="text-sm max-[430px]:text-xs xl:text-lg text-foreground financial-number">
+                <div className={`text-sm max-[430px]:text-xs xl:text-lg financial-number ${
+                  box.metrics.days_to_20pct_increase != null && box.metrics.days_to_20pct_increase !== undefined
+                    ? 'text-foreground'
+                    : 'text-white/30'
+                }`}>
                   {box.metrics.days_to_20pct_increase != null && box.metrics.days_to_20pct_increase !== undefined
                     ? Math.round(box.metrics.days_to_20pct_increase)
-                    : '--'}
+                    : 'No squeeze'}
                 </div>
               </div>
               </div>

@@ -208,8 +208,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 </div>
                 <div className="py-2 flex flex-col min-h-[4rem] justify-center">
                   <div className="text-white/50 text-[10px] mb-0.5 uppercase tracking-wide">Days to +20%</div>
-                  <div className="text-lg font-bold text-white">
-                    {box.metrics.days_to_20pct_increase != null ? Math.round(box.metrics.days_to_20pct_increase) : 'N/A'}
+                  <div className={`text-lg font-bold ${box.metrics.days_to_20pct_increase != null ? 'text-white' : 'text-white/30'}`}>
+                    {box.metrics.days_to_20pct_increase != null ? Math.round(box.metrics.days_to_20pct_increase) : 'No squeeze'}
                   </div>
                   <div className="text-white/50 text-[10px] min-h-[1rem] mt-0.5">Estimated</div>
                 </div>
@@ -477,10 +477,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                   <div className="flex flex-col min-h-[6rem] pb-4 border-b border-white/15">
                     <div className="text-white/70 text-base font-medium mb-1">Days to +20%</div>
-                    <div className="text-3xl lg:text-4xl font-bold text-white">
+                    <div className={`text-3xl lg:text-4xl font-bold ${box.metrics.days_to_20pct_increase !== null && box.metrics.days_to_20pct_increase !== undefined ? 'text-white' : 'text-white/30'}`}>
                       {box.metrics.days_to_20pct_increase !== null && box.metrics.days_to_20pct_increase !== undefined
                         ? Math.round(box.metrics.days_to_20pct_increase)
-                        : 'N/A'}
+                        : 'No squeeze'}
                     </div>
                     <div className="text-white/60 text-sm min-h-[1.25rem] mt-0.5">
                       Estimated time to price increase

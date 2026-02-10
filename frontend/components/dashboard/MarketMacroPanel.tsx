@@ -15,7 +15,7 @@ type ChartRange = 7 | 30 | 90 | 365;
 
 function formatUsd(value: number | null): string {
   if (value === null || value === undefined) return '--';
-  return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatPct(value: number | null): string {
