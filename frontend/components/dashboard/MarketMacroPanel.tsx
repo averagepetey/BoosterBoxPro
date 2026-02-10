@@ -26,7 +26,7 @@ function formatPct(value: number | null): string {
 
 export function MarketMacroPanel() {
   const [chartRange, setChartRange] = useState<ChartRange>(30);
-  const { data: macro, isLoading: macroLoading } = useMarketMacro();
+  const { data: macro, isLoading: macroLoading, error: macroError } = useMarketMacro();
   const { data: timeSeries } = useMarketIndexTimeSeries(chartRange);
 
   if (macroLoading) {
@@ -43,6 +43,10 @@ export function MarketMacroPanel() {
         </div>
       </div>
     );
+  }
+
+  if (macroError) {
+    console.error('[MarketMacroPanel] Error loading macro data:', macroError);
   }
 
   if (!macro) return null;
