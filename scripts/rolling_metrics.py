@@ -346,9 +346,9 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         # avg_added for internal use
         avg_added = avg_boxes_added or 0
 
-        # ── 7. days_to_20pct_increase (needs 30d data) ──────────────
+        # ── 7. days_to_20pct_increase ─────────────────────────────────
         days_to_20pct_increase = None
-        if has_30d_data and sold_30d_avg_raw and sold_30d_avg_raw > 0 and active_listings > 0:
+        if sold_30d_avg_raw and sold_30d_avg_raw > 0 and active_listings > 0:
             net_burn = sold_30d_avg_raw - avg_added
             if net_burn > 0.05:
                 d20 = round(active_listings / net_burn, 2)
