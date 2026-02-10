@@ -70,7 +70,8 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
                    unified_volume_usd, unified_volume_7d_ema,
                    boxes_sold_30d_avg, boxes_added_today, liquidity_score,
                    days_to_20pct_increase, avg_boxes_added_per_day,
-                   expected_days_to_sell, floor_price_1d_change_pct
+                   expected_days_to_sell, floor_price_1d_change_pct,
+                   ebay_units_sold_count
             FROM box_metrics_unified
             WHERE booster_box_id = :bid
             ORDER BY metric_date ASC
@@ -82,10 +83,16 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
         d = r._mapping if hasattr(r, "_mapping") else dict(r)
         metric_date = d.get("metric_date")
         date_str = metric_date.isoformat() if hasattr(metric_date, "isoformat") else str(metric_date) if metric_date else None
+        # boxes_sold_per_day in DB may already include eBay (from a prior
+        # rolling_metrics run).  Subtract stored eBay to recover raw TCG value
+        # so re-runs don't double-count.
+        raw_sold = float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None
+        stored_ebay_sold = float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0
+        tcg_sold = max(0, raw_sold - stored_ebay_sold) if raw_sold is not None else None
         entries.append({
             "date": date_str,
             "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
-            "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
+            "boxes_sold_today": tcg_sold,
             "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
             "stored_ebay_active": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0,
             "unified_volume_usd": float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None,
