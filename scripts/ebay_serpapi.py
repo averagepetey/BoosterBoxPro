@@ -588,9 +588,16 @@ def run_ebay_serpapi_scraper(
     for box_id, config in box_items:
         name = config["name"]
         query = config["search_query"]
-        min_price = config["min_price"]
-        max_price = config["max_price"]
         tcg_floor = tcg_floors.get(box_id)
+
+        # Dynamic price range based on TCG floor (2x ceiling, 0.5x floor)
+        # Falls back to hardcoded config values if no TCG floor available
+        if tcg_floor and tcg_floor > 0:
+            min_price = max(config["min_price"], int(tcg_floor * 0.5))
+            max_price = max(config["max_price"], int(tcg_floor * 2.0))
+        else:
+            min_price = config["min_price"]
+            max_price = config["max_price"]
 
         logger.info(f"Scraping {name}" + (f" (TCG floor: ${tcg_floor:.2f})" if tcg_floor else ""))
 
