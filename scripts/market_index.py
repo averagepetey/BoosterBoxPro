@@ -181,9 +181,9 @@ def compute_market_index(target_date: str | None = None) -> dict:
 
     logger.info(f"Found {len(boxes)} boxes for market index")
 
-    # ── Index value: equal-weight average of floor prices ──────────
+    # ── Index value: sum of all floor prices ──────────
     floor_prices = [b["floor_price_usd"] for b in boxes if b.get("floor_price_usd") is not None and b["floor_price_usd"] > 0]
-    index_value = round(sum(floor_prices) / len(floor_prices), 2) if floor_prices else None
+    index_value = round(sum(floor_prices), 2) if floor_prices else None
 
     # ── Change percentages: compare to stored historical values ───
     dt = datetime.strptime(target_date, "%Y-%m-%d")
