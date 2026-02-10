@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMarketMacro, useMarketIndexTimeSeries } from '@/hooks/useMarketMacro';
 import { MarketIndexChart } from './MarketIndexChart';
 import { SentimentBadge } from './SentimentBadge';
@@ -22,6 +22,38 @@ function formatPct(value: number | null): string {
   if (value === null || value === undefined || isNaN(value)) return '--';
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(1)}%`;
+}
+
+function InfoTooltip() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative inline-flex" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="ml-1.5 w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/60 text-[10px] font-bold flex items-center justify-center transition"
+        aria-label="What is the BoosterBox Index?"
+      >
+        i
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-2 z-50 w-64 rounded-lg border border-white/15 bg-[#1a1a1a] p-3 shadow-xl text-xs text-white/70 leading-relaxed">
+          <p className="font-semibold text-white/90 mb-1">BoosterBox Index</p>
+          <p>The total cost to own one of every sealed One Piece booster box. It tracks the combined floor prices of all 18 sets to show the overall market direction at a glance.</p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function MarketMacroPanel() {
@@ -70,8 +102,9 @@ export function MarketMacroPanel() {
           {/* Index header */}
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="text-white/50 text-[10px] font-semibold uppercase tracking-wider mb-1">
+              <div className="text-white/50 text-[10px] font-semibold uppercase tracking-wider mb-1 flex items-center">
                 BoosterBox Index
+                <InfoTooltip />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-white text-2xl font-bold">{formatUsd(macro.index_value)}</span>
