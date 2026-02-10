@@ -89,12 +89,17 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
         raw_sold = float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None
         stored_ebay_sold = float(d["ebay_units_sold_count"]) if d.get("ebay_units_sold_count") is not None else 0
         tcg_sold = max(0, raw_sold - stored_ebay_sold) if raw_sold is not None else None
+        # active_listings_count in DB may already include eBay (same pattern).
+        # Subtract stored eBay active to recover raw TCG value.
+        raw_active = int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None
+        stored_ebay_active = int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0
+        tcg_active = max(0, raw_active - stored_ebay_active) if raw_active is not None else None
         entries.append({
             "date": date_str,
             "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
             "boxes_sold_today": tcg_sold,
-            "active_listings_count": int(d["active_listings_count"]) if d.get("active_listings_count") is not None else None,
-            "stored_ebay_active": int(d["ebay_active_listings_count"]) if d.get("ebay_active_listings_count") is not None else 0,
+            "active_listings_count": tcg_active,
+            "stored_ebay_active": stored_ebay_active,
             "unified_volume_usd": float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None,
             "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
         })
@@ -458,15 +463,16 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         updated += 1
 
         # ── Combined TCG + eBay metrics for unified columns ──────────
+        # IDEMPOTENCY: All three combined values (sold, active, added) are
+        # written to box_metrics_unified.  On re-run, _get_tcg_history recovers
+        # raw TCG values by subtracting stored eBay counts.  This ensures
+        # re-runs produce identical results instead of double-counting eBay.
+        #
         # floor_price_usd stays TCGplayer-only (primary marketplace)
         # boxes_sold_today = TCG + eBay sold
         combined_sold = round(sales_per_day, 2) if sales_per_day else target_entry.get("boxes_sold_today")
         # active_listings_count = TCG + eBay active (already computed as `active_listings`)
         combined_active = active_listings if active_listings else target_entry.get("active_listings_count")
-        # boxes_added_today = TCG + eBay added
-        combined_added = _get_combined_added(target_entry)
-        if target_entry.get("boxes_added_today") is None and target_entry.get("ebay_boxes_added_today") is None:
-            combined_added = None  # Both null → null (not 0)
 
         # ── Write computed metrics to DB ──────────────────────────────
         try:
@@ -481,7 +487,7 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 unified_volume_usd=unified_volume_usd,
                 unified_volume_7d_ema=unified_volume_7d_ema,
                 boxes_sold_30d_avg=boxes_sold_30d_avg,
-                boxes_added_today=combined_added,
+                boxes_added_today=None,  # Preserve raw Phase 2 TCG value (no eBay counterpart to subtract)
                 liquidity_score=liquidity_score,
                 days_to_20pct_increase=days_to_20pct_increase,
                 avg_boxes_added_per_day=avg_boxes_added_per_day,
