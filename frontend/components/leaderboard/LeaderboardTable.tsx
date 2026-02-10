@@ -7,7 +7,39 @@
 
 import { LeaderboardBox } from '../../lib/api/leaderboard';
 import { getBoxImageUrl } from '../../lib/utils/boxImages';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+
+function NoSqueezeTooltip() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative inline-flex" ref={ref}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="ml-1 w-3.5 h-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/60 text-[9px] font-bold flex items-center justify-center transition"
+        aria-label="What does No squeeze mean?"
+      >
+        i
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-lg border border-white/15 bg-[#1a1a1a] p-2.5 shadow-xl text-[11px] text-white/70 leading-relaxed">
+          <p className="font-semibold text-white/90 mb-1">No Supply Squeeze</p>
+          <p>More boxes are being listed than sold, so there&apos;s no supply pressure driving prices up.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface LeaderboardTableProps {
   boxes: LeaderboardBox[];
@@ -316,7 +348,7 @@ export function LeaderboardTable({
                 }`}>
                   {box.metrics.days_to_20pct_increase != null && box.metrics.days_to_20pct_increase !== undefined
                     ? Math.round(box.metrics.days_to_20pct_increase)
-                    : 'No squeeze'}
+                    : <span className="inline-flex items-center">No squeeze<NoSqueezeTooltip /></span>}
                 </div>
               </div>
               </div>
