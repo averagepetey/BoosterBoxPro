@@ -11,6 +11,7 @@ import { useState, useRef, useEffect } from 'react';
 
 function NoSqueezeTooltip() {
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,17 +23,25 @@ function NoSqueezeTooltip() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const show = open || hovered;
+
   return (
     <div className="relative inline-flex" ref={ref}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         className="ml-1 w-3.5 h-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/60 text-[9px] font-bold flex items-center justify-center transition"
         aria-label="What does No squeeze mean?"
       >
         i
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-lg border border-white/15 bg-[#1a1a1a] p-2.5 shadow-xl text-[11px] text-white/70 leading-relaxed">
+      {show && (
+        <div
+          className="absolute right-0 top-full mt-1.5 z-50 w-56 rounded-lg border border-white/15 bg-[#1a1a1a] p-2.5 shadow-xl text-[11px] text-white/70 leading-relaxed"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
           <p className="font-semibold text-white/90 mb-1">No Supply Squeeze</p>
           <p>More boxes are being listed than sold, so there&apos;s no supply pressure driving prices up.</p>
         </div>
