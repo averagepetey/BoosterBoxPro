@@ -1240,6 +1240,10 @@ def save_results(results: List[Dict]):
                 metric_date=today,
                 active_listings_count=boxes_within_20pct,
                 boxes_added_today=boxes_added_today,
+                # Reset eBay active count so Phase 3's subtraction-based
+                # idempotency works (COALESCE would otherwise preserve
+                # stale combined-era values from previous Phase 3 runs).
+                ebay_active_listings_count=0,
             )
             if ok:
                 logger.debug(f"DB upsert ok for {box_id}")

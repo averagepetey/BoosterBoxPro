@@ -756,6 +756,10 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                     boxes_sold_30d_avg=boxes_sold_30d_avg,
                     current_bucket_start=current_bucket_start,
                     current_bucket_qty=current_bucket_qty,
+                    # Reset eBay sold count so Phase 3's subtraction-based
+                    # idempotency works (COALESCE would otherwise preserve
+                    # stale combined-era values from previous Phase 3 runs).
+                    ebay_units_sold_count=0,
                 )
             except Exception as e:
                 logger.warning(f"DB upsert skipped for {name}: {e}")

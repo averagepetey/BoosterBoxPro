@@ -99,7 +99,6 @@ def _get_tcg_history(box_id: str) -> List[Dict[str, Any]]:
             "floor_price_usd": float(d["floor_price_usd"]) if d.get("floor_price_usd") is not None else None,
             "boxes_sold_today": tcg_sold,
             "active_listings_count": tcg_active,
-            "stored_ebay_active": stored_ebay_active,
             "unified_volume_usd": float(d["unified_volume_usd"]) if d.get("unified_volume_usd") is not None else None,
             "boxes_added_today": int(d["boxes_added_today"]) if d.get("boxes_added_today") is not None else None,
         })
@@ -335,11 +334,9 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
             floor_price_30d_change_pct = round(((fp_today - fp_30d) / fp_30d) * 100, 2)
 
         # ── Shared inputs for metrics 6-8 ─────────────────────────────
-        # Subtract any eBay active that Phase 3 previously combined into active_listings_count
-        # so re-runs don't double-count eBay listings
-        raw_active = target_entry.get("active_listings_count") or 0
-        stored_ebay = target_entry.get("stored_ebay_active") or 0
-        tcg_active = max(0, raw_active - stored_ebay)
+        # _get_tcg_history already recovered raw TCG active_listings_count
+        # by subtracting stored eBay.  Don't subtract again here.
+        tcg_active = target_entry.get("active_listings_count") or 0
         ebay_active = target_entry.get("ebay_active_listings") or 0
         active_listings = tcg_active + ebay_active
 
