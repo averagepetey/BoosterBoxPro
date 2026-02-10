@@ -287,6 +287,26 @@ def main():
         save_completion_status(status)
         return 1
 
+    # Phase 3b: Market Index (NON-FATAL — aggregate stats for macro panel)
+    logger.info("")
+    logger.info("=" * 50)
+    logger.info("Phase 3b: Market Index — Computing Aggregate Stats")
+    logger.info("=" * 50)
+    status["market_index"] = {"completed": False, "error": None}
+    try:
+        from scripts.market_index import compute_market_index
+
+        mi_result = compute_market_index(target_date=today_str)
+        status["market_index"]["completed"] = True
+        status["market_index"]["index_value"] = mi_result.get("index_value")
+        status["market_index"]["sentiment"] = mi_result.get("sentiment")
+        logger.info(f"✅ Phase 3b complete: index={mi_result.get('index_value')}, sentiment={mi_result.get('sentiment')}")
+    except Exception as e:
+        status["market_index"]["error"] = str(e)
+        logger.warning(f"⚠️  Phase 3b (Market Index) failed (non-fatal): {e}")
+        import traceback
+        logger.warning(traceback.format_exc())
+
     # Calculate duration
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()

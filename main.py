@@ -820,6 +820,144 @@ async def get_box_ebay_listings(
         return {"data": [], "meta": {"total": 0, "box_id": box_id, "error": str(e)}}
 
 
+# Market Macro endpoint - aggregate market-wide stats (subscribers only)
+@app.get("/booster-boxes/market-macro")
+@limiter.limit(RateLimits.LEADERBOARD)
+async def get_market_macro(
+    request: Request,
+    current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
+):
+    """
+    Get market macro summary — latest BoosterBox Index, sentiment, fear & greed,
+    price movers, volume, and supply data.
+    Requires authentication and active subscription.
+    """
+    from app.services.db_historical_reader import _get_sync_engine
+    from sqlalchemy import text
+
+    try:
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            # Latest row
+            row = conn.execute(text("""
+                SELECT mid.*, bb_g.product_name AS gainer_name, bb_l.product_name AS loser_name
+                FROM market_index_daily mid
+                LEFT JOIN booster_boxes bb_g ON bb_g.id = mid.biggest_gainer_box_id
+                LEFT JOIN booster_boxes bb_l ON bb_l.id = mid.biggest_loser_box_id
+                ORDER BY mid.metric_date DESC
+                LIMIT 1
+            """)).fetchone()
+
+            if not row:
+                return JSONResponse(status_code=404, content={"detail": "No market index data available"})
+
+            d = row._mapping if hasattr(row, "_mapping") else dict(row)
+
+            # Previous day for 24h comparison
+            prev_row = conn.execute(text("""
+                SELECT index_value, total_daily_volume_usd, total_active_listings
+                FROM market_index_daily
+                WHERE metric_date < CAST(:md AS date)
+                ORDER BY metric_date DESC
+                LIMIT 1
+            """), {"md": str(d["metric_date"])}).fetchone()
+
+        data = {
+            "metric_date": str(d["metric_date"]),
+            "index_value": float(d["index_value"]) if d.get("index_value") is not None else None,
+            "index_1d_change_pct": float(d["index_1d_change_pct"]) if d.get("index_1d_change_pct") is not None else None,
+            "index_7d_change_pct": float(d["index_7d_change_pct"]) if d.get("index_7d_change_pct") is not None else None,
+            "index_30d_change_pct": float(d["index_30d_change_pct"]) if d.get("index_30d_change_pct") is not None else None,
+            "sentiment": d.get("sentiment"),
+            "fear_greed_score": int(d["fear_greed_score"]) if d.get("fear_greed_score") is not None else None,
+            "floors_up_count": d.get("floors_up_count"),
+            "floors_down_count": d.get("floors_down_count"),
+            "floors_flat_count": d.get("floors_flat_count"),
+            "biggest_gainer": {
+                "box_id": str(d["biggest_gainer_box_id"]) if d.get("biggest_gainer_box_id") else None,
+                "name": d.get("gainer_name"),
+                "pct": float(d["biggest_gainer_pct"]) if d.get("biggest_gainer_pct") is not None else None,
+            },
+            "biggest_loser": {
+                "box_id": str(d["biggest_loser_box_id"]) if d.get("biggest_loser_box_id") else None,
+                "name": d.get("loser_name"),
+                "pct": float(d["biggest_loser_pct"]) if d.get("biggest_loser_pct") is not None else None,
+            },
+            "total_daily_volume_usd": float(d["total_daily_volume_usd"]) if d.get("total_daily_volume_usd") is not None else None,
+            "total_7d_volume_usd": float(d["total_7d_volume_usd"]) if d.get("total_7d_volume_usd") is not None else None,
+            "total_30d_volume_usd": float(d["total_30d_volume_usd"]) if d.get("total_30d_volume_usd") is not None else None,
+            "volume_1d_change_pct": float(d["volume_1d_change_pct"]) if d.get("volume_1d_change_pct") is not None else None,
+            "volume_7d_change_pct": float(d["volume_7d_change_pct"]) if d.get("volume_7d_change_pct") is not None else None,
+            "avg_liquidity_score": float(d["avg_liquidity_score"]) if d.get("avg_liquidity_score") is not None else None,
+            "total_boxes_sold_today": float(d["total_boxes_sold_today"]) if d.get("total_boxes_sold_today") is not None else None,
+            "total_active_listings": d.get("total_active_listings"),
+            "total_boxes_added_today": d.get("total_boxes_added_today"),
+            "net_supply_change": d.get("net_supply_change"),
+            "listings_1d_change": d.get("listings_1d_change"),
+        }
+
+        # Add previous day values for comparison
+        if prev_row:
+            pd = prev_row._mapping if hasattr(prev_row, "_mapping") else dict(prev_row)
+            data["prev_day"] = {
+                "index_value": float(pd["index_value"]) if pd.get("index_value") is not None else None,
+                "total_daily_volume_usd": float(pd["total_daily_volume_usd"]) if pd.get("total_daily_volume_usd") is not None else None,
+                "total_active_listings": int(pd["total_active_listings"]) if pd.get("total_active_listings") is not None else None,
+            }
+
+        return {"data": data}
+    except Exception as e:
+        logger.error(f"Error fetching market macro: {e}")
+        if settings.environment == "production":
+            return JSONResponse(status_code=500, content={"detail": "Failed to fetch market data"})
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+# Market Index time-series endpoint - historical chart data (subscribers only)
+@app.get("/booster-boxes/market-index/time-series")
+@limiter.limit(RateLimits.TIME_SERIES)
+async def get_market_index_time_series(
+    request: Request,
+    days: int = Query(default=30, ge=1, le=365),
+    current_user = Depends(require_active_subscription) if require_active_subscription is not None else Depends(get_optional_user),
+):
+    """
+    Get historical market index time-series data for charting.
+    Returns metric_date, index_value, sentiment, fear_greed_score, total_daily_volume_usd per day.
+    Requires authentication and active subscription.
+    """
+    from app.services.db_historical_reader import _get_sync_engine
+    from sqlalchemy import text
+    from datetime import date, timedelta
+
+    try:
+        engine = _get_sync_engine()
+        cutoff = (date.today() - timedelta(days=days)).isoformat()
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT metric_date, index_value, sentiment, fear_greed_score, total_daily_volume_usd
+                FROM market_index_daily
+                WHERE metric_date >= CAST(:cutoff AS date)
+                ORDER BY metric_date ASC
+            """), {"cutoff": cutoff}).fetchall()
+
+        data_points = []
+        for r in rows:
+            d = r._mapping if hasattr(r, "_mapping") else dict(r)
+            data_points.append({
+                "date": str(d["metric_date"]),
+                "index_value": float(d["index_value"]) if d.get("index_value") is not None else None,
+                "sentiment": d.get("sentiment"),
+                "fear_greed_score": int(d["fear_greed_score"]) if d.get("fear_greed_score") is not None else None,
+                "total_daily_volume_usd": float(d["total_daily_volume_usd"]) if d.get("total_daily_volume_usd") is not None else None,
+            })
+
+        return {"data": data_points}
+    except Exception as e:
+        logger.error(f"Error fetching market index time-series: {e}")
+        return {"data": []}
+
+
 # Rank history endpoint - DISABLED for now
 # @app.get("/booster-boxes/{box_id}/rank-history")
 # async def get_box_rank_history(

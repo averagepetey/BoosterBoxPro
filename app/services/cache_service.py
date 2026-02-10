@@ -208,7 +208,7 @@ class CacheService:
             return 0
         deleted = 0
         try:
-            for pattern in ("leaderboard:*", "box:detail:*", "box:timeseries:*"):
+            for pattern in ("leaderboard:*", "box:detail:*", "box:timeseries:*", "market:*"):
                 keys = self.redis_client.keys(pattern)
                 if keys:
                     self.redis_client.delete(*keys)
