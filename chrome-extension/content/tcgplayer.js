@@ -213,6 +213,42 @@
   }
 
   /**
+   * Load collapsed state from session storage.
+   * Returns the set code the user collapsed on, or null.
+   */
+  async function loadCollapsedState() {
+    try {
+      const { bbpCollapsedSetCode } = await chrome.storage.session.get('bbpCollapsedSetCode');
+      return bbpCollapsedSetCode || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Save collapsed state — records which box was collapsed so it survives page refresh.
+   */
+  async function saveCollapsedState(setCode) {
+    if (!setCode) return;
+    try {
+      await chrome.storage.session.set({ bbpCollapsedSetCode: setCode });
+    } catch (e) {
+      // storage unavailable
+    }
+  }
+
+  /**
+   * Clear collapsed state (user expanded or navigated to a different box).
+   */
+  async function clearCollapsedState() {
+    try {
+      await chrome.storage.session.remove('bbpCollapsedSetCode');
+    } catch (e) {
+      // storage unavailable
+    }
+  }
+
+  /**
    * Create the stats panel HTML
    */
   function createPanel() {
@@ -285,7 +321,7 @@
               <div class="bbp-stats-grid">
                 <div class="bbp-stat"><span class="bbp-stat-label">Liquidity</span><span class="bbp-stat-value" id="bbp-liquidity">—</span></div>
                 <div class="bbp-stat"><span class="bbp-stat-label">Boxes Listed to 20%</span><span class="bbp-stat-value" id="bbp-listings">—</span></div>
-                <div class="bbp-stat"><span class="bbp-stat-label">Sold/Day</span><span class="bbp-stat-value" id="bbp-sales-day">—</span></div>
+                <div class="bbp-stat"><span class="bbp-stat-label">Sold Today</span><span class="bbp-stat-value" id="bbp-sales-day">—</span></div>
                 <div class="bbp-stat"><span class="bbp-stat-label">Time to Sale</span><span class="bbp-stat-value" id="bbp-time-sale">—</span></div>
                 <div class="bbp-stat"><span class="bbp-stat-label">Top 10 Value</span><span class="bbp-stat-value" id="bbp-top10">—</span></div>
                 <div class="bbp-stat"><span class="bbp-stat-label">Daily Vol</span><span class="bbp-stat-value" id="bbp-daily-volume">—</span></div>
@@ -476,7 +512,7 @@
     const el24h = document.getElementById('bbp-24h-change');
     if (el24h) el24h.innerHTML = metrics.floor_price_1d_change_pct != null ? formatPercent(metrics.floor_price_1d_change_pct) : '—';
     document.getElementById('bbp-volume-7d').textContent = formatCurrency(metrics.unified_volume_7d_ema || metrics.unified_volume_usd);
-    document.getElementById('bbp-days-20').textContent = metrics.days_to_20pct_increase != null ? Math.round(metrics.days_to_20pct_increase) : 'N/A';
+    document.getElementById('bbp-days-20').textContent = metrics.days_to_20pct_increase != null ? Math.round(metrics.days_to_20pct_increase) : 'No squeeze';
     // Volume change (DoD)
     const volChangeWrap = document.getElementById('bbp-volume-change-wrap');
     const volChangeEl = document.getElementById('bbp-volume-change');
@@ -494,7 +530,7 @@
     const liqLabel = metrics.liquidity_score >= 70 ? 'High' : metrics.liquidity_score >= 40 ? 'Moderate' : 'Low';
     document.getElementById('bbp-liquidity').textContent = metrics.liquidity_score != null ? liqLabel : '—';
     document.getElementById('bbp-listings').textContent = formatNumber(metrics.active_listings_count);
-    document.getElementById('bbp-sales-day').textContent = (metrics.boxes_sold_30d_avg != null ? (Math.round(metrics.boxes_sold_30d_avg * 10) / 10) : metrics.sales_per_day != null ? (Math.round(metrics.sales_per_day * 10) / 10) : '—').toString();
+    document.getElementById('bbp-sales-day').textContent = (metrics.boxes_sold_today != null ? (Math.round(metrics.boxes_sold_today * 10) / 10) : metrics.boxes_sold_30d_avg != null ? (Math.round(metrics.boxes_sold_30d_avg * 10) / 10) : '—').toString();
     document.getElementById('bbp-time-sale').textContent = (metrics.expected_time_to_sale_days != null || metrics.expected_days_to_sell != null) ? (Number(metrics.expected_time_to_sale_days || metrics.expected_days_to_sell).toFixed(2) + ' days') : 'N/A';
     document.getElementById('bbp-top10').textContent = (metrics.top_10_value_usd != null) ? formatCurrency(metrics.top_10_value_usd) : '—';
     document.getElementById('bbp-daily-volume').textContent = formatCurrency(metrics.daily_volume_usd);
@@ -615,8 +651,10 @@
       if (isCollapsed) {
         savedHeightBeforeCollapse = panelElement.style.height;
         panelElement.style.height = '';
+        saveCollapsedState(currentSetCode);
       } else {
         panelElement.style.height = savedHeightBeforeCollapse;
+        clearCollapsedState();
       }
       collapseBtn.innerHTML = isCollapsed
         ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 3L4.5 7L8.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -637,6 +675,7 @@
         panelElement.style.height = savedHeightBeforeCollapse;
         collapseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3L9.5 7L5.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         collapseBtn.title = 'Collapse';
+        clearCollapsedState();
       }
     });
 
@@ -724,13 +763,15 @@
     document.getElementById('bbp-cmp-volume1').textContent = formatCurrency(m1.daily_volume_usd);
     document.getElementById('bbp-cmp-volume2').textContent = formatCurrency(m2.daily_volume_usd);
 
-    // Sales
-    document.getElementById('bbp-cmp-sales1').textContent = m1.sales_per_day ? m1.sales_per_day.toFixed(1) : '—';
-    document.getElementById('bbp-cmp-sales2').textContent = m2.sales_per_day ? m2.sales_per_day.toFixed(1) : '—';
+    // Sales (boxes_sold_today primary, boxes_sold_30d_avg fallback — matches frontend)
+    const sales1 = m1.boxes_sold_today != null ? m1.boxes_sold_today : m1.boxes_sold_30d_avg;
+    const sales2 = m2.boxes_sold_today != null ? m2.boxes_sold_today : m2.boxes_sold_30d_avg;
+    document.getElementById('bbp-cmp-sales1').textContent = sales1 != null ? Number(sales1).toFixed(1) : '—';
+    document.getElementById('bbp-cmp-sales2').textContent = sales2 != null ? Number(sales2).toFixed(1) : '—';
 
-    // Liquidity
-    document.getElementById('bbp-cmp-liq1').textContent = m1.liquidity_score ? `${m1.liquidity_score.toFixed(1)}/10` : '—';
-    document.getElementById('bbp-cmp-liq2').textContent = m2.liquidity_score ? `${m2.liquidity_score.toFixed(1)}/10` : '—';
+    // Liquidity (categorical: High/Moderate/Low — matches stats tab and frontend)
+    document.getElementById('bbp-cmp-liq1').textContent = m1.liquidity_score != null ? (m1.liquidity_score >= 70 ? 'High' : m1.liquidity_score >= 40 ? 'Moderate' : 'Low') : '—';
+    document.getElementById('bbp-cmp-liq2').textContent = m2.liquidity_score != null ? (m2.liquidity_score >= 70 ? 'High' : m2.liquidity_score >= 40 ? 'Moderate' : 'Low') : '—';
 
     // Days to +20%
     document.getElementById('bbp-cmp-days1').textContent = m1.days_to_20pct_increase ? `${Math.round(m1.days_to_20pct_increase)} days` : '—';
@@ -787,16 +828,28 @@
       panelElement.style.display = 'flex';
       panelElement.classList.remove('bbp-collapsed');
       userDismissed = false;
+      clearCollapsedState();
     } else if (userDismissed) {
       // User clicked X — panel stays hidden until they click "Open Extension"
       // Just update data silently in the background
     } else if (isFirstTimeSeeingThisBox) {
-      // First time seeing this box in this tab — auto-open expanded
+      // First time seeing this box in this tab — check if it was collapsed before
+      // a page refresh (persisted in session storage)
+      const collapsedCode = await loadCollapsedState();
+      panelElement.style.display = 'flex';
+      if (collapsedCode === newSetCode) {
+        // Same box after page refresh — respect collapsed state
+        panelElement.classList.add('bbp-collapsed');
+      } else {
+        // Truly new box — auto-open expanded
+        panelElement.classList.remove('bbp-collapsed');
+        clearCollapsedState();
+      }
+    } else if (isNewBox) {
+      // Different box (previously seen in this tab) — auto-expand
       panelElement.style.display = 'flex';
       panelElement.classList.remove('bbp-collapsed');
-    } else if (isNewBox) {
-      // Different box (previously seen in this tab) — keep panel visible, don't force expand
-      panelElement.style.display = 'flex';
+      clearCollapsedState();
     }
     // Same box, same state — keep as-is
 
