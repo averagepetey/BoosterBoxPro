@@ -538,10 +538,13 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
     """
     Pull fresh sales data from TCGplayer for all boxes and save to DB.
 
-    Sales computation uses actual weekly bucket data from Apify:
-    - boxes_sold_today: daily rate from the most recent complete weekly bucket (or delta from incomplete bucket)
+    Sales calculation is simple:
+    - Apify gives us totalQuantitySold (lifetime cumulative total)
+    - We saved yesterday's total in the DB
+    - boxes_sold_today = today's total - yesterday's total
+    - daily_volume = boxes_sold_today × market_price
 
-    The old approach of using averageDailyQuantitySold (a lifetime avg) is removed.
+    Fallback for first run (no yesterday data): use weekly bucket average.
 
     Returns:
         Dict with success_count, error_count, date, top_5 results, and alerts
@@ -567,7 +570,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             cutoff_30d = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
             rows = conn.execute(_text("""
                 SELECT booster_box_id, metric_date, floor_price_usd, boxes_sold_per_day,
-                       current_bucket_start, current_bucket_qty
+                       current_bucket_start, current_bucket_qty, total_quantity_sold
                 FROM box_metrics_unified
                 WHERE metric_date >= :cutoff
                 ORDER BY booster_box_id, metric_date ASC
@@ -582,6 +585,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 "boxes_sold_today": float(d["boxes_sold_per_day"]) if d.get("boxes_sold_per_day") is not None else None,
                 "current_bucket_start": d.get("current_bucket_start"),
                 "current_bucket_qty": int(d["current_bucket_qty"]) if d.get("current_bucket_qty") is not None else None,
+                "total_quantity_sold": int(d["total_quantity_sold"]) if d.get("total_quantity_sold") is not None else None,
             }
             historical.setdefault(bid, []).append(entry)
         logger.info(f"Loaded {len(historical)} boxes with history from DB")
@@ -640,33 +644,28 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 floor = 0
                 bucket_date = ""
 
-            # ── Compute daily sales from weekly bucket data ──
-            _weekly_fallback = compute_daily_sales_from_buckets(buckets, today=today) or 0
-            # boxes_sold_today: most recent complete week's daily rate
-            boxes_sold_today = compute_this_week_daily_rate(buckets, today=today) or _weekly_fallback
+            # ── Compute daily sales from totalQuantitySold delta ──
+            # Simple: today's lifetime total - yesterday's lifetime total = boxes sold today
+            prev_entry = get_previous_entry(historical, box_id, today)
+            prev_total = prev_entry.get("total_quantity_sold") if prev_entry else None
 
-            # Store complete bucket data for the most recent complete week (reference)
+            if prev_total is not None and total_quantity_sold > 0:
+                # We have yesterday's total — subtract to get today's sales
+                boxes_sold_today = max(0, total_quantity_sold - prev_total)
+                logger.info(f"  Sales delta: {total_quantity_sold} - {prev_total} = {boxes_sold_today} sold today")
+            else:
+                # First run or no previous total — fall back to weekly bucket average
+                boxes_sold_today = compute_this_week_daily_rate(buckets, today=today) or 0
+                if boxes_sold_today == 0:
+                    boxes_sold_today = compute_daily_sales_from_buckets(buckets, today=today) or 0
+                logger.info(f"  No previous total — using weekly avg fallback: {boxes_sold_today}/day")
+
+            # Keep bucket reference data (not used for sales calc, just stored)
             complete_buckets = get_complete_weekly_buckets(buckets, today)
             recent_bucket_qty = _safe_int(complete_buckets[0].get("quantitySold")) if complete_buckets else 0
-
-            # ── Delta tracking from incomplete bucket ──
             incomplete_bucket = get_current_incomplete_bucket(buckets, today)
             current_bucket_start = incomplete_bucket.get("bucketStartDate", "")[:10] if incomplete_bucket else None
             current_bucket_qty = _safe_int(incomplete_bucket.get("quantitySold")) if incomplete_bucket else None
-
-            # Get previous entry for comparison
-            prev_entry = get_previous_entry(historical, box_id, today)
-
-            # Compute delta sold today from incomplete bucket tracking
-            delta_boxes_sold_today = None
-            delta_source = None
-            if current_bucket_qty is not None and current_bucket_start:
-                delta_boxes_sold_today, delta_source = compute_delta_sold_today(
-                    current_bucket_qty, current_bucket_start, prev_entry
-                )
-                if delta_boxes_sold_today is not None:
-                    boxes_sold_today = delta_boxes_sold_today
-                    logger.info(f"  Delta tracking: {delta_boxes_sold_today} sold today ({delta_source})")
 
             prev_sold_per_day = prev_entry.get("boxes_sold_today") if prev_entry else None
             prev_price = prev_entry.get("market_price_usd") if prev_entry else None
@@ -698,21 +697,19 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
             new_entry = {
                 "date": today,
                 "source": "apify_tcgplayer",
-                # Sales metrics (computed from weekly bucket data)
-                "boxes_sold_today": boxes_sold_today,  # Delta from incomplete bucket, or weekly rate fallback
-                "bucket_quantity_sold": recent_bucket_qty,  # Raw qty from most recent complete week
-                # Incomplete bucket delta tracking
+                # Sales metrics (from totalQuantitySold delta)
+                "boxes_sold_today": boxes_sold_today,
+                "total_quantity_sold": total_quantity_sold,
+                "bucket_quantity_sold": recent_bucket_qty,
+                # Bucket tracking (reference only)
                 "current_bucket_start": current_bucket_start,
                 "current_bucket_qty": current_bucket_qty,
-                "delta_boxes_sold_today": delta_boxes_sold_today,
-                "delta_source": delta_source,
                 "floor_price_usd": floor,
                 "market_price_usd": market_price,
                 "daily_volume_usd": daily_vol,
                 "bucket_date": bucket_date,
                 # Reference fields from API (not used for computations)
                 "apify_lifetime_avg": apify_lifetime_avg,
-                "total_quantity_sold": total_quantity_sold,
                 "total_transaction_count": total_transaction_count,
                 # Day-over-day changes
                 "avg_change_from_yesterday": avg_change,
@@ -744,7 +741,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                 vals = [_safe_float(e.get("boxes_sold_today") or 0) for e in recent_30]
                 boxes_sold_30d_avg = round(sum(vals) / len(vals), 2) if vals else None
 
-            # Write to DB: use daily delta (actual sales today) not weekly average
+            # Write to DB
             try:
                 from app.services.box_metrics_writer import upsert_daily_metrics
                 upsert_daily_metrics(
@@ -756,6 +753,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
                     boxes_sold_30d_avg=boxes_sold_30d_avg,
                     current_bucket_start=current_bucket_start,
                     current_bucket_qty=current_bucket_qty,
+                    total_quantity_sold=total_quantity_sold,
                     # Reset eBay sold count so Phase 3's subtraction-based
                     # idempotency works (COALESCE would otherwise preserve
                     # stale combined-era values from previous Phase 3 runs).
@@ -766,7 +764,7 @@ def refresh_all_boxes_sales_data() -> Dict[str, Any]:
 
             # Log with context
             change_str = f" ({avg_change_pct:+.1f}%)" if avg_change_pct else ""
-            logger.info(f"✅ {name}: {boxes_sold_today}/day (this week){change_str} @ ${market_price:.2f}")
+            logger.info(f"✅ {name}: {boxes_sold_today} sold today{change_str} @ ${market_price:.2f} (lifetime total: {total_quantity_sold})")
 
             results.append({
                 "name": name,

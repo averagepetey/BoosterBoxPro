@@ -22,13 +22,15 @@ _upsert_sql = text("""
         volume_1d_change_pct, volume_7d_change_pct, volume_30d_change_pct,
         daily_volume_usd, tcg_daily_volume_usd, ebay_daily_volume_usd,
         ebay_units_sold_count, ebay_active_listings_count,
-        current_bucket_start, current_bucket_qty
+        current_bucket_start, current_bucket_qty,
+        total_quantity_sold
     ) VALUES (
         CAST(:bid AS uuid), CAST(:md AS date), :fp, :bspd, :alc, :uvu, :uv7, :bs30, :bat,
         :liq, :d20, :abapd, :edts, :fp1d, :fp7d, :fp30d,
         :v1d, :v7d, :v30d,
         :dv, :tcg_dv, :ebay_dv, :ebay_sold, :ebay_listings,
-        :cbs, :cbq
+        :cbs, :cbq,
+        :tqs
     )
     ON CONFLICT (booster_box_id, metric_date)
     DO UPDATE SET
@@ -56,6 +58,7 @@ _upsert_sql = text("""
         ebay_active_listings_count = COALESCE(EXCLUDED.ebay_active_listings_count, box_metrics_unified.ebay_active_listings_count),
         current_bucket_start = COALESCE(EXCLUDED.current_bucket_start, box_metrics_unified.current_bucket_start),
         current_bucket_qty = COALESCE(EXCLUDED.current_bucket_qty, box_metrics_unified.current_bucket_qty),
+        total_quantity_sold = COALESCE(EXCLUDED.total_quantity_sold, box_metrics_unified.total_quantity_sold),
         updated_at = NOW()
 """)
 
@@ -86,9 +89,11 @@ def upsert_daily_metrics(
     ebay_daily_volume_usd: Optional[float] = None,
     ebay_units_sold_count: Optional[float] = None,
     ebay_active_listings_count: Optional[int] = None,
-    # Bucket tracking for TCGplayer delta computation
+    # Bucket tracking (kept for reference)
     current_bucket_start: Optional[str] = None,
     current_bucket_qty: Optional[int] = None,
+    # Lifetime total for daily delta calculation
+    total_quantity_sold: Optional[int] = None,
 ) -> bool:
     """Upsert one row into box_metrics_unified. Returns True on success, False on FK/error."""
     try:
@@ -122,6 +127,7 @@ def upsert_daily_metrics(
                     "ebay_listings": ebay_active_listings_count,
                     "cbs": current_bucket_start,
                     "cbq": current_bucket_qty,
+                    "tqs": total_quantity_sold,
                 })
         return True
     except Exception:
