@@ -368,19 +368,19 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
                 days_to_20pct_increase = 180.0
 
         # ── 8. expected_time_to_sale_days ──────────────────────────────
-        tcg_sales = float(
-            target_entry.get("boxes_sold_today")
-            or sold_30d_avg_raw
-            or 0
-        )
-        ebay_sales = float(target_entry.get("ebay_sold_today") or 0)
-        sales_per_day = tcg_sales + ebay_sales
+        # Actual today's sales (integers) — used for the daily sold count
+        tcg_sales_today = float(target_entry.get("boxes_sold_today") or 0)
+        ebay_sales_today = float(target_entry.get("ebay_sold_today") or 0)
+        actual_sold_today = tcg_sales_today + ebay_sales_today
+
+        # For time-to-sale estimation, fall back to 30-day avg if today is 0
+        sales_for_estimate = actual_sold_today if actual_sold_today > 0 else (sold_30d_avg_raw or 0)
 
         # Use active_listings as supply proxy
         supply = active_listings
         expected_time_to_sale_days = None
-        if supply and supply > 0 and sales_per_day and sales_per_day > 0:
-            net_burn = sales_per_day - avg_added
+        if supply and supply > 0 and sales_for_estimate and sales_for_estimate > 0:
+            net_burn = sales_for_estimate - avg_added
             if net_burn > 0.05:
                 raw_days = supply / net_burn
                 expected_time_to_sale_days = round(max(1.0, min(365.0, raw_days)), 2)
@@ -466,8 +466,8 @@ def compute_rolling_metrics(target_date: str | None = None) -> dict:
         # re-runs produce identical results instead of double-counting eBay.
         #
         # floor_price_usd stays TCGplayer-only (primary marketplace)
-        # boxes_sold_today = TCG + eBay sold
-        combined_sold = round(sales_per_day, 2) if sales_per_day else target_entry.get("boxes_sold_today")
+        # boxes_sold_today = TCG + eBay actual daily count (integers, no averages)
+        combined_sold = round(actual_sold_today, 2) if actual_sold_today else target_entry.get("boxes_sold_today")
         # active_listings_count = TCG + eBay active (already computed as `active_listings`)
         combined_active = active_listings if active_listings else target_entry.get("active_listings_count")
 
