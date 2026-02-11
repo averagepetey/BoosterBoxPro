@@ -8,15 +8,16 @@
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Navigation } from '@/components/ui/Navigation';
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePostHog } from 'posthog-js/react';
 import { useBoxDetail, useBoxTimeSeries, useBoxEbayListings } from '@/hooks/useBoxDetail';
-import { useState } from 'react';
 import { PriceChart } from '@/components/charts/PriceChart';
 import { AdvancedMetricsTable } from '@/components/AdvancedMetricsTable';
 
 export default function BoxDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const posthog = usePostHog();
   const { box, isLoading, error } = useBoxDetail(id);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y' | 'all'>('30d');
   // Enable time-series and rank history hooks
@@ -34,6 +35,17 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     365,  // Always fetch all available data for the table
     true  // Filter to one entry per month
   );
+
+  // Track box detail view
+  useEffect(() => {
+    if (box && posthog) {
+      const setMatch = box.product_name.match(/((?:OP|EB|PRB)-\d+)/i);
+      posthog.capture('box_detail_viewed', {
+        box_id: id,
+        set_code: setMatch ? setMatch[1].toUpperCase() : null,
+      });
+    }
+  }, [box, posthog, id]);
 
   const formatCurrency = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return '--';

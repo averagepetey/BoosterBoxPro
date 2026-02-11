@@ -15,7 +15,8 @@
     "https://ebay.com/*",
     "https://boosterboxpro.onrender.com/*",
     "https://*.onrender.com/*",
-    "https://*.run.app/*"
+    "https://*.run.app/*",
+    "https://us.i.posthog.com/*"
   ],
   "options_ui": {
     "page": "options/options.html"

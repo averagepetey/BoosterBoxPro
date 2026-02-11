@@ -21,12 +21,24 @@
   const siteName = window.location.hostname.includes('ebay') ? 'eBay' : 'TCGplayer';
   console.log(`[BBP] BoosterBoxPro content script loaded on ${siteName}`);
 
+  /**
+   * Send an analytics event to PostHog via background script
+   */
+  function trackEvent(event, properties = {}) {
+    try {
+      chrome.runtime.sendMessage({ action: 'trackEvent', event, properties });
+    } catch (e) {
+      // Extension context invalidated — ignore
+    }
+  }
+
   // State
   let currentSetCode = null;
   let currentBoxData = null;
   let panelElement = null;
   let isCompareMode = false;
   let compareBoxData = null;
+  let panelOpenedAt = null;
   // Track which boxes the user has already seen (auto-opened) this session
   let seenBoxesThisSession = new Set();
   // Whether the user explicitly collapsed/closed the panel
@@ -492,6 +504,10 @@
     error.style.display = 'none';
     chrome.runtime.sendMessage({ action: 'boxDetected' });
 
+    trackEvent('extension_box_detected', { set_code: data.box?.set_code || currentSetCode, site: siteName });
+    trackEvent('extension_panel_opened', { set_code: data.box?.set_code || currentSetCode, site: siteName });
+    panelOpenedAt = Date.now();
+
     const box = data.box;
     const metrics = data.metrics;
 
@@ -541,6 +557,9 @@
     document.getElementById('bbp-listings-added').textContent = listingsAdded != null ? formatNumber(Math.round(listingsAdded)) + '/day' : '—';
     const dashboardLink = panelElement.querySelector('.bbp-dashboard-link');
     dashboardLink.href = 'https://booster-box-pro.vercel.app/boxes/' + box.id;
+    dashboardLink.addEventListener('click', () => {
+      trackEvent('extension_dashboard_link_clicked', { set_code: box.set_code || currentSetCode, box_id: box.id });
+    });
     currentBoxData = data;
     const cmp1 = document.getElementById('bbp-compare-box1-name');
     if (cmp1) cmp1.textContent = box.set_code || currentSetCode;
@@ -649,10 +668,19 @@
     collapseBtn.addEventListener('click', () => {
       const isCollapsed = panelElement.classList.toggle('bbp-collapsed');
       if (isCollapsed) {
+        trackEvent('extension_panel_collapsed', { set_code: currentSetCode });
+        // Track session duration on collapse
+        if (panelOpenedAt) {
+          const durationSeconds = Math.round((Date.now() - panelOpenedAt) / 1000);
+          trackEvent('extension_session_ended', { duration_seconds: durationSeconds, set_code: currentSetCode });
+          panelOpenedAt = null;
+        }
         savedHeightBeforeCollapse = panelElement.style.height;
         panelElement.style.height = '';
         saveCollapsedState(currentSetCode);
       } else {
+        trackEvent('extension_panel_expanded', { set_code: currentSetCode });
+        panelOpenedAt = Date.now();
         panelElement.style.height = savedHeightBeforeCollapse;
         clearCollapsedState();
       }
@@ -672,6 +700,8 @@
       }
       if (panelElement.classList.contains('bbp-collapsed') && !isButton) {
         panelElement.classList.remove('bbp-collapsed');
+        trackEvent('extension_panel_expanded', { set_code: currentSetCode });
+        panelOpenedAt = Date.now();
         panelElement.style.height = savedHeightBeforeCollapse;
         collapseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3L9.5 7L5.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         collapseBtn.title = 'Collapse';
@@ -681,6 +711,13 @@
 
     // Close button (X) — hides panel entirely until user clicks "Open Extension" in popup
     panelElement.querySelector('.bbp-btn-close').addEventListener('click', () => {
+      trackEvent('extension_panel_dismissed', { set_code: currentSetCode });
+      // Track session duration on dismiss
+      if (panelOpenedAt) {
+        const durationSeconds = Math.round((Date.now() - panelOpenedAt) / 1000);
+        trackEvent('extension_session_ended', { duration_seconds: durationSeconds, set_code: currentSetCode });
+        panelOpenedAt = null;
+      }
       panelElement.style.display = 'none';
       userDismissed = true;
     });
@@ -689,6 +726,7 @@
     panelElement.querySelectorAll('.bbp-tab').forEach(tab => {
       tab.addEventListener('click', (e) => {
         const tabName = e.target.dataset.tab;
+        trackEvent('extension_tab_switched', { tab_name: tabName, set_code: currentSetCode });
 
         // Update tab buttons
         panelElement.querySelectorAll('.bbp-tab').forEach(t => t.classList.remove('active'));
@@ -706,6 +744,7 @@
     compareSelect.addEventListener('change', async (e) => {
       const compareCode = e.target.value;
       if (!compareCode || !currentSetCode) return;
+      trackEvent('extension_compare_selected', { current_box: currentSetCode, compare_box: compareCode });
 
       // Remove current box from options display
       const resultsDiv = panelElement.querySelector('.bbp-compare-results');
@@ -732,6 +771,7 @@
 
     // Retry button
     panelElement.querySelector('.bbp-retry-btn').addEventListener('click', () => {
+      trackEvent('extension_retry_clicked', { set_code: currentSetCode });
       detectAndFetch();
     });
 
@@ -951,6 +991,14 @@
     }
 
     return true;
+  });
+
+  // Track session end on page unload
+  window.addEventListener('beforeunload', () => {
+    if (panelOpenedAt && currentSetCode) {
+      const durationSeconds = Math.round((Date.now() - panelOpenedAt) / 1000);
+      trackEvent('extension_session_ended', { duration_seconds: durationSeconds, set_code: currentSetCode });
+    }
   });
 
   // Start when DOM is ready (auto-detect, don't force show)

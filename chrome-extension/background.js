@@ -3,6 +3,9 @@
  * Handles API communication and caching
  */
 
+// PostHog analytics (lightweight HTTP client)
+importScripts('lib/posthog.js');
+
 const DEFAULT_API_BASE_URL = 'https://boosterboxpro.onrender.com';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
@@ -211,7 +214,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'injectPanel':
       injectContentScript(request.tabId).then(sendResponse);
       return true;
-      
+
+    case 'trackEvent':
+      captureEvent(request.event, request.properties || {}).then(() => sendResponse({ success: true }));
+      return true;
+
     default:
       console.warn(`[BBP] Unknown action: ${request.action}`);
       sendResponse({ error: 'Unknown action' });
@@ -227,5 +234,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.action.setBadgeText({ text: '', tabId: sender.tab.id });
   }
 });
+
+// Ensure PostHog distinct_id is initialized on service worker load
+getDistinctId().then(id => console.log('[BBP] PostHog distinct_id:', id));
 
 console.log('[BBP] BoosterBoxPro background service worker loaded');

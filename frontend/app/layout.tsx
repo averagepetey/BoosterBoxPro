@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { PostHogProvider } from "@/components/providers/PostHogProvider";
+import { PostHogPageView } from "@/components/providers/PostHogPageView";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthModalsProvider } from "@/components/auth/AuthModalsProvider";
 
@@ -30,13 +32,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <QueryProvider>
-            <AuthModalsProvider>
-              {children}
-            </AuthModalsProvider>
-          </QueryProvider>
-        </ErrorBoundary>
+        <PostHogProvider>
+          <PostHogPageView />
+          <ErrorBoundary>
+            <QueryProvider>
+              <AuthModalsProvider>
+                {children}
+              </AuthModalsProvider>
+            </QueryProvider>
+          </ErrorBoundary>
+        </PostHogProvider>
       </body>
     </html>
   );
