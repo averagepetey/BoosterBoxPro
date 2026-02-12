@@ -3,7 +3,7 @@
  * Uses PostHog's capture API directly (SDK doesn't work in content scripts due to CSP)
  */
 
-const POSTHOG_API_KEY = '__POSTHOG_API_KEY__'; // Replace with your actual PostHog project API key
+const POSTHOG_API_KEY = 'phc_XhxvuetiJo2RY2SqT5p7rlX6T5YbIMQOrUxv1TCJr6j';
 const POSTHOG_HOST = 'https://us.i.posthog.com';
 
 /**
