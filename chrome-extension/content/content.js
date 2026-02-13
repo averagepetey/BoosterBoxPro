@@ -868,8 +868,19 @@
    * @param {boolean} forceShow - If true, show panel even if no box detected (user clicked button)
    */
   async function detectAndFetch(retryCount = 0, forceShow = false) {
-    // Show loading state only if panel is visible or forceShow
-    if (panelElement && (panelElement.style.display !== 'none' || forceShow)) {
+    const panelAlreadyVisible = panelElement && panelElement.style.display !== 'none';
+
+    // Show loading state only when:
+    // - User explicitly clicked "Open Extension" (forceShow)
+    // - Panel is already visible (e.g., SPA navigation between box pages)
+    // For auto-detection on a new page, panel stays hidden until API confirms a match.
+    if (panelElement && (forceShow || panelAlreadyVisible)) {
+      if (forceShow) {
+        panelElement.style.display = 'flex';
+        panelElement.classList.remove('bbp-collapsed');
+        userDismissed = false;
+        clearCollapsedState();
+      }
       panelElement.querySelector('.bbp-loading').style.display = 'flex';
       panelElement.querySelector('.bbp-box-info').style.display = 'none';
       panelElement.querySelector('.bbp-no-box').style.display = 'none';
@@ -892,9 +903,10 @@
       // No box detected
       currentSetCode = null;
       if (forceShow && panelElement) {
-        panelElement.style.display = 'flex';
+        // User explicitly opened — show "no box" message
         updatePanel(null);
       } else if (panelElement) {
+        // Auto-detect found nothing — hide panel silently
         panelElement.style.display = 'none';
       }
       chrome.runtime.sendMessage({ action: 'noBoxDetected' });
@@ -905,40 +917,10 @@
     const isNewBox = newSetCode !== currentSetCode;
     const isFirstTimeSeeingThisBox = !seenBoxesThisSession.has(newSetCode);
     currentSetCode = newSetCode;
-
-    // Decide whether to show/expand the panel
-    if (forceShow) {
-      // User clicked "Open Extension" in popup — always show expanded
-      panelElement.style.display = 'flex';
-      panelElement.classList.remove('bbp-collapsed');
-      userDismissed = false;
-      clearCollapsedState();
-    } else if (userDismissed) {
-      // User clicked X — panel stays hidden until they click "Open Extension"
-      // Just update data silently in the background
-    } else if (isFirstTimeSeeingThisBox) {
-      // First time seeing this box in this tab — check if it was collapsed before
-      // a page refresh (persisted in session storage)
-      const collapsedCode = await loadCollapsedState();
-      panelElement.style.display = 'flex';
-      if (collapsedCode === newSetCode) {
-        // Same box after page refresh — respect collapsed state
-        panelElement.classList.add('bbp-collapsed');
-      } else {
-        // Truly new box — auto-open expanded
-        panelElement.classList.remove('bbp-collapsed');
-        clearCollapsedState();
-      }
-    } else if (isNewBox) {
-      // Different box (previously seen in this tab) — auto-expand
-      panelElement.style.display = 'flex';
-      panelElement.classList.remove('bbp-collapsed');
-      clearCollapsedState();
-    }
-    // Same box, same state — keep as-is
-
-    // Mark this box as seen
     markBoxSeen(newSetCode);
+
+    // DON'T show panel yet for auto-detection — wait for API to confirm match.
+    // forceShow case already handled above (panel visible with loading spinner).
 
     // Fetch data from background script
     const FETCH_TIMEOUT_MS = 12000;
@@ -952,16 +934,48 @@
           setTimeout(() => reject(new Error('Request timed out')), FETCH_TIMEOUT_MS)
         )
       ]);
+
+      // After API response: show panel only if box matched (unless forceShow, already visible)
+      if (!forceShow && panelElement) {
+        if (response && response.matched && !userDismissed) {
+          // API confirmed match — now show the panel
+          panelElement.style.display = 'flex';
+          if (isFirstTimeSeeingThisBox) {
+            const collapsedCode = await loadCollapsedState();
+            if (collapsedCode === newSetCode) {
+              panelElement.classList.add('bbp-collapsed');
+            } else {
+              panelElement.classList.remove('bbp-collapsed');
+              clearCollapsedState();
+            }
+          } else if (isNewBox) {
+            panelElement.classList.remove('bbp-collapsed');
+            clearCollapsedState();
+          }
+        } else if (!response || !response.matched) {
+          // Not matched — hide panel
+          panelElement.style.display = 'none';
+          chrome.runtime.sendMessage({ action: 'noBoxDetected' });
+          return;
+        }
+      }
+
       updatePanel(response);
     } catch (error) {
       log('Error fetching data:', error);
       const isTimeout = error && (error.message === 'Request timed out' || error.message === 'Timeout');
-      updatePanel({
-        matched: false,
-        error: isTimeout
-          ? 'Request timed out. Please click Retry.'
-          : 'Unable to connect to BoosterBoxPro. Please try again in a moment.'
-      });
+      if (forceShow || panelAlreadyVisible) {
+        // Show error only if panel was explicitly opened or already visible
+        updatePanel({
+          matched: false,
+          error: isTimeout
+            ? 'Request timed out. Please click Retry.'
+            : 'Unable to connect to BoosterBoxPro. Please try again in a moment.'
+        });
+      } else if (panelElement) {
+        // Auto-detect error — silently hide
+        panelElement.style.display = 'none';
+      }
     }
   }
 
