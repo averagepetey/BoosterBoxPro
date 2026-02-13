@@ -129,6 +129,28 @@ def _get_previous_day_totals(target_date: str):
     return None
 
 
+def _get_actual_7d_volume(target_date: str) -> Optional[float]:
+    """Sum daily_volume_usd across all boxes for the last 7 days from DB."""
+    from sqlalchemy import text
+    engine = _get_sync_engine()
+    dt = datetime.strptime(target_date, "%Y-%m-%d")
+    start_str = (dt - timedelta(days=6)).strftime("%Y-%m-%d")
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT COALESCE(SUM(bmu.daily_volume_usd), 0)
+            FROM box_metrics_unified bmu
+            JOIN booster_boxes bb ON bb.id = bmu.booster_box_id
+            WHERE bmu.metric_date >= CAST(:start AS date)
+              AND bmu.metric_date <= CAST(:end AS date)
+              AND bb.product_name NOT LIKE '%%(Test)%%'
+              AND bb.product_name NOT LIKE '%%Test Box%%'
+              AND bb.product_name != 'One Piece - OP-01 Romance Dawn Booster Box'
+        """), {"start": start_str, "end": target_date}).fetchone()
+    if row and row[0] is not None:
+        return round(float(row[0]), 2)
+    return None
+
+
 def compute_fear_greed(boxes: List[Dict[str, Any]]) -> int:
     """
     4-factor Fear & Greed score (0-100).
@@ -208,33 +230,26 @@ def compute_market_index(target_date: str | None = None) -> dict:
     # BULLISH if index_7d > +2% AND volume_7d > 0%
     # BEARISH if index_7d < -2% AND volume_7d < 0%
     # else NEUTRAL
-    vol_7d_sum = sum(b.get("unified_volume_usd", 0) for b in boxes)
     prev_totals = _get_previous_day_totals(target_date)
-    # Compute volume 7d change from stored historical
-    past_7d_str = (dt - timedelta(days=7)).strftime("%Y-%m-%d")
-    from sqlalchemy import text as _text
-    engine = _get_sync_engine()
-    with engine.connect() as conn:
-        row = conn.execute(_text("""
-            SELECT total_7d_volume_usd FROM market_index_daily
-            WHERE metric_date = CAST(:d AS date)
-        """), {"d": past_7d_str}).fetchone()
-    past_7d_vol = float(row[0]) if row and row[0] is not None else None
-
-    # Current 7d volume
-    total_7d_volume_usd = vol_7d_sum  # This is sum of individual box 30d volumes; estimate 7d as daily * 7
-    # Better: sum daily_volume_usd across boxes gives today's total
     total_daily_vol = sum(b.get("daily_volume_usd", 0) for b in boxes)
 
-    # For volume trend, use volume_7d_change_pct from individual boxes
-    vol_changes = [b.get("floor_price_7d_change_pct") for b in boxes if b.get("floor_price_7d_change_pct") is not None]
-    avg_vol_7d_change = sum(vol_changes) / len(vol_changes) if vol_changes else 0
+    # Get actual 7d volume from DB (sum of daily_volume_usd over last 7 days)
+    actual_7d_vol = _get_actual_7d_volume(target_date)
+
+    # Get previous week's 7d volume for comparison
+    past_7d_str = (dt - timedelta(days=7)).strftime("%Y-%m-%d")
+    past_7d_vol = _get_actual_7d_volume(past_7d_str)
+
+    # Volume 7d change: compare this week's actual 7d total to previous week's
+    volume_7d_change_for_sentiment = 0
+    if past_7d_vol and past_7d_vol > 0 and actual_7d_vol:
+        volume_7d_change_for_sentiment = ((actual_7d_vol - past_7d_vol) / past_7d_vol) * 100
 
     sentiment = "NEUTRAL"
     if index_7d_change_pct is not None:
-        if index_7d_change_pct > 2 and avg_vol_7d_change > 0:
+        if index_7d_change_pct > 2 and volume_7d_change_for_sentiment > 0:
             sentiment = "BULLISH"
-        elif index_7d_change_pct < -2 and avg_vol_7d_change < 0:
+        elif index_7d_change_pct < -2 and volume_7d_change_for_sentiment < 0:
             sentiment = "BEARISH"
 
     # ── Fear & Greed ──────────────────────────────────────────────
@@ -272,8 +287,8 @@ def compute_market_index(target_date: str | None = None) -> dict:
     total_daily_volume_usd = round(total_daily_vol, 2)
     total_30d_volume_usd = round(sum(b.get("unified_volume_usd", 0) for b in boxes), 2)
 
-    # 7d volume estimate: daily * 7 (approximate since we don't store per-box 7d volume separately)
-    total_7d_vol_est = round(total_daily_vol * 7, 2) if total_daily_vol else None
+    # Actual 7d volume from DB (already computed above for sentiment)
+    total_7d_volume_usd = actual_7d_vol
 
     # Volume change percentages
     volume_1d_change_pct = None
@@ -282,11 +297,19 @@ def compute_market_index(target_date: str | None = None) -> dict:
         volume_1d_change_pct = round(
             ((total_daily_volume_usd - prev_totals["total_daily_volume_usd"]) / prev_totals["total_daily_volume_usd"]) * 100, 2
         )
-    if past_7d_vol and past_7d_vol > 0 and total_7d_vol_est:
-        volume_7d_change_pct_val = round(((total_7d_vol_est - past_7d_vol) / past_7d_vol) * 100, 2)
+    if past_7d_vol and past_7d_vol > 0 and total_7d_volume_usd:
+        volume_7d_change_pct_val = round(((total_7d_volume_usd - past_7d_vol) / past_7d_vol) * 100, 2)
 
     # ── Liquidity & Sales ─────────────────────────────────────────
-    liq_scores = [b.get("liquidity_score", 0) for b in boxes if b.get("liquidity_score") is not None and b["liquidity_score"] > 0]
+    # Apply manual liquidity overrides (0-100 scale) to match leaderboard
+    from app.services.box_detail_service import get_manual_liquidity_reprint
+    liq_scores = []
+    for b in boxes:
+        manual_liq, _ = get_manual_liquidity_reprint(b.get("product_name"))
+        if manual_liq is not None:
+            liq_scores.append(manual_liq)
+        elif b.get("liquidity_score") is not None and b["liquidity_score"] > 0:
+            liq_scores.append(b["liquidity_score"])
     avg_liquidity = round(sum(liq_scores) / len(liq_scores), 2) if liq_scores else None
 
     total_boxes_sold = round(sum(b.get("boxes_sold_per_day", 0) for b in boxes), 2)
@@ -294,7 +317,9 @@ def compute_market_index(target_date: str | None = None) -> dict:
     # ── Supply ────────────────────────────────────────────────────
     total_active_listings = sum(b.get("active_listings_count", 0) for b in boxes)
     total_boxes_added = sum(b.get("boxes_added_today", 0) for b in boxes)
-    net_supply = total_boxes_added - int(total_boxes_sold) if total_boxes_sold else total_boxes_added
+    # boxes_added_today is already net change (today's listings - yesterday's listings),
+    # so it already accounts for sales. Don't subtract sales again.
+    net_supply = total_boxes_added
 
     listings_1d_change_val = None
     if prev_totals and prev_totals.get("total_active_listings") is not None:
@@ -319,7 +344,7 @@ def compute_market_index(target_date: str | None = None) -> dict:
         biggest_loser_box_id=biggest_loser_id,
         biggest_loser_pct=biggest_loser_pct,
         total_daily_volume_usd=total_daily_volume_usd,
-        total_7d_volume_usd=total_7d_vol_est,
+        total_7d_volume_usd=total_7d_volume_usd,
         total_30d_volume_usd=total_30d_volume_usd,
         volume_1d_change_pct=volume_1d_change_pct,
         volume_7d_change_pct=volume_7d_change_pct_val,
