@@ -212,14 +212,17 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             active_listings = int(latest_db_metric.active_listings_count)
         boxes_sold_today = latest.get("boxes_sold_today") or 0
 
-        avg_sales_30d = latest.get("boxes_sold_30d_avg")
+        # Prefer pre-computed boxes_sold_30d_avg from DB (Phase 3)
+        avg_sales_30d = None
+        if latest_db_metric and latest_db_metric.boxes_sold_30d_avg is not None and float(latest_db_metric.boxes_sold_30d_avg) > 0:
+            avg_sales_30d = float(latest_db_metric.boxes_sold_30d_avg)
+        if avg_sales_30d is None:
+            avg_sales_30d = latest.get("boxes_sold_30d_avg")
         if avg_sales_30d is None:
             try:
                 avg_sales_30d = get_box_30d_avg_sales(str(db_box.id))
             except Exception:
                 avg_sales_30d = None
-        if avg_sales_30d is None and latest_db_metric and (latest_db_metric.boxes_sold_30d_avg or 0) > 0:
-            avg_sales_30d = float(latest_db_metric.boxes_sold_30d_avg)
 
         avg_boxes_added_per_day = latest.get("avg_boxes_added_per_day")
         boxes_added_values: list[float] = []
@@ -233,8 +236,10 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
             avg_boxes_added_per_day = avg_boxes_added_per_day or 0
         # Only expose 30-day average when we have 30 entries; otherwise UI shows daily (boxes_added_today)
 
-        # Prefer pre-computed days_to_20pct from Phase 3
-        days_to_20pct = latest.get("days_to_20pct_increase")
+        # Prefer pre-computed days_to_20pct from DB (Phase 3)
+        days_to_20pct = None
+        if latest_db_metric and latest_db_metric.days_to_20pct_increase is not None:
+            days_to_20pct = float(latest_db_metric.days_to_20pct_increase)
         if days_to_20pct is None:
             if avg_sales_30d and avg_sales_30d > 0 and active_listings:
                 net_burn_rate = avg_sales_30d - avg_boxes_added_per_day
@@ -247,7 +252,10 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
                 else:
                     days_to_20pct = 180.0
 
-        liquidity_score = latest.get("liquidity_score")
+        # Prefer pre-computed liquidity_score from DB (Phase 3)
+        liquidity_score = None
+        if latest_db_metric and latest_db_metric.liquidity_score is not None:
+            liquidity_score = float(latest_db_metric.liquidity_score)
         if liquidity_score is None and avg_sales_30d and avg_sales_30d > 0:
             if active_listings and active_listings > 0:
                 raw_score = (avg_sales_30d / active_listings) * 100
@@ -257,15 +265,24 @@ async def build_box_detail_data(db: AsyncSession, db_box: BoosterBox) -> dict[st
 
         daily_vol = latest.get("daily_volume_usd") or 0
         volume_7d = latest.get("volume_7d") or (daily_vol * 7 if daily_vol else 0)
+        # Prefer pre-computed unified_volume_usd from DB (Phase 3)
         volume_30d = None
-        try:
-            volume_30d = get_box_30d_volume_or_ramp(str(db_box.id), current_floor_override=current_floor_override)
-        except Exception:
-            volume_30d = None
+        if latest_db_metric and latest_db_metric.unified_volume_usd is not None:
+            volume_30d = float(latest_db_metric.unified_volume_usd)
+        if volume_30d is None:
+            try:
+                volume_30d = get_box_30d_volume_or_ramp(str(db_box.id), current_floor_override=current_floor_override)
+            except Exception:
+                volume_30d = None
         if volume_30d is None:
             volume_30d = latest.get("unified_volume_usd") or (daily_vol * 30 if daily_vol else 0)
 
-        unified_volume_7d_ema = latest.get("unified_volume_7d_ema")
+        # Prefer pre-computed unified_volume_7d_ema from DB (Phase 3)
+        unified_volume_7d_ema = None
+        if latest_db_metric and latest_db_metric.unified_volume_7d_ema is not None:
+            unified_volume_7d_ema = float(latest_db_metric.unified_volume_7d_ema)
+        if unified_volume_7d_ema is None:
+            unified_volume_7d_ema = latest.get("unified_volume_7d_ema")
         if unified_volume_7d_ema is None and len(historical_data) >= 2:
             recent_entries = historical_data[-7:] if len(historical_data) >= 7 else historical_data
             volumes = []

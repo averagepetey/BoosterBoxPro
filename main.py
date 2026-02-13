@@ -540,6 +540,8 @@ async def get_booster_boxes(
             
             # Manual overrides for reprint risk and top 10 value
             manual_liq, manual_reprint = get_manual_liquidity_reprint(db_box.product_name)
+            if manual_liq is not None:
+                box_data["metrics"]["liquidity_score"] = manual_liq
             if manual_reprint is not None:
                 box_data["reprint_risk"] = manual_reprint
 
