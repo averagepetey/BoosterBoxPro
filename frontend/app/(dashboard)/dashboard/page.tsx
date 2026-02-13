@@ -23,9 +23,9 @@ function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('30d');
-  // Default sort based on initial timeRange (30d)
-  const [sortBy, setSortBy] = useState('unified_volume_usd');
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
+  // Default sort based on initial timeRange (24h)
+  const [sortBy, setSortBy] = useState('daily_volume_usd');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isMounted, setIsMounted] = useState(false);
 
