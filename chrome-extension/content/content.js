@@ -346,8 +346,8 @@
                 <div class="bbp-key-metric-sub" id="bbp-24h-change">—</div>
               </div>
               <div class="bbp-key-metric">
-                <div class="bbp-key-metric-label">Volume (7d EMA)</div>
-                <div class="bbp-key-metric-value" id="bbp-volume-7d">—</div>
+                <div class="bbp-key-metric-label">24h Volume</div>
+                <div class="bbp-key-metric-value" id="bbp-volume-24h">—</div>
               </div>
               <div class="bbp-key-metric">
                 <div class="bbp-key-metric-label">Days to +20%</div>
@@ -565,7 +565,7 @@
         el24h.textContent = '—';
       }
     }
-    document.getElementById('bbp-volume-7d').textContent = formatCurrency(metrics.unified_volume_7d_ema || metrics.unified_volume_usd);
+    document.getElementById('bbp-volume-24h').textContent = formatCurrency(metrics.daily_volume_usd);
     document.getElementById('bbp-days-20').textContent = metrics.days_to_20pct_increase != null ? Math.round(metrics.days_to_20pct_increase) : 'No squeeze';
     // Volume change (DoD)
     const volChangeWrap = document.getElementById('bbp-volume-change-wrap');
