@@ -17,8 +17,17 @@ function trackEvent(event, properties = {}) {
 document.addEventListener('DOMContentLoaded', async () => {
   trackEvent('popup_opened');
 
+  // Get config from background for centralized URL management
+  let dashboardUrl = 'https://booster-box-pro.vercel.app';
+  try {
+    const cfg = await chrome.runtime.sendMessage({ action: 'getConfig' });
+    if (cfg && cfg.dashboardUrl) dashboardUrl = cfg.dashboardUrl;
+  } catch (e) {
+    // Use default
+  }
+
   const dashboardLink = document.getElementById('dashboard-link');
-  dashboardLink.href = 'https://booster-box-pro.vercel.app/dashboard';
+  dashboardLink.href = dashboardUrl + '/dashboard';
   dashboardLink.addEventListener('click', () => {
     trackEvent('popup_dashboard_clicked');
   });

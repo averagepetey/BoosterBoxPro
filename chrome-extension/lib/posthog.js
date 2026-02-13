@@ -49,7 +49,7 @@ async function captureEvent(eventName, properties = {}) {
       body: JSON.stringify(payload),
     });
   } catch (e) {
-    console.warn('[BBP Analytics] Failed to capture event:', e);
+    // Silently ignore analytics failures in production
   }
 }
 
@@ -81,6 +81,6 @@ async function identifyUser(userId, properties = {}) {
     // Update stored distinct_id to the identified user
     await chrome.storage.local.set({ bbpPosthogDistinctId: userId });
   } catch (e) {
-    console.warn('[BBP Analytics] Failed to identify user:', e);
+    // Silently ignore analytics failures in production
   }
 }

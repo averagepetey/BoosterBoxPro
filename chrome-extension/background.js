@@ -6,7 +6,11 @@
 // PostHog analytics (lightweight HTTP client)
 importScripts('lib/posthog.js');
 
+const DEBUG = false;
+function log(...args) { if (DEBUG) console.log('[BBP]', ...args); }
+
 const DEFAULT_API_BASE_URL = 'https://boosterboxpro.onrender.com';
+const DASHBOARD_URL = 'https://booster-box-pro.vercel.app';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 // In-memory cache for box data
@@ -26,17 +30,6 @@ async function getApiBaseUrl() {
 }
 
 /**
- * User-friendly message for network/connection failures
- */
-function connectionErrorMessage(baseUrl, err) {
-  const url = baseUrl || DEFAULT_API_BASE_URL;
-  if (!err || /failed to fetch|network|connection refused|load failed/i.test(String(err.message || ''))) {
-    return `Can't reach the API at ${url}. Make sure the BoosterBoxPro backend is running, then click Retry.`;
-  }
-  return err.message || 'Connection error';
-}
-
-/**
  * Fetch box data from BoosterBoxPro API
  */
 async function fetchBoxData(setCode) {
@@ -45,14 +38,14 @@ async function fetchBoxData(setCode) {
   // Check cache first
   const cached = boxCache.get(setCode);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log(`[BBP] Cache hit for ${setCode}`);
+    log(`Cache hit for ${setCode}`);
     return cached.data;
   }
 
-  console.log(`[BBP] Fetching data for ${setCode} from ${API_BASE_URL}`);
-  
+  log(`Fetching data for ${setCode}`);
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
     const response = await fetch(`${API_BASE_URL}/extension/box/${setCode}`, {
@@ -62,31 +55,27 @@ async function fetchBoxData(setCode) {
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { matched: false, error: 'Box not found', apiBaseUrl: API_BASE_URL };
+        return { matched: false, error: "This box isn't tracked yet." };
       }
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Cache the result
     boxCache.set(setCode, {
       data: data,
       timestamp: Date.now()
     });
-    
+
     return data;
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error(`[BBP] Error fetching box data:`, error);
+    log('Error fetching box data:', error);
     const message = error.name === 'AbortError'
-      ? `Request timed out. Is the backend running at ${API_BASE_URL}? Start it (e.g. python main.py), then click Retry.`
-      : connectionErrorMessage(API_BASE_URL, error);
-    return {
-      matched: false,
-      error: message,
-      apiBaseUrl: API_BASE_URL
-    };
+      ? 'Request timed out. Please try again in a moment.'
+      : 'Unable to connect to BoosterBoxPro. Please try again in a moment.';
+    return { matched: false, error: message };
   }
 }
 
@@ -95,17 +84,26 @@ async function fetchBoxData(setCode) {
  */
 async function compareBoxes(box1, box2) {
   const API_BASE_URL = await getApiBaseUrl();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${API_BASE_URL}/extension/compare?box1=${box1}&box2=${box2}`);
-    
+    const response = await fetch(`${API_BASE_URL}/extension/compare?box1=${box1}&box2=${box2}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error(`[BBP] Error comparing boxes:`, error);
-    return { error: connectionErrorMessage(API_BASE_URL, error) };
+    clearTimeout(timeoutId);
+    log('Error comparing boxes:', error);
+    const message = error.name === 'AbortError'
+      ? 'Request timed out. Please try again in a moment.'
+      : 'Unable to connect to BoosterBoxPro. Please try again in a moment.';
+    return { error: message };
   }
 }
 
@@ -114,16 +112,22 @@ async function compareBoxes(box1, box2) {
  */
 async function searchBoxes(query) {
   const API_BASE_URL = await getApiBaseUrl();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${API_BASE_URL}/extension/search?q=${encodeURIComponent(query)}`);
-    
+    const response = await fetch(`${API_BASE_URL}/extension/search?q=${encodeURIComponent(query)}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error(`[BBP] Error searching boxes:`, error);
+    clearTimeout(timeoutId);
+    log('Error searching boxes:', error);
     return { results: [] };
   }
 }
@@ -133,16 +137,22 @@ async function searchBoxes(query) {
  */
 async function getTopMovers() {
   const API_BASE_URL = await getApiBaseUrl();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${API_BASE_URL}/extension/top-movers`);
-    
+    const response = await fetch(`${API_BASE_URL}/extension/top-movers`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error(`[BBP] Error fetching top movers:`, error);
+    clearTimeout(timeoutId);
+    log('Error fetching top movers:', error);
     return { gainers: [], losers: [] };
   }
 }
@@ -162,65 +172,68 @@ async function injectContentScript(tabId) {
       }
     } catch (e) {
       // Content script not loaded, proceed with injection
-      console.log('[BBP] Content script not loaded, injecting...');
+      log('Content script not loaded, injecting...');
     }
-    
+
     // Inject CSS
     await chrome.scripting.insertCSS({
       target: { tabId: tabId },
       files: ['content/panel.css']
     });
-    
+
     // Inject JS
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
-      files: ['content/tcgplayer.js']
+      files: ['content/content.js']
     });
     // Tell the newly injected script to show the panel (it starts hidden)
     await new Promise(r => setTimeout(r, 100));
     try {
       await chrome.tabs.sendMessage(tabId, { action: 'showPanel' });
     } catch (e) {
-      console.log('[BBP] showPanel after inject:', e.message);
+      log('showPanel after inject:', e.message);
     }
     return { success: true };
   } catch (error) {
-    console.error('[BBP] Injection error:', error);
+    log('Injection error:', error);
     return { success: false, error: error.message };
   }
 }
 
 // Listen for messages from content scripts and popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(`[BBP] Received message:`, request);
-  
+  log('Received message:', request.action);
+
   switch (request.action) {
     case 'fetchBoxData':
       fetchBoxData(request.setCode).then(sendResponse);
       return true; // Keep channel open for async response
-      
+
     case 'compareBoxes':
       compareBoxes(request.box1, request.box2).then(sendResponse);
       return true;
-      
+
     case 'searchBoxes':
       searchBoxes(request.query).then(sendResponse);
       return true;
-      
+
     case 'getTopMovers':
       getTopMovers().then(sendResponse);
       return true;
-    
+
     case 'injectPanel':
       injectContentScript(request.tabId).then(sendResponse);
       return true;
+
+    case 'getConfig':
+      sendResponse({ dashboardUrl: DASHBOARD_URL });
+      return false;
 
     case 'trackEvent':
       captureEvent(request.event, request.properties || {}).then(() => sendResponse({ success: true }));
       return true;
 
     default:
-      console.warn(`[BBP] Unknown action: ${request.action}`);
       sendResponse({ error: 'Unknown action' });
   }
 });
@@ -236,6 +249,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Ensure PostHog distinct_id is initialized on service worker load
-getDistinctId().then(id => console.log('[BBP] PostHog distinct_id:', id));
+getDistinctId().then(id => log('PostHog distinct_id:', id));
 
-console.log('[BBP] BoosterBoxPro background service worker loaded');
+log('BoosterBoxPro background service worker loaded');

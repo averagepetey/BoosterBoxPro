@@ -1,14 +1,17 @@
 /**
- * BoosterBoxPro Chrome Extension - TCGplayer Content Script
- * Auto-detects One Piece booster boxes and displays market data panel
+ * BoosterBoxPro Chrome Extension - Content Script
+ * Auto-detects One Piece booster boxes on TCGplayer & eBay and displays market data panel
  */
 
 (function() {
   'use strict';
 
+  const DEBUG = false;
+  function log(...args) { if (DEBUG) console.log('[BBP]', ...args); }
+
   // Prevent multiple injections - if already loaded, just show the panel
   if (window.__bbpLoaded) {
-    console.log('[BBP] Already loaded, showing panel');
+    log('Already loaded, showing panel');
     const existingPanel = document.getElementById('bbp-panel');
     if (existingPanel) {
       existingPanel.style.display = 'flex';
@@ -19,7 +22,10 @@
   window.__bbpLoaded = true;
 
   const siteName = window.location.hostname.includes('ebay') ? 'eBay' : 'TCGplayer';
-  console.log(`[BBP] BoosterBoxPro content script loaded on ${siteName}`);
+  log(`Content script loaded on ${siteName}`);
+
+  // Config fetched from background at init
+  let config = { dashboardUrl: 'https://booster-box-pro.vercel.app' };
 
   /**
    * Send an analytics event to PostHog via background script
@@ -115,14 +121,14 @@
     const url = decodeURIComponent(window.location.href);
     const urlCode = matchSetCode(url);
     if (urlCode) {
-      console.log(`[BBP] Found set code in URL: ${urlCode}`);
+      log(`Found set code in URL: ${urlCode}`);
       return urlCode;
     }
 
     // 2. Page title (browser tab)
     const titleCode = matchSetCode(document.title);
     if (titleCode) {
-      console.log(`[BBP] Found set code in title: ${titleCode}`);
+      log(`Found set code in title: ${titleCode}`);
       return titleCode;
     }
 
@@ -131,42 +137,75 @@
     if (h1) {
       const h1Code = matchSetCode(h1.textContent);
       if (h1Code) {
-        console.log(`[BBP] Found set code in H1: ${h1Code}`);
+        log(`Found set code in H1: ${h1Code}`);
         return h1Code;
       }
     }
 
+    // 4. eBay product page title selectors
+    if (siteName === 'eBay') {
+      const ebaySelectors = [
+        'h1.x-item-title__mainTitle span.ux-textspans',
+        'h1.it-title',
+        '#itemTitle',
+        '.vim.x-item-title span.ux-textspans',
+      ];
+      for (const sel of ebaySelectors) {
+        const el = document.querySelector(sel);
+        if (el) {
+          const code = matchSetCode(el.textContent);
+          if (code) {
+            log(`Found set code in eBay title: ${code}`);
+            return code;
+          }
+        }
+      }
+    }
+
+    // 5. TCGplayer product title element
     const productTitle = document.querySelector(
       '[class*="product-details__name"], [class*="ProductDetails__name"]'
     );
     if (productTitle) {
       const ptCode = matchSetCode(productTitle.textContent);
       if (ptCode) {
-        console.log(`[BBP] Found set code in product title: ${ptCode}`);
+        log(`Found set code in product title: ${ptCode}`);
         return ptCode;
       }
     }
 
-    // 4. Breadcrumbs
+    // 6. Breadcrumbs
     const breadcrumbs = document.querySelectorAll('[class*="breadcrumb"] a, nav a');
     for (const el of breadcrumbs) {
       const bcCode = matchSetCode(el.textContent);
       if (bcCode) {
-        console.log(`[BBP] Found set code in breadcrumb: ${bcCode}`);
+        log(`Found set code in breadcrumb: ${bcCode}`);
         return bcCode;
       }
     }
 
-    // 5. Body text (first 3000 chars) — last resort, may pick up related products
+    // 7. eBay search results — detect if viewing a search for booster boxes
+    if (siteName === 'eBay') {
+      const searchInput = document.querySelector('input#gh-ac');
+      if (searchInput && searchInput.value) {
+        const code = matchSetCode(searchInput.value);
+        if (code) {
+          log(`Found set code in eBay search: ${code}`);
+          return code;
+        }
+      }
+    }
+
+    // 8. Body text (first 3000 chars) — last resort, may pick up related products
     if (document.body) {
       const bodyCode = matchSetCode(document.body.innerText.substring(0, 3000));
       if (bodyCode) {
-        console.log(`[BBP] Found set code in body text: ${bodyCode}`);
+        log(`Found set code in body text: ${bodyCode}`);
         return bodyCode;
       }
     }
 
-    console.log('[BBP] No set code detected on this page');
+    log('No set code detected on this page');
     return null;
   }
 
@@ -428,7 +467,6 @@
         <div class="bbp-error" style="display: none;">
           <div class="bbp-error-icon">⚠️</div>
           <div class="bbp-error-text">Unable to load market data.</div>
-          <div class="bbp-error-url" style="display: none;"></div>
           <button class="bbp-retry-btn">Retry</button>
         </div>
       </div>
@@ -447,14 +485,17 @@
   }
 
   /**
-   * Format percentage with color
+   * Apply a percentage value to an element using textContent (XSS-safe).
+   * Sets text and toggles bbp-positive / bbp-negative classes.
    */
-  function formatPercent(value, includeSign = true) {
-    if (value === null || value === undefined) return '—';
+  function applyPercent(element, value) {
+    if (value === null || value === undefined) { element.textContent = '—'; return; }
     const sign = value >= 0 ? '+' : '';
-    const colorClass = value > 0 ? 'bbp-positive' : value < 0 ? 'bbp-negative' : '';
     const arrow = value > 0 ? ' ▲' : value < 0 ? ' ▼' : '';
-    return `<span class="${colorClass}">${includeSign ? sign : ''}${value.toFixed(1)}%${arrow}</span>`;
+    element.textContent = `${sign}${value.toFixed(1)}%${arrow}`;
+    element.classList.remove('bbp-positive', 'bbp-negative');
+    if (value > 0) element.classList.add('bbp-positive');
+    else if (value < 0) element.classList.add('bbp-negative');
   }
 
   /**
@@ -483,15 +524,6 @@
         error.style.display = 'block';
         const errText = error.querySelector('.bbp-error-text');
         errText.textContent = data.error;
-        const errUrl = error.querySelector('.bbp-error-url');
-        if (errUrl) {
-          if (data.apiBaseUrl) {
-            errUrl.textContent = 'Backend: ' + data.apiBaseUrl;
-            errUrl.style.display = 'block';
-          } else {
-            errUrl.style.display = 'none';
-          }
-        }
       } else {
         noBox.style.display = 'block';
       }
@@ -517,7 +549,7 @@
     // Update image if available
     const img = panelElement.querySelector('.bbp-box-image');
     if (box.image_url) {
-      img.src = `https://booster-box-pro.vercel.app${box.image_url}`;
+      img.src = `${config.dashboardUrl}${box.image_url}`;
       img.style.display = 'block';
     } else {
       img.style.display = 'none';
@@ -526,7 +558,13 @@
     // Key metrics (same as box detail page)
     document.getElementById('bbp-floor-price').textContent = formatCurrency(metrics.floor_price_usd);
     const el24h = document.getElementById('bbp-24h-change');
-    if (el24h) el24h.innerHTML = metrics.floor_price_1d_change_pct != null ? formatPercent(metrics.floor_price_1d_change_pct) : '—';
+    if (el24h) {
+      if (metrics.floor_price_1d_change_pct != null) {
+        applyPercent(el24h, metrics.floor_price_1d_change_pct);
+      } else {
+        el24h.textContent = '—';
+      }
+    }
     document.getElementById('bbp-volume-7d').textContent = formatCurrency(metrics.unified_volume_7d_ema || metrics.unified_volume_usd);
     document.getElementById('bbp-days-20').textContent = metrics.days_to_20pct_increase != null ? Math.round(metrics.days_to_20pct_increase) : 'No squeeze';
     // Volume change (DoD)
@@ -534,7 +572,10 @@
     const volChangeEl = document.getElementById('bbp-volume-change');
     if (volChangeWrap && volChangeEl && metrics.volume_1d_change_pct != null) {
       volChangeWrap.style.display = 'block';
-      volChangeEl.innerHTML = `<span class="${metrics.volume_1d_change_pct >= 0 ? 'bbp-positive' : 'bbp-negative'}">${metrics.volume_1d_change_pct >= 0 ? '▲' : '▼'} ${Math.abs(metrics.volume_1d_change_pct).toFixed(1)}%</span>`;
+      const arrow = metrics.volume_1d_change_pct >= 0 ? '▲' : '▼';
+      volChangeEl.textContent = `${arrow} ${Math.abs(metrics.volume_1d_change_pct).toFixed(1)}%`;
+      volChangeEl.classList.remove('bbp-positive', 'bbp-negative');
+      volChangeEl.classList.add(metrics.volume_1d_change_pct >= 0 ? 'bbp-positive' : 'bbp-negative');
     } else if (volChangeWrap) volChangeWrap.style.display = 'none';
     // Community sentiment (same as box detail)
     const sentiment = metrics.community_sentiment != null ? metrics.community_sentiment : 50;
@@ -552,11 +593,14 @@
     document.getElementById('bbp-daily-volume').textContent = formatCurrency(metrics.daily_volume_usd);
     const reprintRisk = (box.reprint_risk || 'UNKNOWN').toString();
     const riskClass = reprintRisk.toLowerCase() === 'low' ? 'bbp-risk-low' : reprintRisk.toLowerCase() === 'high' ? 'bbp-risk-high' : 'bbp-risk-medium';
-    document.getElementById('bbp-reprint-risk').innerHTML = '<span class="' + riskClass + '">' + reprintRisk + '</span>';
+    const reprintEl = document.getElementById('bbp-reprint-risk');
+    reprintEl.textContent = reprintRisk;
+    reprintEl.classList.remove('bbp-risk-low', 'bbp-risk-medium', 'bbp-risk-high');
+    reprintEl.classList.add(riskClass);
     const listingsAdded = metrics.boxes_added_today != null ? metrics.boxes_added_today : (metrics.avg_boxes_added_per_day != null ? metrics.avg_boxes_added_per_day : null);
     document.getElementById('bbp-listings-added').textContent = listingsAdded != null ? formatNumber(Math.round(listingsAdded)) + '/day' : '—';
     const dashboardLink = panelElement.querySelector('.bbp-dashboard-link');
-    dashboardLink.href = 'https://booster-box-pro.vercel.app/boxes/' + box.id;
+    dashboardLink.href = config.dashboardUrl + '/boxes/' + box.id;
     dashboardLink.addEventListener('click', () => {
       trackEvent('extension_dashboard_link_clicked', { set_code: box.set_code || currentSetCode, box_id: box.id });
     });
@@ -765,7 +809,7 @@
           updateCompareView();
         }
       } catch (err) {
-        console.error('[BBP] Compare error:', err);
+        log('Compare error:', err);
       }
     });
 
@@ -796,8 +840,8 @@
     document.getElementById('bbp-cmp-price2').textContent = formatCurrency(m2.floor_price_usd);
 
     // 30d change
-    document.getElementById('bbp-cmp-change1').innerHTML = formatPercent(m1.floor_price_30d_change_pct);
-    document.getElementById('bbp-cmp-change2').innerHTML = formatPercent(m2.floor_price_30d_change_pct);
+    applyPercent(document.getElementById('bbp-cmp-change1'), m1.floor_price_30d_change_pct);
+    applyPercent(document.getElementById('bbp-cmp-change2'), m2.floor_price_30d_change_pct);
 
     // Volume
     document.getElementById('bbp-cmp-volume1').textContent = formatCurrency(m1.daily_volume_usd);
@@ -834,12 +878,12 @@
 
     // Detect set code
     const newSetCode = extractSetCode();
-    console.log(`[BBP] Detected set code: ${newSetCode} (attempt ${retryCount + 1})`);
+    log(`Detected set code: ${newSetCode} (attempt ${retryCount + 1})`);
 
     // If not found and we haven't retried enough, wait and try again
     // TCGplayer loads content dynamically
     if (!newSetCode && retryCount < 3) {
-      console.log(`[BBP] No set code found, retrying in 500ms...`);
+      log('No set code found, retrying in 500ms...');
       setTimeout(() => detectAndFetch(retryCount + 1, forceShow), 500);
       return;
     }
@@ -910,14 +954,13 @@
       ]);
       updatePanel(response);
     } catch (error) {
-      console.error('[BBP] Error fetching data:', error);
+      log('Error fetching data:', error);
       const isTimeout = error && (error.message === 'Request timed out' || error.message === 'Timeout');
       updatePanel({
         matched: false,
         error: isTimeout
-          ? "Request timed out. The BoosterBoxPro API may be waking up — click Retry in a moment."
-          : "Could not reach the BoosterBoxPro API. Click Retry in a moment.",
-        apiBaseUrl: 'https://boosterboxpro.onrender.com'
+          ? 'Request timed out. Please click Retry.'
+          : 'Unable to connect to BoosterBoxPro. Please try again in a moment.'
       });
     }
   }
@@ -926,7 +969,15 @@
    * Initialize extension
    */
   async function init(forceShow = false) {
-    console.log('[BBP] Initializing BoosterBoxPro panel');
+    log('Initializing BoosterBoxPro panel');
+
+    // Fetch config from background
+    try {
+      const cfg = await chrome.runtime.sendMessage({ action: 'getConfig' });
+      if (cfg && cfg.dashboardUrl) config = cfg;
+    } catch (e) {
+      // Use defaults
+    }
 
     // Create and inject panel — show immediately so user can collapse while loading
     panelElement = createPanel();
@@ -959,7 +1010,7 @@
       const url = location.href;
       if (url !== lastUrl) {
         lastUrl = url;
-        console.log('[BBP] URL changed, re-detecting...');
+        log('URL changed, re-detecting...');
         // Do NOT reset userDismissed — if user clicked X, panel stays hidden
         // until they click "Open Extension" in the Chrome popup
         setTimeout(() => detectAndFetch(0, false), 600);
@@ -969,7 +1020,7 @@
 
   // Listen for messages from popup/background
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('[BBP] Received message:', request);
+    log('Received message:', request);
 
     if (request.action === 'ping') {
       // Used to check if content script is loaded

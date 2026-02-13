@@ -3,9 +3,10 @@
   "name": "BoosterBoxPro - Market Intelligence",
   "version": "1.0.0",
   "description": "See real-time One Piece TCG booster box market data on TCGplayer. Box detail view matches the BoosterBoxPro dashboard.",
+  "author": "BoosterBoxPro",
+  "homepage_url": "https://booster-box-pro.vercel.app",
   "permissions": [
     "storage",
-    "activeTab",
     "scripting"
   ],
   "host_permissions": [
@@ -15,9 +16,11 @@
     "https://ebay.com/*",
     "https://boosterboxpro.onrender.com/*",
     "https://*.onrender.com/*",
-    "https://*.run.app/*",
     "https://us.i.posthog.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "options_ui": {
     "page": "options/options.html"
   },
@@ -32,7 +35,7 @@
         "https://*.ebay.com/*",
         "https://ebay.com/*"
       ],
-      "js": ["content/tcgplayer.js"],
+      "js": ["content/content.js"],
       "css": ["content/panel.css"],
       "run_at": "document_idle"
     }

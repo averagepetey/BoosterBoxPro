@@ -105,3 +105,17 @@ body {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(239, 68, 68, 0.4);
   transform: translateY(-1px);
 }
+
+.privacy-link {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.privacy-link:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
