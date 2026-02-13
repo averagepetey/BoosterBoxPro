@@ -979,9 +979,10 @@
       // Use defaults
     }
 
-    // Create and inject panel — show immediately so user can collapse while loading
+    // Create and inject panel — keep hidden until a box is actually detected
+    // (prevents the panel from flashing on irrelevant pages like eBay homepage)
     panelElement = createPanel();
-    panelElement.style.display = 'flex';
+    panelElement.style.display = forceShow ? 'flex' : 'none';
     document.body.appendChild(panelElement);
 
     // Restore saved position or use default (right side)
