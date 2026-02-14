@@ -22,7 +22,7 @@ export function MacroSupply({ data }: MacroSupplyProps) {
         </div>
         <div>
           <span className="text-white/40">Added: </span>
-          <span className="text-white/80">+{formatNum(data.total_boxes_added_today)}</span>
+          <span className="text-white/80">{data.total_boxes_added_today !== null && data.total_boxes_added_today !== undefined ? (data.total_boxes_added_today > 0 ? '+' : '') + formatNum(data.total_boxes_added_today) : '--'}</span>
         </div>
         <div>
           <span className="text-white/40">Net: </span>

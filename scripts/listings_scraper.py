@@ -1214,20 +1214,14 @@ def save_results(results: List[Dict]):
         # Added/removed from yesterday's refresh to today's (daily cron: yesterday count vs today count)
         yesterday_alc = yesterday_counts.get(box_id)
 
-        # Guard: if yesterday's count looks like bad data (>100), don't compute delta
-        # This prevents the first correct run from showing a huge negative delta from old inflated data
-        if yesterday_alc is not None and yesterday_alc > 100:
-            logger.warning(f"Yesterday's count ({yesterday_alc}) for {box_id} looks inflated, skipping delta")
-            boxes_added_today = None
-        else:
-            # When floor dropped, use the comparable count (today's listings counted against
-            # yesterday's higher 20% threshold) so the delta is apples-to-apples.
-            # When floor rose or stayed same, use today's normal 20% count.
-            count_for_delta = comparable_20pct if comparable_20pct is not None else boxes_within_20pct
-            delta = (count_for_delta - yesterday_alc) if yesterday_alc is not None else None
-            boxes_added_today = delta
-            if comparable_20pct is not None and yesterday_alc is not None:
-                logger.info(f"  Floor dropped for {box_id}: using comparable count {comparable_20pct} (vs today's {boxes_within_20pct}) for delta against yesterday's {yesterday_alc}")
+        # When floor dropped, use the comparable count (today's listings counted against
+        # yesterday's higher 20% threshold) so the delta is apples-to-apples.
+        # When floor rose or stayed same, use today's normal 20% count.
+        count_for_delta = comparable_20pct if comparable_20pct is not None else boxes_within_20pct
+        delta = (count_for_delta - yesterday_alc) if yesterday_alc is not None else None
+        boxes_added_today = delta
+        if comparable_20pct is not None and yesterday_alc is not None:
+            logger.info(f"  Floor dropped for {box_id}: using comparable count {comparable_20pct} (vs today's {boxes_within_20pct}) for delta against yesterday's {yesterday_alc}")
 
         # Write to DB using box_id directly (these ARE the DB UUIDs)
         # NOTE: Do NOT write floor_price_usd here — that comes from Apify (sales data).

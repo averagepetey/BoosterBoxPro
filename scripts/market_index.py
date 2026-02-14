@@ -269,9 +269,9 @@ def compute_market_index(target_date: str | None = None) -> dict:
         if change is None:
             floors_flat += 1
             continue
-        if change > 0.5:
+        if change > 0:
             floors_up += 1
-        elif change < -0.5:
+        elif change < 0:
             floors_down += 1
         else:
             floors_flat += 1
