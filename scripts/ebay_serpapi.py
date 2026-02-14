@@ -53,13 +53,8 @@ SOLD_MIN_PRICE_RATIO = 0.65    # Sold listings: reject below 35% discount
 # SerpApi endpoint
 SERPAPI_URL = "https://serpapi.com/search.json"
 
-# Low-volume boxes: sold scraped every 3rd day (day_of_year % 3 == 0)
-LOW_VOLUME_BOX_IDS = {
-    "860ffe3f-9286-42a9-ad4e-d079a6add6f4",  # OP-01 Blue
-    "d3929fc6-6afa-468a-b7a1-ccc0f392131a",  # OP-03
-    "526c28b7-bc13-449b-a521-e63bdd81811a",  # OP-04
-    "3bda2acb-a55c-4a6e-ae93-dff5bad27e62",  # PRB-02
-}
+# All boxes scraped daily — no low-volume skip
+LOW_VOLUME_BOX_IDS: set = set()
 
 # eBay search config for each box (18 boxes)
 # search_query: primary eBay search terms
